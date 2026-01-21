@@ -1,0 +1,101 @@
+{
+  "name": "virgil",
+  "displayName": "Virgil",
+  "description": "Interactive guided walkthroughs for code review and codebase exploration",
+  "version": "0.1.0",
+  "publisher": "virgil",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:*.walkthrough.json"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "virgil.start",
+        "title": "Start Walkthrough",
+        "category": "Virgil"
+      },
+      {
+        "command": "virgil.next",
+        "title": "Next Step",
+        "category": "Virgil"
+      },
+      {
+        "command": "virgil.prev",
+        "title": "Previous Step",
+        "category": "Virgil"
+      },
+      {
+        "command": "virgil.goToStep",
+        "title": "Go to Step",
+        "category": "Virgil"
+      },
+      {
+        "command": "virgil.refresh",
+        "title": "Refresh Walkthrough",
+        "category": "Virgil"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "virgil",
+          "title": "Virgil",
+          "icon": "$(book)"
+        }
+      ]
+    },
+    "views": {
+      "virgil": [
+        {
+          "id": "virgilWalkthrough",
+          "name": "Walkthrough",
+          "contextualTitle": "Virgil Walkthrough"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "virgil.refresh",
+          "when": "view == virgilWalkthrough",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "virgil.next",
+        "key": "ctrl+shift+]",
+        "mac": "cmd+shift+]",
+        "when": "virgilWalkthroughActive"
+      },
+      {
+        "command": "virgil.prev",
+        "key": "ctrl+shift+[",
+        "mac": "cmd+shift+[",
+        "when": "virgilWalkthroughActive"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.0"
+  }
+}
