@@ -1,0 +1,68 @@
+{
+  "title": "Virgil Quick Start",
+  "description": "A brief introduction to using the Virgil extension",
+  "author": "claude",
+  "created": "2025-01-21T16:00:00Z",
+  "context": {
+    "type": "tutorial"
+  },
+  "overview": {
+    "purpose": "Get up and running with Virgil in 3 steps",
+    "scope": "Extension entry point and tree view"
+  },
+  "steps": [
+    {
+      "id": 1,
+      "title": "Extension activates on walkthrough files",
+      "description": "Virgil activates when it detects any `*.walkthrough.json` file in your workspace. The activation event is defined in package.json.",
+      "locations": [
+        {
+          "path": "package.json",
+          "startLine": 13,
+          "endLine": 15
+        }
+      ],
+      "notes": [
+        "Supports any filename ending in .walkthrough.json"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Tree view shows walkthrough structure",
+      "description": "The WalkthroughProvider parses the JSON and builds a tree view with the title, overview, steps, and summary sections.",
+      "locations": [
+        {
+          "path": "src/WalkthroughProvider.ts",
+          "startLine": 148,
+          "endLine": 165
+        }
+      ],
+      "notes": [
+        "Current step is highlighted with a green arrow"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Navigate with keyboard shortcuts",
+      "description": "Use Cmd+Shift+] for next step and Cmd+Shift+[ for previous step. These keybindings are defined in package.json.",
+      "locations": [
+        {
+          "path": "package.json",
+          "startLine": 72,
+          "endLine": 85
+        }
+      ],
+      "notes": [
+        "Keybindings only active when a walkthrough is loaded"
+      ]
+    }
+  ],
+  "summary": {
+    "keyTakeaways": [
+      "Create *.walkthrough.json files to define guided tours",
+      "Use the sidebar to navigate between steps",
+      "Keyboard shortcuts make navigation fast"
+    ],
+    "recommendation": "none"
+  }
+}

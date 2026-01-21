@@ -32,6 +32,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   private walkthrough: Walkthrough | undefined;
   private currentStepIndex: number = -1;
   private workspaceRoot: string;
+  private currentFile: string | undefined;
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
@@ -43,24 +44,57 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     this._onDidChangeTreeData.fire();
   }
 
+  getAvailableWalkthroughs(): string[] {
+    try {
+      const files = fs.readdirSync(this.workspaceRoot);
+      return files.filter(f => f.endsWith('.walkthrough.json'));
+    } catch {
+      return [];
+    }
+  }
+
+  getCurrentFile(): string | undefined {
+    return this.currentFile;
+  }
+
+  setWalkthroughFile(filename: string): void {
+    this.currentFile = filename;
+    this.currentStepIndex = -1;
+    this.loadWalkthrough();
+    this._onDidChangeTreeData.fire();
+  }
+
   private loadWalkthrough(): void {
-    // Find any *.walkthrough.json file
-    const files = fs.readdirSync(this.workspaceRoot);
-    const walkthroughFile = files.find(f => f.endsWith('.walkthrough.json'));
+    // Use current file if set, otherwise find first available
+    let walkthroughFile = this.currentFile;
+
+    if (!walkthroughFile) {
+      const files = this.getAvailableWalkthroughs();
+      walkthroughFile = files[0];
+    }
 
     if (!walkthroughFile) {
       this.walkthrough = undefined;
+      this.currentFile = undefined;
       return;
     }
 
     const walkthroughPath = path.join(this.workspaceRoot, walkthroughFile);
 
+    if (!fs.existsSync(walkthroughPath)) {
+      this.walkthrough = undefined;
+      this.currentFile = undefined;
+      return;
+    }
+
     try {
       const content = fs.readFileSync(walkthroughPath, 'utf-8');
       this.walkthrough = JSON.parse(content) as Walkthrough;
+      this.currentFile = walkthroughFile;
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to parse ${walkthroughFile}`);
       this.walkthrough = undefined;
+      this.currentFile = undefined;
     }
   }
 
@@ -99,12 +133,26 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
 
   getChildren(element?: WalkthroughTreeItem): Thenable<WalkthroughTreeItem[]> {
     if (!this.walkthrough) {
-      return Promise.resolve([
-        new WalkthroughTreeItem(
-          'No walkthrough found',
-          vscode.TreeItemCollapsibleState.None
-        )
-      ]);
+      const available = this.getAvailableWalkthroughs();
+      if (available.length === 0) {
+        return Promise.resolve([
+          new WalkthroughTreeItem(
+            'No *.walkthrough.json files found',
+            vscode.TreeItemCollapsibleState.None
+          )
+        ]);
+      }
+      // Show available walkthroughs to select
+      const selectItem = new WalkthroughTreeItem(
+        'Select a walkthrough...',
+        vscode.TreeItemCollapsibleState.None
+      );
+      selectItem.command = {
+        command: 'virgil.selectWalkthrough',
+        title: 'Select Walkthrough'
+      };
+      selectItem.iconPath = new vscode.ThemeIcon('folder-opened');
+      return Promise.resolve([selectItem]);
     }
 
     if (!element) {
@@ -134,6 +182,23 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     }
 
     const items: WalkthroughTreeItem[] = [];
+
+    // File selector (if multiple walkthroughs available)
+    const available = this.getAvailableWalkthroughs();
+    if (available.length > 1) {
+      const fileItem = new WalkthroughTreeItem(
+        this.currentFile || 'Select walkthrough',
+        vscode.TreeItemCollapsibleState.None
+      );
+      fileItem.description = `(${available.length} available)`;
+      fileItem.iconPath = new vscode.ThemeIcon('files');
+      fileItem.command = {
+        command: 'virgil.selectWalkthrough',
+        title: 'Select Walkthrough'
+      };
+      fileItem.tooltip = 'Click to switch walkthrough';
+      items.push(fileItem);
+    }
 
     // Title as header
     const titleItem = new WalkthroughTreeItem(

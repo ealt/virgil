@@ -40,6 +40,11 @@
         "command": "virgil.refresh",
         "title": "Refresh Walkthrough",
         "category": "Virgil"
+      },
+      {
+        "command": "virgil.selectWalkthrough",
+        "title": "Select Walkthrough",
+        "category": "Virgil"
       }
     ],
     "viewsContainers": {

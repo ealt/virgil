@@ -88,6 +88,36 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.selectWalkthrough', async () => {
+      if (!walkthroughProvider) {
+        return;
+      }
+
+      const available = walkthroughProvider.getAvailableWalkthroughs();
+      if (available.length === 0) {
+        vscode.window.showInformationMessage('No walkthrough files found');
+        return;
+      }
+
+      const currentFile = walkthroughProvider.getCurrentFile();
+      const items = available.map(file => ({
+        label: file,
+        description: file === currentFile ? '(current)' : undefined
+      }));
+
+      const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: 'Select a walkthrough'
+      });
+
+      if (selected) {
+        walkthroughProvider.setWalkthroughFile(selected.label);
+        highlightManager?.clearAll();
+        vscode.window.showInformationMessage(`Loaded: ${selected.label}`);
+      }
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('virgil.openLocation', async (filePath: string, startLine: number, endLine: number) => {
       await openFileAtLocation(workspaceRoot, filePath, startLine, endLine);
     })
