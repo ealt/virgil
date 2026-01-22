@@ -17,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
   highlightManager = new HighlightManager();
 
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  
+
   // Register convertMarkdown command early so it's available even without workspace
   context.subscriptions.push(
     vscode.commands.registerCommand('virgil.convertMarkdown', async () => {
