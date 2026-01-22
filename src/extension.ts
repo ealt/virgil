@@ -114,6 +114,71 @@ export function activate(context: vscode.ExtensionContext) {
         // Show first step of newly selected walkthrough
         walkthroughProvider.goToStep(0);
         showCurrentStep();
+        checkCommitMismatch();
+      }
+    })
+  );
+
+  // Check for commit mismatch and show warning
+  async function checkCommitMismatch() {
+    if (!walkthroughProvider) {
+      return;
+    }
+
+    walkthroughProvider.refreshGitState();
+    const mismatchInfo = walkthroughProvider.getCommitMismatchInfo();
+    if (mismatchInfo) {
+      const choice = await vscode.window.showWarningMessage(
+        `This walkthrough was created for commit ${mismatchInfo.expected.substring(0, 7)}. You're on ${mismatchInfo.current.substring(0, 7)}. Code may have changed.`,
+        'Checkout',
+        'Ignore'
+      );
+
+      if (choice === 'Checkout') {
+        vscode.commands.executeCommand('virgil.checkoutCommit');
+      }
+    }
+  }
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.checkoutCommit', async () => {
+      if (!walkthroughProvider) {
+        return;
+      }
+
+      const commit = walkthroughProvider.getWalkthroughCommit();
+      if (!commit) {
+        vscode.window.showInformationMessage('This walkthrough does not specify a commit.');
+        return;
+      }
+
+      // Check for uncommitted changes
+      if (walkthroughProvider.isWorkingTreeDirty()) {
+        const choice = await vscode.window.showWarningMessage(
+          'You have uncommitted changes. Stash them before checking out?',
+          'Stash & Checkout',
+          'Cancel'
+        );
+
+        if (choice === 'Stash & Checkout') {
+          const stashResult = walkthroughProvider.stashChanges();
+          if (!stashResult.success) {
+            vscode.window.showErrorMessage(`Failed to stash changes: ${stashResult.error}`);
+            return;
+          }
+          vscode.window.showInformationMessage('Changes stashed.');
+        } else {
+          return;
+        }
+      }
+
+      // Checkout the commit
+      const result = walkthroughProvider.checkoutCommit(commit);
+      if (result.success) {
+        vscode.window.showInformationMessage(`Checked out commit ${commit.substring(0, 7)}. You are now in detached HEAD state.`);
+        walkthroughProvider.refresh();
+      } else {
+        vscode.window.showErrorMessage(`Failed to checkout: ${result.error}`);
       }
     })
   );
@@ -192,6 +257,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (walkthrough && walkthrough.steps.length > 0) {
       walkthroughProvider.goToStep(0);
       showCurrentStep();
+      checkCommitMismatch();
     }
   }
 

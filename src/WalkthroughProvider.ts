@@ -25,10 +25,12 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   private workspaceRoot: string;
   private currentFile: string | undefined;
   private workspaceRemote: string | undefined;
+  private workspaceCommit: string | undefined;
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
     this.workspaceRemote = this.getGitRemote();
+    this.workspaceCommit = this.getGitCommit();
     this.loadWalkthrough();
   }
 
@@ -43,6 +45,92 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     } catch {
       // Not a git repo or no origin remote
       return undefined;
+    }
+  }
+
+  private getGitCommit(): string | undefined {
+    try {
+      const commit = execSync('git rev-parse HEAD', {
+        cwd: this.workspaceRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      }).trim();
+      return commit || undefined;
+    } catch {
+      // Not a git repo
+      return undefined;
+    }
+  }
+
+  refreshGitState(): void {
+    this.workspaceCommit = this.getGitCommit();
+  }
+
+  hasCommitMismatch(): boolean {
+    if (!this.walkthrough?.repository?.commit) {
+      return false; // No commit specified in walkthrough
+    }
+    if (!this.workspaceCommit) {
+      return false; // Can't determine current commit
+    }
+    // Compare first 7 chars (short SHA) to handle partial matches
+    const walkthroughCommit = this.walkthrough.repository.commit.substring(0, 40);
+    const currentCommit = this.workspaceCommit.substring(0, 40);
+    return walkthroughCommit !== currentCommit;
+  }
+
+  getCommitMismatchInfo(): { expected: string; current: string } | null {
+    if (!this.hasCommitMismatch()) {
+      return null;
+    }
+    return {
+      expected: this.walkthrough!.repository!.commit!,
+      current: this.workspaceCommit!
+    };
+  }
+
+  getWalkthroughCommit(): string | undefined {
+    return this.walkthrough?.repository?.commit;
+  }
+
+  isWorkingTreeDirty(): boolean {
+    try {
+      const status = execSync('git status --porcelain', {
+        cwd: this.workspaceRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      }).trim();
+      return status.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  checkoutCommit(commit: string): { success: boolean; error?: string } {
+    try {
+      execSync(`git checkout ${commit}`, {
+        cwd: this.workspaceRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      this.workspaceCommit = this.getGitCommit();
+      this._onDidChangeTreeData.fire();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  stashChanges(): { success: boolean; error?: string } {
+    try {
+      execSync('git stash', {
+        cwd: this.workspaceRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
     }
   }
 
@@ -218,15 +306,23 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       items.push(fileItem);
     }
 
-    // Title as header
+    // Title as header (with warning if commit mismatch)
+    const hasMismatch = this.hasCommitMismatch();
     const titleItem = new WalkthroughTreeItem(
       this.walkthrough.title,
       vscode.TreeItemCollapsibleState.None
     );
-    if (this.walkthrough.description) {
-      titleItem.description = this.walkthrough.description;
+    if (hasMismatch) {
+      const mismatchInfo = this.getCommitMismatchInfo();
+      titleItem.description = '⚠️ commit mismatch';
+      titleItem.tooltip = `Walkthrough expects commit ${mismatchInfo?.expected.substring(0, 7)}...\nCurrent commit: ${mismatchInfo?.current.substring(0, 7)}...\n\nCode may have changed since this walkthrough was created.`;
+      titleItem.iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('editorWarning.foreground'));
+    } else {
+      if (this.walkthrough.description) {
+        titleItem.description = this.walkthrough.description;
+      }
+      titleItem.iconPath = new vscode.ThemeIcon('book');
     }
-    titleItem.iconPath = new vscode.ThemeIcon('book');
     items.push(titleItem);
 
     // Steps

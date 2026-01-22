@@ -2,7 +2,8 @@
   "title": "Virgil Quick Start",
   "description": "Get up and running with Virgil in 5 steps",
   "repository": {
-    "remote": "git@github.com:ealt/virgil.git"
+    "remote": "git@github.com:ealt/virgil.git",
+    "commit": "919ee5d0000000000000000000000000000000000"
   },
   "metadata": {
     "type": "tutorial"
