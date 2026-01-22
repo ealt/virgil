@@ -111,7 +111,11 @@ export function activate(context: vscode.ExtensionContext) {
       if (selected) {
         walkthroughProvider.setWalkthroughFile(selected.label);
         highlightManager?.clearAll();
-        vscode.window.showInformationMessage(`Loaded: ${selected.label}`);
+        // Show overview for newly selected walkthrough
+        const walkthrough = walkthroughProvider.getWalkthrough();
+        if (walkthrough) {
+          StepDetailPanel.showOverview(context.extensionUri, walkthrough);
+        }
       }
     })
   );
@@ -168,9 +172,12 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  // Load walkthrough if it exists
-  if (findWalkthroughFile()) {
-    vscode.window.showInformationMessage('Virgil walkthrough loaded. Select a step from the sidebar to begin.');
+  // Load walkthrough if it exists - show overview automatically
+  if (findWalkthroughFile() && walkthroughProvider) {
+    const walkthrough = walkthroughProvider.getWalkthrough();
+    if (walkthrough) {
+      StepDetailPanel.showOverview(context.extensionUri, walkthrough);
+    }
   }
 
   async function showCurrentStep() {
