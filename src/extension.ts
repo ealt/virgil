@@ -20,18 +20,26 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Register convertMarkdown command early so it's available even without workspace
   context.subscriptions.push(
-    vscode.commands.registerCommand('virgil.convertMarkdown', async () => {
+    vscode.commands.registerCommand('virgil.convertMarkdown', async (uri?: vscode.Uri) => {
       const currentWorkspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       if (!currentWorkspaceRoot) {
         vscode.window.showErrorMessage('No workspace folder open');
         return;
       }
 
-      // Check if there's an active markdown editor
+      // Prefer the target from context menu (Explorer/editor)
       const activeEditor = vscode.window.activeTextEditor;
       let markdownFile: string | undefined;
 
-      if (activeEditor && activeEditor.document.languageId === 'markdown') {
+      if (uri?.fsPath) {
+        const ext = path.extname(uri.fsPath).toLowerCase();
+        if (ext === '.md' || ext === '.markdown') {
+          markdownFile = uri.fsPath;
+        } else {
+          vscode.window.showErrorMessage('Selected file is not a Markdown file.');
+          return;
+        }
+      } else if (activeEditor && activeEditor.document.languageId === 'markdown') {
         // Use currently open markdown file
         markdownFile = activeEditor.document.uri.fsPath;
       } else {
