@@ -61,7 +61,7 @@ This runs `npm install`, compiles, packages the VSIX, and installs it into Curso
    - Use keyboard shortcuts (see below)
    - Use Previous/Next buttons in the detail panel
 
-4. **View details**: The detail panel opens automatically showing step descriptions, code locations, and comments
+5. **View details**: The detail panel opens automatically showing step descriptions, code locations, and comments
 
 ## Usage
 
