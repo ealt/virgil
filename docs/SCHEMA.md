@@ -229,10 +229,12 @@ Location links specify which code to highlight for a step. They must appear **im
   - `(10)` or `(10-10)` - Single line
 
 **Examples:**
+
 - `[View code (10-20)](/src/auth.ts)` → `src/auth.ts:10-20`
 - `[Multiple ranges (10-20,33-45)](/src/file.ts)` → `src/file.ts:10-20,33-45`
 
 **Notes:**
+
 - Location links are **optional** - steps without them are informational
 - Only one location link per step (immediately after the title)
 - If a location link appears elsewhere in the step body, it will be ignored
@@ -247,6 +249,7 @@ Use the `virgil.convertMarkdown` command:
 4. The JSON file will be created with repository info inferred from git
 
 **Repository info**: If not specified in frontmatter, the converter will automatically infer:
+
 - `remote` from `git remote get-url origin`
 - `commit` from `git rev-parse HEAD`
 
