@@ -1,8 +1,15 @@
+export interface Comment {
+  id: string;
+  author: string;
+  body: string;
+}
+
 export interface WalkthroughStep {
   id: number;
   title: string;
   body?: string;
   location?: string; // format: "path:start-end,start-end"
+  comments?: Comment[];
 }
 
 export interface Repository {

@@ -45,6 +45,11 @@
         "command": "virgil.selectWalkthrough",
         "title": "Select Walkthrough",
         "category": "Virgil"
+      },
+      {
+        "command": "virgil.submitComment",
+        "title": "Submit Comment",
+        "category": "Virgil"
       }
     ],
     "viewsContainers": {

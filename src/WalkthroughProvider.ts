@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { Walkthrough, WalkthroughStep, parseLocation, normalizeRemoteUrl } from './types';
+import { Walkthrough, WalkthroughStep, Comment, parseLocation, normalizeRemoteUrl } from './types';
 
 export class WalkthroughTreeItem extends vscode.TreeItem {
   constructor(
@@ -245,6 +245,79 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     if (this.currentStepIndex > 0) {
       this.currentStepIndex--;
       this._onDidChangeTreeData.fire();
+    }
+  }
+
+  hasGitUserName(): boolean {
+    try {
+      const name = execSync('git config user.name', {
+        cwd: this.workspaceRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      }).trim();
+      return name.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  getGitUserName(): string {
+    try {
+      const name = execSync('git config user.name', {
+        cwd: this.workspaceRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      }).trim();
+      return name || 'Anonymous';
+    } catch {
+      return 'Anonymous';
+    }
+  }
+
+  setGitUserName(name: string): { success: boolean; error?: string } {
+    try {
+      execSync(`git config user.name "${name.replace(/"/g, '\\"')}"`, {
+        cwd: this.workspaceRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  addComment(stepIndex: number, body: string): boolean {
+    if (!this.walkthrough || !this.currentFile) {
+      return false;
+    }
+
+    if (stepIndex < 0 || stepIndex >= this.walkthrough.steps.length) {
+      return false;
+    }
+
+    const step = this.walkthrough.steps[stepIndex];
+    if (!step.comments) {
+      step.comments = [];
+    }
+
+    const comment: Comment = {
+      id: Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+      author: this.getGitUserName(),
+      body: body
+    };
+
+    step.comments.push(comment);
+
+    // Save to file
+    try {
+      const walkthroughPath = path.join(this.workspaceRoot, this.currentFile);
+      fs.writeFileSync(walkthroughPath, JSON.stringify(this.walkthrough, null, 2));
+      this._onDidChangeTreeData.fire();
+      return true;
+    } catch (error) {
+      vscode.window.showErrorMessage('Failed to save comment');
+      return false;
     }
   }
 

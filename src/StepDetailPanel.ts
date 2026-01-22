@@ -53,6 +53,9 @@ export class StepDetailPanel {
           case 'openLocation':
             vscode.commands.executeCommand('virgil.openLocation', message.location);
             break;
+          case 'submitComment':
+            vscode.commands.executeCommand('virgil.submitComment', message.text);
+            break;
         }
       },
       null,
@@ -191,6 +194,81 @@ export class StepDetailPanel {
     button.secondary:hover:not(:disabled) {
       background-color: var(--vscode-button-secondaryHoverBackground);
     }
+    .comments-section {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--vscode-panel-border);
+    }
+    .comments-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .comments-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--vscode-descriptionForeground);
+    }
+    .add-comment-btn {
+      flex: none;
+      padding: 4px 12px;
+      font-size: 12px;
+    }
+    .comment {
+      padding: 10px 12px;
+      background-color: var(--vscode-editor-inactiveSelectionBackground);
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    .comment-author {
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--vscode-textLink-foreground);
+      margin-bottom: 4px;
+    }
+    .comment-body {
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    .no-comments {
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground);
+      font-style: italic;
+      margin-bottom: 12px;
+    }
+    .comment-form {
+      margin-top: 12px;
+    }
+    .comment-input {
+      width: 100%;
+      min-height: 80px;
+      padding: 8px;
+      border: 1px solid var(--vscode-input-border);
+      background-color: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      border-radius: 4px;
+      font-family: var(--vscode-font-family);
+      font-size: 13px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    .comment-input:focus {
+      outline: 1px solid var(--vscode-focusBorder);
+      border-color: var(--vscode-focusBorder);
+    }
+    .comment-input::placeholder {
+      color: var(--vscode-input-placeholderForeground);
+    }
+    .comment-form-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+    .submit-comment-btn {
+      flex: none;
+      padding: 6px 16px;
+    }
   </style>
 </head>
 <body>
@@ -205,6 +283,27 @@ export class StepDetailPanel {
   ${locationHtml}
 
   ${step.body ? `<div class="body">${this.escapeHtml(step.body)}</div>` : ''}
+
+  <div class="comments-section">
+    <div class="comments-header">
+      <span class="comments-title">Comments${step.comments?.length ? ` (${step.comments.length})` : ''}</span>
+    </div>
+    ${step.comments && step.comments.length > 0
+      ? step.comments.map(comment => `
+        <div class="comment">
+          <div class="comment-author">${this.escapeHtml(comment.author)}</div>
+          <div class="comment-body">${this.escapeHtml(comment.body)}</div>
+        </div>
+      `).join('')
+      : '<div class="no-comments">No comments yet</div>'
+    }
+    <div class="comment-form">
+      <textarea id="commentInput" class="comment-input" placeholder="Add a comment..."></textarea>
+      <div class="comment-form-actions">
+        <button class="submit-comment-btn" onclick="submitComment()">Add Comment</button>
+      </div>
+    </div>
+  </div>
 
   <div class="navigation">
     <button class="secondary" onclick="navigate('prev')" ${isFirst ? 'disabled' : ''}>
@@ -225,6 +324,22 @@ export class StepDetailPanel {
     function openLocation(location) {
       vscode.postMessage({ command: 'openLocation', location: location });
     }
+
+    function submitComment() {
+      const input = document.getElementById('commentInput');
+      const text = input.value.trim();
+      if (text) {
+        vscode.postMessage({ command: 'submitComment', text: text });
+        input.value = '';
+      }
+    }
+
+    // Allow Ctrl+Enter / Cmd+Enter to submit
+    document.getElementById('commentInput').addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        submitComment();
+      }
+    });
   </script>
 </body>
 </html>`;

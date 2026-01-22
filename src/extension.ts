@@ -115,6 +115,7 @@ export function activate(context: vscode.ExtensionContext) {
         walkthroughProvider.goToStep(0);
         showCurrentStep();
         checkCommitMismatch();
+        checkGitUserName();
       }
     })
   );
@@ -136,6 +137,37 @@ export function activate(context: vscode.ExtensionContext) {
 
       if (choice === 'Checkout') {
         vscode.commands.executeCommand('virgil.checkoutCommit');
+      }
+    }
+  }
+
+  // Check for missing git user name and prompt to set it
+  async function checkGitUserName() {
+    if (!walkthroughProvider) {
+      return;
+    }
+
+    if (!walkthroughProvider.hasGitUserName()) {
+      const choice = await vscode.window.showWarningMessage(
+        'Git user.name is not configured. Comments will be attributed to "Anonymous".',
+        'Set Name',
+        'Ignore'
+      );
+
+      if (choice === 'Set Name') {
+        const name = await vscode.window.showInputBox({
+          prompt: 'Enter your name for git config',
+          placeHolder: 'Your Name'
+        });
+
+        if (name) {
+          const result = walkthroughProvider.setGitUserName(name);
+          if (result.success) {
+            vscode.window.showInformationMessage(`Git user.name set to "${name}"`);
+          } else {
+            vscode.window.showErrorMessage(`Failed to set git user.name: ${result.error}`);
+          }
+        }
       }
     }
   }
@@ -179,6 +211,24 @@ export function activate(context: vscode.ExtensionContext) {
         walkthroughProvider.refresh();
       } else {
         vscode.window.showErrorMessage(`Failed to checkout: ${result.error}`);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.submitComment', async (text: string) => {
+      if (!walkthroughProvider || !text) {
+        return;
+      }
+
+      const currentIndex = walkthroughProvider.getCurrentStepIndex();
+      if (currentIndex < 0) {
+        return;
+      }
+
+      const success = walkthroughProvider.addComment(currentIndex, text);
+      if (success) {
+        showCurrentStep(); // Refresh the panel to show the new comment
       }
     })
   );
@@ -258,6 +308,7 @@ export function activate(context: vscode.ExtensionContext) {
       walkthroughProvider.goToStep(0);
       showCurrentStep();
       checkCommitMismatch();
+      checkGitUserName();
     }
   }
 

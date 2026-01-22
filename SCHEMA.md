@@ -65,6 +65,15 @@ URL matching is normalized to handle variations:
 | `title` | string | Yes | Step name |
 | `body` | string | No | Explanation text |
 | `location` | string | No | File location (see format below) |
+| `comments` | array | No | User comments on this step |
+
+### Comment
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Unique identifier |
+| `author` | string | Yes | Comment author (from git config) |
+| `body` | string | Yes | Comment text |
 
 ### Location Format
 
@@ -104,7 +113,10 @@ Line numbers are 1-indexed.
       "id": 2,
       "title": "JWT utility module",
       "body": "Handles token generation and validation.\n\n- Uses RS256 signing\n- Tokens expire in 15 minutes",
-      "location": "src/auth/jwt.ts:1-45"
+      "location": "src/auth/jwt.ts:1-45",
+      "comments": [
+        { "id": "a1b2c3", "author": "bob", "body": "Should we add rate limiting here?" }
+      ]
     },
     {
       "id": 3,
@@ -136,6 +148,12 @@ interface Repository {
   commit?: string;
 }
 
+interface Comment {
+  id: string;
+  author: string;
+  body: string;
+}
+
 interface Walkthrough {
   title: string;
   description?: string;
@@ -149,5 +167,6 @@ interface WalkthroughStep {
   title: string;
   body?: string;
   location?: string;
+  comments?: Comment[];
 }
 ```
