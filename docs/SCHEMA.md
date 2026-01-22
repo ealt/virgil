@@ -195,13 +195,13 @@ Description text (optional, everything between frontmatter and first ## heading)
 
 ## First Step Title
 
-[View code (10-20)](src/file.ts)
+[View code (10-20)](/src/file.ts)
 
 Step body text here.
 
 ## Second Step Title
 
-[Multiple ranges (10-20,33-45)](src/file.ts)
+[Multiple ranges (10-20,33-45)](/src/file.ts)
 
 Step body text.
 ```
@@ -220,17 +220,17 @@ Step body text.
 
 Location links specify which code to highlight for a step. They must appear **immediately after the step title** (on the line following `## Step Title`).
 
-**Format**: `[link text (10-20)](file.ts)`
+**Format**: `[link text (10-20)](/file.ts)`
 
-- **File path** in the URL (makes the link clickable in markdown renderers)
+- **File path** in the URL (prefix with `/` to resolve from repo root)
 - **Line numbers** in parentheses in the link text:
   - `(10-20)` - Single range
   - `(10-20,33-45)` - Multiple ranges
   - `(10)` or `(10-10)` - Single line
 
 **Examples:**
-- `[View code (10-20)](src/auth.ts)` → `src/auth.ts:10-20`
-- `[Multiple ranges (10-20,33-45)](src/file.ts)` → `src/file.ts:10-20,33-45`
+- `[View code (10-20)](/src/auth.ts)` → `src/auth.ts:10-20`
+- `[Multiple ranges (10-20,33-45)](/src/file.ts)` → `src/file.ts:10-20,33-45`
 
 **Notes:**
 - Location links are **optional** - steps without them are informational
