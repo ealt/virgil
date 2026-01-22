@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Walkthrough, WalkthroughStep, parseLocation } from './types';
+import { execSync } from 'child_process';
+import { Walkthrough, WalkthroughStep, parseLocation, normalizeRemoteUrl } from './types';
 
 export class WalkthroughTreeItem extends vscode.TreeItem {
   constructor(
@@ -23,10 +24,26 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   private currentStepIndex: number = -1;
   private workspaceRoot: string;
   private currentFile: string | undefined;
+  private workspaceRemote: string | undefined;
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
+    this.workspaceRemote = this.getGitRemote();
     this.loadWalkthrough();
+  }
+
+  private getGitRemote(): string | undefined {
+    try {
+      const remote = execSync('git remote get-url origin', {
+        cwd: this.workspaceRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe']
+      }).trim();
+      return remote || undefined;
+    } catch {
+      // Not a git repo or no origin remote
+      return undefined;
+    }
   }
 
   refresh(): void {
@@ -37,7 +54,34 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   getAvailableWalkthroughs(): string[] {
     try {
       const files = fs.readdirSync(this.workspaceRoot);
-      return files.filter(f => f.endsWith('.walkthrough.json'));
+      const walkthroughFiles = files.filter(f => f.endsWith('.walkthrough.json'));
+
+      // Filter to only show walkthroughs that match this repo (or have no repo specified)
+      return walkthroughFiles.filter(filename => {
+        try {
+          const filePath = path.join(this.workspaceRoot, filename);
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const walkthrough = JSON.parse(content) as Walkthrough;
+
+          // No repository specified - show for any repo
+          if (!walkthrough.repository?.remote) {
+            return true;
+          }
+
+          // No workspace remote - can't match, but show anyway for non-git workspaces
+          if (!this.workspaceRemote) {
+            return true;
+          }
+
+          // Compare normalized URLs
+          const walkthroughRemote = normalizeRemoteUrl(walkthrough.repository.remote);
+          const workspaceRemote = normalizeRemoteUrl(this.workspaceRemote);
+          return walkthroughRemote === workspaceRemote;
+        } catch {
+          // If we can't parse the file, include it and let loadWalkthrough handle the error
+          return true;
+        }
+      });
     } catch {
       return [];
     }

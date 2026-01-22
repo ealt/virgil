@@ -15,6 +15,10 @@ Files must end with `.walkthrough.json`. Examples:
 {
   "title": "string (required)",
   "description": "string (optional)",
+  "repository": {
+    "remote": "git remote URL (optional)",
+    "commit": "git commit SHA (optional)"
+  },
   "metadata": { "key": "value" },
   "steps": [
     {
@@ -35,8 +39,23 @@ Files must end with `.walkthrough.json`. Examples:
 |-------|------|----------|-------------|
 | `title` | string | Yes | Walkthrough name |
 | `description` | string | No | Brief summary |
+| `repository` | object | No | Git repository info (see below) |
 | `metadata` | object | No | Freeform key-value pairs |
 | `steps` | array | Yes | List of steps |
+
+### Repository
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `remote` | string | No | Git remote URL (e.g., `https://github.com/org/repo`) |
+| `commit` | string | No | Git commit SHA for the codebase state |
+
+When `repository.remote` is specified, the extension will only show the walkthrough if the current workspace's git remote matches. This allows walkthrough files to be portable (e.g., stored in a shared location) while only appearing for the relevant repository.
+
+URL matching is normalized to handle variations:
+- SSH vs HTTPS (`git@github.com:org/repo` ↔ `https://github.com/org/repo`)
+- With or without `.git` suffix
+- Case-insensitive comparison
 
 ### Step
 
@@ -66,6 +85,10 @@ Line numbers are 1-indexed.
 {
   "title": "Authentication Refactor",
   "description": "Review of JWT implementation",
+  "repository": {
+    "remote": "https://github.com/acme/backend",
+    "commit": "a1b2c3d4e5f6..."
+  },
   "metadata": {
     "pr": 123,
     "recommendation": "approve",
@@ -108,9 +131,15 @@ Line numbers are 1-indexed.
 ## TypeScript Interface
 
 ```typescript
+interface Repository {
+  remote?: string;
+  commit?: string;
+}
+
 interface Walkthrough {
   title: string;
   description?: string;
+  repository?: Repository;
   metadata?: Record<string, unknown>;
   steps: WalkthroughStep[];
 }

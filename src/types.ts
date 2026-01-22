@@ -5,11 +5,46 @@ export interface WalkthroughStep {
   location?: string; // format: "path:start-end,start-end"
 }
 
+export interface Repository {
+  remote?: string;  // git remote URL
+  commit?: string;  // git commit SHA
+}
+
 export interface Walkthrough {
   title: string;
   description?: string;
+  repository?: Repository;
   metadata?: Record<string, unknown>;
   steps: WalkthroughStep[];
+}
+
+// Normalize a git remote URL for comparison
+// Handles: SSH vs HTTPS, .git suffix, trailing slashes
+export function normalizeRemoteUrl(url: string): string {
+  let normalized = url.trim().toLowerCase();
+
+  // Remove trailing slashes
+  normalized = normalized.replace(/\/+$/, '');
+
+  // Remove .git suffix
+  normalized = normalized.replace(/\.git$/, '');
+
+  // Convert SSH format to HTTPS-like for comparison
+  // git@github.com:org/repo -> github.com/org/repo
+  const sshMatch = normalized.match(/^git@([^:]+):(.+)$/);
+  if (sshMatch) {
+    normalized = `${sshMatch[1]}/${sshMatch[2]}`;
+  }
+
+  // Remove protocol prefix for comparison
+  // https://github.com/org/repo -> github.com/org/repo
+  normalized = normalized.replace(/^(https?:\/\/|git:\/\/)/, '');
+
+  // Remove authentication info if present
+  // user@github.com/org/repo -> github.com/org/repo
+  normalized = normalized.replace(/^[^@]+@/, '');
+
+  return normalized;
 }
 
 // Parsed location for internal use
