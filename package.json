@@ -11,7 +11,8 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:*.walkthrough.json"
+    "workspaceContains:*.walkthrough.json",
+    "onCommand:virgil.convertMarkdown"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -50,6 +51,11 @@
         "command": "virgil.submitComment",
         "title": "Submit Comment",
         "category": "Virgil"
+      },
+      {
+        "command": "virgil.convertMarkdown",
+        "title": "Convert Markdown to Walkthrough",
+        "category": "Virgil"
       }
     ],
     "viewsContainers": {
@@ -77,6 +83,20 @@
           "when": "view == virgilWalkthrough",
           "group": "navigation"
         }
+      ],
+      "explorer/context": [
+        {
+          "command": "virgil.convertMarkdown",
+          "when": "resourceExtname == .md",
+          "group": "virgil"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "virgil.convertMarkdown",
+          "when": "editorLangId == markdown",
+          "group": "virgil"
+        }
       ]
     },
     "keybindings": [
@@ -98,14 +118,17 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts"
+    "lint": "eslint src --ext ts",
+    "refresh:extension": "scripts/refresh-extension.sh"
   },
   "dependencies": {
     "highlight.js": "^11.9.0",
+    "js-yaml": "^4.1.0",
     "marked": "^9.1.0",
     "marked-highlight": "^2.1.0"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",

@@ -176,6 +176,84 @@ When a step has a `location`, the extension will:
 - Comments are persisted to the JSON file when added through the extension UI
 - Multiple walkthrough files can coexist in a workspace; use `repository.remote` to scope them to specific repositories
 
+## Markdown Format
+
+You can write walkthroughs in Markdown format and convert them to JSON using the `virgil.convertMarkdown` command. This makes it easier to write and maintain walkthroughs, especially for longer documents.
+
+### Structure
+
+```markdown
+# Walkthrough Title
+
+---
+metadata_key: metadata_value
+remote: git@github.com:org/repo.git
+commit: abc123...
+---
+
+Description text (optional, everything between frontmatter and first ## heading)
+
+## First Step Title
+
+[View code (10-20)](src/file.ts)
+
+Step body text here.
+
+## Second Step Title
+
+[Multiple ranges (10-20,33-45)](src/file.ts)
+
+Step body text.
+```
+
+### Components
+
+1. **Title**: First `#` heading becomes the walkthrough title
+2. **Frontmatter**: YAML between `---` delimiters contains:
+   - `metadata` fields (any key-value pairs)
+   - `remote`: Git remote URL (optional)
+   - `commit`: Git commit SHA (optional)
+3. **Description**: Text between frontmatter and first `##` heading
+4. **Steps**: Each `##` heading starts a new step
+
+### Location Links
+
+Location links specify which code to highlight for a step. They must appear **immediately after the step title** (on the line following `## Step Title`).
+
+**Format**: `[link text (10-20)](file.ts)`
+
+- **File path** in the URL (makes the link clickable in markdown renderers)
+- **Line numbers** in parentheses in the link text:
+  - `(10-20)` - Single range
+  - `(10-20,33-45)` - Multiple ranges
+  - `(10)` or `(10-10)` - Single line
+
+**Examples:**
+- `[View code (10-20)](src/auth.ts)` → `src/auth.ts:10-20`
+- `[Multiple ranges (10-20,33-45)](src/file.ts)` → `src/file.ts:10-20,33-45`
+
+**Notes:**
+- Location links are **optional** - steps without them are informational
+- Only one location link per step (immediately after the title)
+- If a location link appears elsewhere in the step body, it will be ignored
+
+### Converting to JSON
+
+Use the `virgil.convertMarkdown` command:
+
+1. Open a markdown file (or have it active in the editor)
+2. Run the command: `Virgil: Convert Markdown to Walkthrough`
+3. Select or confirm the output location
+4. The JSON file will be created with repository info inferred from git
+
+**Repository info**: If not specified in frontmatter, the converter will automatically infer:
+- `remote` from `git remote get-url origin`
+- `commit` from `git rev-parse HEAD`
+
+### Example
+
+See `docs/developer-guide.md` for a complete example of a walkthrough written in Markdown format.
+
 ## TypeScript Interface
 
 For reference, here are the TypeScript interfaces used by the extension:

@@ -38,6 +38,16 @@ Interactive guided walkthroughs for code review and codebase exploration. Named 
    - **VS Code**: `code --install-extension virgil-0.1.0.vsix`
    - **Cursor**: `cursor --install-extension virgil-0.1.0.vsix`
 
+### Dev Refresh Script
+
+If you are actively working on the extension and want to rebuild + reinstall quickly:
+
+```bash
+npm run refresh:extension
+```
+
+This runs `npm install`, compiles, packages the VSIX, and installs it into Cursor. Reload the window afterward.
+
 ## Quick Start
 
 1. **Create a walkthrough file**: Create a file ending in `.walkthrough.json` in your workspace root (see [Creating Walkthroughs](#creating-walkthroughs) below)
@@ -166,6 +176,49 @@ When `repository.remote` is specified, the walkthrough only appears for workspac
 ### Complete Example
 
 See [docs/SCHEMA.md](docs/SCHEMA.md) for the complete schema documentation with detailed examples.
+
+### Writing Walkthroughs in Markdown
+
+You can write walkthroughs in Markdown format and convert them to JSON using the extension. This makes it easier to write and maintain longer walkthroughs.
+
+**Basic format:**
+
+```markdown
+# Walkthrough Title
+
+---
+metadata_key: value
+remote: git@github.com:org/repo.git
+commit: abc123...
+---
+
+Description text
+
+## Step Title
+
+[View code (10-20)](src/file.ts)
+
+Step body text.
+```
+
+**Key features:**
+
+- Title from first `#` heading
+- YAML frontmatter for metadata and repository info
+- Steps from `##` headings
+- Location links: `[text (10-20)](file.ts)` immediately after step title
+- Repository info automatically inferred from git if not in frontmatter
+
+**Converting to JSON:**
+
+1. Open or create a markdown file
+2. Run the command: `Virgil: Convert Markdown to Walkthrough`
+3. Select output location
+4. The JSON file will be created
+
+**Example:** See [docs/developer-guide.md](docs/developer-guide.md) for a complete example.
+
+For detailed documentation on the markdown format, see the [Markdown Format section](docs/SCHEMA.md#markdown-format) in the schema documentation.
 
 ## Walkthrough Format
 

@@ -5,6 +5,7 @@ import { parseLocation } from './types';
 import { WalkthroughProvider } from './WalkthroughProvider';
 import { StepDetailPanel } from './StepDetailPanel';
 import { HighlightManager } from './HighlightManager';
+import { parseMarkdownWalkthrough } from './markdownParser';
 
 let walkthroughProvider: WalkthroughProvider | undefined;
 let highlightManager: HighlightManager | undefined;
@@ -16,6 +17,96 @@ export function activate(context: vscode.ExtensionContext) {
   highlightManager = new HighlightManager();
 
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  
+  // Register convertMarkdown command early so it's available even without workspace
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.convertMarkdown', async () => {
+      const currentWorkspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (!currentWorkspaceRoot) {
+        vscode.window.showErrorMessage('No workspace folder open');
+        return;
+      }
+
+      // Check if there's an active markdown editor
+      const activeEditor = vscode.window.activeTextEditor;
+      let markdownFile: string | undefined;
+
+      if (activeEditor && activeEditor.document.languageId === 'markdown') {
+        // Use currently open markdown file
+        markdownFile = activeEditor.document.uri.fsPath;
+      } else {
+        // Prompt user to select a markdown file
+        const fileUri = await vscode.window.showOpenDialog({
+          canSelectFiles: true,
+          canSelectFolders: false,
+          canSelectMany: false,
+          openLabel: 'Select Markdown File',
+          filters: {
+            'Markdown': ['md', 'markdown']
+          },
+          defaultUri: vscode.Uri.file(currentWorkspaceRoot)
+        });
+
+        if (!fileUri || fileUri.length === 0) {
+          return; // User cancelled
+        }
+
+        markdownFile = fileUri[0].fsPath;
+      }
+
+      if (!markdownFile) {
+        return;
+      }
+
+      try {
+        // Read markdown file
+        const markdownContent = fs.readFileSync(markdownFile, 'utf-8');
+
+        // Parse markdown
+        const result = parseMarkdownWalkthrough(markdownContent, currentWorkspaceRoot);
+
+        // Show warnings if any
+        if (result.warnings.length > 0) {
+          const warningMessage = `Conversion completed with ${result.warnings.length} warning(s):\n${result.warnings.join('\n')}`;
+          await vscode.window.showWarningMessage(warningMessage, 'Continue', 'Cancel');
+        }
+
+        // Determine output file path
+        const markdownBasename = path.basename(markdownFile, path.extname(markdownFile));
+        const defaultOutputPath = path.join(currentWorkspaceRoot, `${markdownBasename}.walkthrough.json`);
+
+        // Prompt for output location
+        const outputUri = await vscode.window.showSaveDialog({
+          defaultUri: vscode.Uri.file(defaultOutputPath),
+          filters: {
+            'Walkthrough JSON': ['walkthrough.json']
+          },
+          saveLabel: 'Save Walkthrough'
+        });
+
+        if (!outputUri) {
+          return; // User cancelled
+        }
+
+        // Write JSON file
+        const jsonContent = JSON.stringify(result.walkthrough, null, 2);
+        fs.writeFileSync(outputUri.fsPath, jsonContent, 'utf-8');
+
+        vscode.window.showInformationMessage(`Walkthrough converted successfully: ${path.basename(outputUri.fsPath)}`);
+
+        // Refresh walkthrough provider if it exists and the output file is in the workspace root
+        const outputPath = outputUri.fsPath;
+        if (outputPath.startsWith(currentWorkspaceRoot) && outputPath.endsWith('.walkthrough.json')) {
+          walkthroughProvider?.refresh();
+        }
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to convert markdown: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    })
+  );
+
   if (!workspaceRoot) {
     return;
   }
