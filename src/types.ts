@@ -8,13 +8,19 @@ export interface WalkthroughStep {
   id: number;
   title: string;
   body?: string;
-  location?: string; // format: "path:start-end,start-end"
+  location?: string; // format: "path:start-end,start-end" for head/current file
+  base_location?: string; // format: "path:start-end,start-end" for base file (requires base ref)
   comments?: Comment[];
 }
 
 export interface Repository {
   remote?: string;  // git remote URL
-  commit?: string;  // git commit SHA
+  commit?: string;  // git commit SHA (head state)
+
+  // Optional base reference for diff mode (pick ONE, or omit for point-in-time mode)
+  baseCommit?: string;   // Explicit commit SHA
+  baseBranch?: string;   // Branch name (e.g., "main") - resolved at runtime
+  pr?: number;           // PR number - base is PR's base branch
 }
 
 export interface Walkthrough {
@@ -93,4 +99,25 @@ export function parseLocation(location: string): ParsedLocation | null {
   }
 
   return { path, ranges };
+}
+
+// View mode for diff steps
+export type ViewMode = 'diff' | 'head' | 'base';
+
+// Step type based on location fields
+export type StepType = 'point-in-time' | 'base-only' | 'diff' | 'informational';
+
+// Determine the step type based on location fields
+export function getStepType(step: WalkthroughStep): StepType {
+  const hasLocation = !!step.location;
+  const hasBaseLocation = !!step.base_location;
+
+  if (hasLocation && hasBaseLocation) {
+    return 'diff';
+  } else if (hasLocation) {
+    return 'point-in-time';
+  } else if (hasBaseLocation) {
+    return 'base-only';
+  }
+  return 'informational';
 }

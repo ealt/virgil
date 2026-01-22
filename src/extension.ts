@@ -1,15 +1,20 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseLocation } from './types';
+import { parseLocation, ViewMode, getStepType } from './types';
 import { WalkthroughProvider } from './WalkthroughProvider';
 import { StepDetailPanel } from './StepDetailPanel';
-import { HighlightManager } from './HighlightManager';
+import { HighlightManager, HighlightColor } from './HighlightManager';
 import { parseMarkdownWalkthrough } from './markdownParser';
+import { DiffContentProvider } from './DiffContentProvider';
+import { DiffResolver } from './DiffResolver';
 
 let walkthroughProvider: WalkthroughProvider | undefined;
 let highlightManager: HighlightManager | undefined;
 let fileWatcher: vscode.FileSystemWatcher | undefined;
+let diffContentProvider: DiffContentProvider | undefined;
+let diffResolver: DiffResolver | undefined;
+let currentViewMode: ViewMode = 'diff';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Virgil extension is now active');
@@ -119,6 +124,15 @@ export function activate(context: vscode.ExtensionContext) {
     return;
   }
 
+  // Initialize diff support
+  diffContentProvider = new DiffContentProvider(workspaceRoot);
+  diffResolver = new DiffResolver(workspaceRoot);
+
+  // Register content provider for git files
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider('virgil-git', diffContentProvider)
+  );
+
   // Find walkthrough file (*.walkthrough.json)
   const findWalkthroughFile = (): string | undefined => {
     const files = fs.readdirSync(workspaceRoot);
@@ -144,6 +158,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('virgil.start', () => {
       if (walkthroughProvider) {
         walkthroughProvider.goToStep(0);
+        currentViewMode = 'diff'; // Reset to default view mode
         showCurrentStep();
       }
     })
@@ -153,6 +168,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('virgil.next', () => {
       if (walkthroughProvider) {
         walkthroughProvider.nextStep();
+        currentViewMode = 'diff'; // Reset to default view mode on step change
         showCurrentStep();
       }
     })
@@ -162,6 +178,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('virgil.prev', () => {
       if (walkthroughProvider) {
         walkthroughProvider.prevStep();
+        currentViewMode = 'diff'; // Reset to default view mode on step change
         showCurrentStep();
       }
     })
@@ -171,6 +188,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('virgil.goToStep', (stepIndex: number) => {
       if (walkthroughProvider) {
         walkthroughProvider.goToStep(stepIndex);
+        currentViewMode = 'diff'; // Reset to default view mode
         showCurrentStep();
       }
     })
@@ -210,12 +228,39 @@ export function activate(context: vscode.ExtensionContext) {
       if (selected) {
         walkthroughProvider.setWalkthroughFile(selected.label);
         highlightManager?.clearAll();
+        currentViewMode = 'diff'; // Reset view mode
         // Show first step of newly selected walkthrough
         walkthroughProvider.goToStep(0);
         showCurrentStep();
         checkCommitMismatch();
         checkGitUserName();
       }
+    })
+  );
+
+  // View mode command for diff steps
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.setViewMode', (mode: ViewMode) => {
+      if (!walkthroughProvider) {
+        return;
+      }
+
+      const walkthrough = walkthroughProvider.getWalkthrough();
+      const currentIndex = walkthroughProvider.getCurrentStepIndex();
+      if (!walkthrough || currentIndex < 0) {
+        return;
+      }
+
+      const step = walkthrough.steps[currentIndex];
+      const stepType = getStepType(step);
+
+      // Only allow view mode changes for diff steps
+      if (stepType !== 'diff') {
+        return;
+      }
+
+      currentViewMode = mode;
+      showCurrentStep();
     })
   );
 
@@ -396,6 +441,7 @@ export function activate(context: vscode.ExtensionContext) {
     const selected = e.selection[0];
     if (selected && selected.stepIndex !== undefined) {
       walkthroughProvider?.goToStep(selected.stepIndex);
+      currentViewMode = 'diff'; // Reset view mode on step selection
       await showCurrentStep();
     }
   });
@@ -412,7 +458,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   async function showCurrentStep() {
-    if (!walkthroughProvider || !highlightManager || !workspaceRoot) {
+    if (!walkthroughProvider || !highlightManager || !workspaceRoot || !diffResolver) {
       return;
     }
 
@@ -424,40 +470,69 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     const step = walkthrough.steps[currentIndex];
+    const stepType = getStepType(step);
 
     // Clear previous highlights
     highlightManager.clearAll();
 
-    // If step has a location, open the file and highlight
-    if (step.location) {
-      const parsed = parseLocation(step.location);
-      if (parsed) {
-        const fullPath = path.join(workspaceRoot, parsed.path);
+    // Resolve base commit if needed
+    const baseResult = diffResolver.resolveBase(walkthrough.repository);
+    const headCommit = walkthrough.repository?.commit || diffResolver.getHeadCommit();
 
-        try {
-          const doc = await vscode.workspace.openTextDocument(fullPath);
-          const editor = await vscode.window.showTextDocument(doc, {
-            viewColumn: vscode.ViewColumn.One,
-            preserveFocus: true
-          });
-
-          // Go to first range
-          const firstRange = parsed.ranges[0];
-          const start = new vscode.Position(firstRange.startLine - 1, 0);
-          const end = new vscode.Position(firstRange.endLine - 1, doc.lineAt(firstRange.endLine - 1).text.length);
-
-          editor.selection = new vscode.Selection(start, start);
-          editor.revealRange(new vscode.Range(start, end), vscode.TextEditorRevealType.InCenter);
-
-          // Highlight all ranges
-          for (const range of parsed.ranges) {
-            highlightManager.highlightRange(editor, range.startLine, range.endLine);
+    // Handle based on step type
+    if (stepType === 'diff') {
+      // Diff mode: 3-way toggle
+      if (!baseResult.commit) {
+        // Show error in panel - no base reference configured
+        StepDetailPanel.show(
+          context.extensionUri,
+          walkthrough,
+          step,
+          currentIndex,
+          walkthrough.steps.length,
+          {
+            stepType,
+            viewMode: currentViewMode,
+            error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.'
           }
-        } catch (error) {
-          // File not found - still show the panel
-        }
+        );
+        return;
       }
+
+      switch (currentViewMode) {
+        case 'diff':
+          await showDiff(step.location!, step.base_location!, baseResult.commit, headCommit);
+          break;
+        case 'head':
+          await showFile(step.location!, headCommit, 'green');
+          break;
+        case 'base':
+          await showFile(step.base_location!, baseResult.commit, 'red');
+          break;
+      }
+    } else if (stepType === 'point-in-time') {
+      // Point-in-time mode (unchanged behavior)
+      await showFile(step.location!, headCommit, 'blue');
+    } else if (stepType === 'base-only') {
+      // Base-only mode
+      if (!baseResult.commit) {
+        StepDetailPanel.show(
+          context.extensionUri,
+          walkthrough,
+          step,
+          currentIndex,
+          walkthrough.steps.length,
+          {
+            stepType,
+            viewMode: currentViewMode,
+            error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.'
+          }
+        );
+        return;
+      }
+      await showFile(step.base_location!, baseResult.commit, 'red');
     }
+    // informational steps have no file to show
 
     // Show step detail panel
     StepDetailPanel.show(
@@ -465,8 +540,93 @@ export function activate(context: vscode.ExtensionContext) {
       walkthrough,
       step,
       currentIndex,
-      walkthrough.steps.length
+      walkthrough.steps.length,
+      {
+        stepType,
+        viewMode: currentViewMode,
+        baseCommit: baseResult.commit || undefined,
+        headCommit: headCommit || undefined
+      }
     );
+  }
+
+  async function showFile(location: string, commit: string | null, color: HighlightColor) {
+    if (!highlightManager) {
+      return;
+    }
+
+    const parsed = parseLocation(location);
+    if (!parsed) {
+      return;
+    }
+
+    try {
+      let doc: vscode.TextDocument;
+
+      if (commit && diffContentProvider) {
+        // Open file at specific commit using virtual document
+        const uri = DiffContentProvider.createUri(commit, parsed.path);
+        doc = await vscode.workspace.openTextDocument(uri);
+      } else {
+        // Open current file from workspace
+        const fullPath = path.join(workspaceRoot!, parsed.path);
+        doc = await vscode.workspace.openTextDocument(fullPath);
+      }
+
+      const editor = await vscode.window.showTextDocument(doc, {
+        viewColumn: vscode.ViewColumn.One,
+        preserveFocus: true
+      });
+
+      // Go to first range
+      const firstRange = parsed.ranges[0];
+      const start = new vscode.Position(firstRange.startLine - 1, 0);
+      const endLine = Math.min(firstRange.endLine, doc.lineCount);
+      const end = new vscode.Position(endLine - 1, doc.lineAt(endLine - 1).text.length);
+
+      editor.selection = new vscode.Selection(start, start);
+      editor.revealRange(new vscode.Range(start, end), vscode.TextEditorRevealType.InCenter);
+
+      // Highlight all ranges
+      for (const range of parsed.ranges) {
+        const clampedEnd = Math.min(range.endLine, doc.lineCount);
+        highlightManager.highlightRange(editor, range.startLine, clampedEnd, color);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Could not open file: ${errorMessage}`);
+    }
+  }
+
+  async function showDiff(headLocation: string, baseLocation: string, baseCommit: string, headCommit: string | null) {
+    const headParsed = parseLocation(headLocation);
+    const baseParsed = parseLocation(baseLocation);
+
+    if (!headParsed || !baseParsed) {
+      return;
+    }
+
+    try {
+      // Create URIs for diff view
+      const baseUri = DiffContentProvider.createUri(baseCommit, baseParsed.path);
+
+      let headUri: vscode.Uri;
+      if (headCommit) {
+        headUri = DiffContentProvider.createUri(headCommit, headParsed.path);
+      } else {
+        // Use current workspace file
+        headUri = vscode.Uri.file(path.join(workspaceRoot!, headParsed.path));
+      }
+
+      // Open diff editor
+      const title = `${baseParsed.path} (${baseCommit.substring(0, 7)}) ↔ ${headParsed.path}`;
+      await vscode.commands.executeCommand('vscode.diff', baseUri, headUri, title);
+
+      // Note: We can't easily highlight in diff view, but the diff itself provides context
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Could not open diff: ${errorMessage}`);
+    }
   }
 }
 
@@ -474,4 +634,5 @@ export function deactivate() {
   highlightManager?.clearAll();
   StepDetailPanel.currentPanel?.dispose();
   fileWatcher?.dispose();
+  diffContentProvider?.dispose();
 }

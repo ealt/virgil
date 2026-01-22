@@ -102,7 +102,16 @@ function parseLocationLink(linkText: string, linkUrl: string): string | null {
 /**
  * Extracts location from a markdown link if it matches the location format
  */
-function extractLocationFromLink(line: string): string | null {
+interface LocationLinkResult {
+  location: string;
+  isBase: boolean;
+}
+
+/**
+ * Extracts location from a markdown link if it matches the location format
+ * Returns both the location string and whether it's a base location
+ */
+function extractLocationFromLink(line: string): LocationLinkResult | null {
   // Match markdown link: [text](url)
   const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
   if (!linkMatch) {
@@ -117,8 +126,16 @@ function extractLocationFromLink(line: string): string | null {
     return null;
   }
 
+  // Check if this is a base location link (starts with "Base" case-insensitive)
+  const isBase = /^base\s*\(/i.test(linkText.trim());
+
   // Parse the location
-  return parseLocationLink(linkText, linkUrl);
+  const location = parseLocationLink(linkText, linkUrl);
+  if (!location) {
+    return null;
+  }
+
+  return { location, isBase };
 }
 
 /**
@@ -172,15 +189,19 @@ export function parseMarkdownWalkthrough(
           const frontmatterData = yaml.load(frontmatterText) as Record<string, unknown>;
 
           // Extract repository fields if present
-          if (frontmatterData.remote || frontmatterData.commit) {
+          if (frontmatterData.remote || frontmatterData.commit ||
+              frontmatterData.baseBranch || frontmatterData.baseCommit || frontmatterData.pr) {
             repositoryFromFrontmatter = {
               remote: typeof frontmatterData.remote === 'string' ? frontmatterData.remote : undefined,
-              commit: typeof frontmatterData.commit === 'string' ? frontmatterData.commit : undefined
+              commit: typeof frontmatterData.commit === 'string' ? frontmatterData.commit : undefined,
+              baseBranch: typeof frontmatterData.baseBranch === 'string' ? frontmatterData.baseBranch : undefined,
+              baseCommit: typeof frontmatterData.baseCommit === 'string' ? frontmatterData.baseCommit : undefined,
+              pr: typeof frontmatterData.pr === 'number' ? frontmatterData.pr : undefined
             };
           }
 
           // Remove repository fields from metadata
-          const { remote, commit, ...rest } = frontmatterData;
+          const { remote, commit, baseBranch, baseCommit, pr, ...rest } = frontmatterData;
           if (Object.keys(rest).length > 0) {
             metadata = rest;
           }
@@ -226,22 +247,51 @@ export function parseMarkdownWalkthrough(
       i++;
     }
 
-    // Check for location link immediately after heading
+    // Check for location links immediately after heading
+    // Can have up to 2 links: one for head location, one for base location
     let location: string | null = null;
-    if (i < lines.length) {
-      const locationLink = extractLocationFromLink(lines[i].trim());
+    let base_location: string | null = null;
+
+    // Process up to 2 location links (in any order)
+    for (let linkCount = 0; linkCount < 2 && i < lines.length; linkCount++) {
+      const currentLine = lines[i].trim();
+      if (!currentLine) {
+        break; // Empty line ends location link section
+      }
+
+      const locationLink = extractLocationFromLink(currentLine);
       if (locationLink) {
         // Validate the location format
-        if (parseLocation(locationLink)) {
-          location = locationLink;
+        if (parseLocation(locationLink.location)) {
+          if (locationLink.isBase) {
+            if (base_location) {
+              warnings.push(`Multiple base location links in step "${stepTitle}". Using first one.`);
+            } else {
+              base_location = locationLink.location;
+            }
+          } else {
+            if (location) {
+              warnings.push(`Multiple location links in step "${stepTitle}". Using first one.`);
+            } else {
+              location = locationLink.location;
+            }
+          }
           i++; // Skip location link line
         } else {
-          warnings.push(`Invalid location format in step "${stepTitle}": ${locationLink}`);
+          warnings.push(`Invalid location format in step "${stepTitle}": ${locationLink.location}`);
+          break;
         }
+      } else {
+        break; // Not a location link, end of location section
+      }
+
+      // Skip empty lines between location links
+      while (i < lines.length && lines[i].trim() === '') {
+        i++;
       }
     }
 
-    // Skip empty lines after location link
+    // Skip any remaining empty lines after location links
     while (i < lines.length && lines[i].trim() === '') {
       i++;
     }
@@ -262,7 +312,8 @@ export function parseMarkdownWalkthrough(
         for (const link of bodyLinkMatch) {
           const extracted = extractLocationFromLink(link);
           if (extracted) {
-            warnings.push(`Location link found in step body for "${stepTitle}": ${link}. Only location links immediately after the step title are used.`);
+            const linkType = extracted.isBase ? 'Base location' : 'Location';
+            warnings.push(`${linkType} link found in step body for "${stepTitle}": ${link}. Only location links immediately after the step title are used.`);
           }
         }
       }
@@ -272,7 +323,8 @@ export function parseMarkdownWalkthrough(
       id: stepId++,
       title: stepTitle,
       body,
-      location: location || undefined
+      location: location || undefined,
+      base_location: base_location || undefined
     });
   }
 

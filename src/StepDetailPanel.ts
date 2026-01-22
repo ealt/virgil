@@ -9,7 +9,7 @@ import json from 'highlight.js/lib/languages/json';
 import bash from 'highlight.js/lib/languages/bash';
 import xml from 'highlight.js/lib/languages/xml';
 import css from 'highlight.js/lib/languages/css';
-import { Walkthrough, WalkthroughStep, parseLocation } from './types';
+import { Walkthrough, WalkthroughStep, parseLocation, ViewMode, StepType } from './types';
 
 // Register languages
 hljs.registerLanguage('javascript', javascript);
@@ -43,6 +43,14 @@ markedInstance.setOptions({
   breaks: true,  // Convert \n to <br>
 });
 
+export interface DiffModeOptions {
+  stepType: StepType;
+  viewMode: ViewMode;
+  baseCommit?: string;
+  headCommit?: string;
+  error?: string;
+}
+
 export class StepDetailPanel {
   public static currentPanel: StepDetailPanel | undefined;
   private readonly panel: vscode.WebviewPanel;
@@ -54,10 +62,11 @@ export class StepDetailPanel {
     walkthrough: Walkthrough,
     step: WalkthroughStep,
     currentIndex: number,
-    totalSteps: number
+    totalSteps: number,
+    diffOptions?: DiffModeOptions
   ): void {
     const panel = StepDetailPanel.getOrCreate(extensionUri);
-    panel.render(walkthrough, step, currentIndex, totalSteps);
+    panel.render(walkthrough, step, currentIndex, totalSteps, diffOptions);
   }
 
   private static getOrCreate(extensionUri: vscode.Uri): StepDetailPanel {
@@ -98,6 +107,9 @@ export class StepDetailPanel {
           case 'submitComment':
             vscode.commands.executeCommand('virgil.submitComment', message.text);
             break;
+          case 'setViewMode':
+            vscode.commands.executeCommand('virgil.setViewMode', message.mode);
+            break;
         }
       },
       null,
@@ -105,25 +117,97 @@ export class StepDetailPanel {
     );
   }
 
-  private render(walkthrough: Walkthrough, step: WalkthroughStep, currentIndex: number, totalSteps: number): void {
+  private render(
+    walkthrough: Walkthrough,
+    step: WalkthroughStep,
+    currentIndex: number,
+    totalSteps: number,
+    diffOptions?: DiffModeOptions
+  ): void {
     this.panel.title = `${step.id}. ${step.title}`;
-    this.panel.webview.html = this.getHtml(walkthrough, step, currentIndex, totalSteps);
+    this.panel.webview.html = this.getHtml(walkthrough, step, currentIndex, totalSteps, diffOptions);
     this.panel.reveal(vscode.ViewColumn.Two, true);
   }
 
-  private getHtml(walkthrough: Walkthrough, step: WalkthroughStep, currentIndex: number, totalSteps: number): string {
+  private getHtml(
+    walkthrough: Walkthrough,
+    step: WalkthroughStep,
+    currentIndex: number,
+    totalSteps: number,
+    diffOptions?: DiffModeOptions
+  ): string {
     const isFirst = currentIndex === 0;
     const isLast = currentIndex === totalSteps - 1;
+    const stepType = diffOptions?.stepType || 'point-in-time';
+    const viewMode = diffOptions?.viewMode || 'diff';
 
-    // Parse location if present
+    // Parse locations if present
     const parsedLocation = step.location ? parseLocation(step.location) : null;
+    const parsedBaseLocation = step.base_location ? parseLocation(step.base_location) : null;
 
-    const locationHtml = parsedLocation ? `
-      <div class="location" onclick="openLocation('${step.location}')">
-        <span class="location-path">${parsedLocation.path}</span>
-        <span class="location-lines">:${parsedLocation.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',')}</span>
-      </div>
-    ` : '';
+    // Build location display
+    let locationHtml = '';
+    if (diffOptions?.error) {
+      // Show error message
+      locationHtml = `
+        <div class="error-message">
+          <span class="error-icon">⚠️</span>
+          <span>${this.escapeHtml(diffOptions.error)}</span>
+        </div>
+        ${parsedLocation ? `
+          <div class="location fallback" onclick="openLocation('${step.location}')">
+            <span class="location-label">View Current File:</span>
+            <span class="location-path">${parsedLocation.path}</span>
+            <span class="location-lines">:${parsedLocation.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',')}</span>
+          </div>
+        ` : ''}
+      `;
+    } else if (stepType === 'diff') {
+      // Diff mode with 3-way toggle
+      locationHtml = `
+        <div class="view-toggle">
+          <span class="toggle-label">View:</span>
+          <button class="toggle-btn ${viewMode === 'diff' ? 'active' : ''}" onclick="setViewMode('diff')">Diff</button>
+          <button class="toggle-btn head ${viewMode === 'head' ? 'active' : ''}" onclick="setViewMode('head')">Head</button>
+          <button class="toggle-btn base ${viewMode === 'base' ? 'active' : ''}" onclick="setViewMode('base')">Base</button>
+        </div>
+        <div class="location-info">
+          ${viewMode === 'diff' || viewMode === 'head' ? `
+            <div class="location head-location">
+              <span class="location-indicator head">●</span>
+              <span class="location-path">${parsedLocation?.path || ''}</span>
+              <span class="location-lines">:${parsedLocation?.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',') || ''}</span>
+            </div>
+          ` : ''}
+          ${viewMode === 'diff' || viewMode === 'base' ? `
+            <div class="location base-location">
+              <span class="location-indicator base">●</span>
+              <span class="location-path">${parsedBaseLocation?.path || ''}</span>
+              <span class="location-lines">:${parsedBaseLocation?.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',') || ''}</span>
+              <span class="location-suffix">(base)</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    } else if (stepType === 'base-only') {
+      // Base-only step
+      locationHtml = parsedBaseLocation ? `
+        <div class="location base-only" onclick="openLocation('${step.base_location}')">
+          <span class="location-indicator base">●</span>
+          <span class="location-path">${parsedBaseLocation.path}</span>
+          <span class="location-lines">:${parsedBaseLocation.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',')}</span>
+          <span class="location-suffix">(base)</span>
+        </div>
+      ` : '';
+    } else if (stepType === 'point-in-time') {
+      // Point-in-time step (existing behavior)
+      locationHtml = parsedLocation ? `
+        <div class="location" onclick="openLocation('${step.location}')">
+          <span class="location-path">${parsedLocation.path}</span>
+          <span class="location-lines">:${parsedLocation.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',')}</span>
+        </div>
+      ` : '';
+    }
 
     // Render metadata if this is the first step and metadata exists
     const metadataHtml = currentIndex === 0 && walkthrough.metadata && Object.keys(walkthrough.metadata).length > 0 ? `
@@ -183,18 +267,74 @@ export class StepDetailPanel {
     .body {
       margin-bottom: 20px;
     }
+
+    /* View toggle for diff mode */
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .toggle-label {
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground);
+    }
+    .toggle-btn {
+      padding: 4px 12px;
+      border: 1px solid var(--vscode-button-border, var(--vscode-panel-border));
+      border-radius: 4px;
+      background-color: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .toggle-btn:hover {
+      background-color: var(--vscode-button-secondaryHoverBackground);
+    }
+    .toggle-btn.active {
+      background-color: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border-color: var(--vscode-button-background);
+    }
+    .toggle-btn.head.active {
+      background-color: rgba(72, 180, 97, 0.8);
+      border-color: rgba(72, 180, 97, 0.8);
+    }
+    .toggle-btn.base.active {
+      background-color: rgba(220, 80, 80, 0.8);
+      border-color: rgba(220, 80, 80, 0.8);
+    }
+
+    /* Location display */
+    .location-info {
+      margin-bottom: 16px;
+    }
     .location {
       display: flex;
       align-items: center;
       padding: 8px 12px;
       background-color: var(--vscode-editor-inactiveSelectionBackground);
       border-radius: 4px;
-      margin-bottom: 20px;
+      margin-bottom: 8px;
       cursor: pointer;
       transition: background-color 0.15s;
     }
     .location:hover {
       background-color: var(--vscode-list-hoverBackground);
+    }
+    .location:last-child {
+      margin-bottom: 0;
+    }
+    .location-indicator {
+      margin-right: 8px;
+      font-size: 10px;
+    }
+    .location-indicator.head {
+      color: rgba(72, 180, 97, 1);
+    }
+    .location-indicator.base {
+      color: rgba(220, 80, 80, 1);
     }
     .location-path {
       color: var(--vscode-textLink-foreground);
@@ -203,6 +343,41 @@ export class StepDetailPanel {
       color: var(--vscode-descriptionForeground);
       font-size: 12px;
     }
+    .location-suffix {
+      margin-left: 8px;
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+      font-style: italic;
+    }
+    .location.base-only {
+      border-left: 3px solid rgba(220, 80, 80, 0.6);
+    }
+    .location.fallback {
+      opacity: 0.8;
+    }
+    .location-label {
+      margin-right: 8px;
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    /* Error message */
+    .error-message {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background-color: rgba(220, 80, 80, 0.1);
+      border: 1px solid rgba(220, 80, 80, 0.3);
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--vscode-errorForeground);
+    }
+    .error-icon {
+      font-size: 16px;
+    }
+
     .navigation {
       display: flex;
       gap: 8px;
@@ -443,6 +618,10 @@ export class StepDetailPanel {
 
     function openLocation(location) {
       vscode.postMessage({ command: 'openLocation', location: location });
+    }
+
+    function setViewMode(mode) {
+      vscode.postMessage({ command: 'setViewMode', mode: mode });
     }
 
     function submitComment() {

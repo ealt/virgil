@@ -1,71 +1,139 @@
 import * as vscode from 'vscode';
 
+export type HighlightColor = 'blue' | 'green' | 'red';
+
+interface ColorConfig {
+  backgroundColor: string;
+  borderColor: string;
+  overviewRulerColor: string;
+}
+
+const COLOR_CONFIGS: Record<HighlightColor, ColorConfig> = {
+  blue: {
+    backgroundColor: 'rgba(86, 156, 214, 0.1)',
+    borderColor: 'rgba(86, 156, 214, 0.6)',
+    overviewRulerColor: 'rgba(86, 156, 214, 0.8)'
+  },
+  green: {
+    backgroundColor: 'rgba(72, 180, 97, 0.15)',
+    borderColor: 'rgba(72, 180, 97, 0.6)',
+    overviewRulerColor: 'rgba(72, 180, 97, 0.8)'
+  },
+  red: {
+    backgroundColor: 'rgba(220, 80, 80, 0.15)',
+    borderColor: 'rgba(220, 80, 80, 0.6)',
+    overviewRulerColor: 'rgba(220, 80, 80, 0.8)'
+  }
+};
+
 export class HighlightManager {
-  private decorationType: vscode.TextEditorDecorationType;
-  private activeDecorations: Map<string, vscode.Range[]> = new Map();
+  private decorationTypes: Map<HighlightColor, vscode.TextEditorDecorationType> = new Map();
+  private activeDecorations: Map<string, { color: HighlightColor; ranges: vscode.Range[] }> = new Map();
 
   constructor() {
-    this.decorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: 'rgba(86, 156, 214, 0.1)',
-      borderColor: 'rgba(86, 156, 214, 0.6)',
-      borderWidth: '0 0 0 3px',
-      borderStyle: 'solid',
-      isWholeLine: true,
-      overviewRulerColor: 'rgba(86, 156, 214, 0.8)',
-      overviewRulerLane: vscode.OverviewRulerLane.Center
-    });
+    // Create decoration types for each color
+    for (const color of Object.keys(COLOR_CONFIGS) as HighlightColor[]) {
+      const config = COLOR_CONFIGS[color];
+      this.decorationTypes.set(color, vscode.window.createTextEditorDecorationType({
+        backgroundColor: config.backgroundColor,
+        borderColor: config.borderColor,
+        borderWidth: '0 0 0 3px',
+        borderStyle: 'solid',
+        isWholeLine: true,
+        overviewRulerColor: config.overviewRulerColor,
+        overviewRulerLane: vscode.OverviewRulerLane.Center
+      }));
+    }
   }
 
-  public highlightRange(editor: vscode.TextEditor, startLine: number, endLine: number): void {
-    const filePath = editor.document.uri.fsPath;
+  public highlightRange(
+    editor: vscode.TextEditor,
+    startLine: number,
+    endLine: number,
+    color: HighlightColor = 'blue'
+  ): void {
+    const filePath = editor.document.uri.toString();
 
     // Convert to 0-indexed
     const start = new vscode.Position(startLine - 1, 0);
     const end = new vscode.Position(endLine - 1, editor.document.lineAt(endLine - 1).text.length);
     const range = new vscode.Range(start, end);
 
-    // Get existing ranges for this file or create new array
-    const existingRanges = this.activeDecorations.get(filePath) || [];
-    existingRanges.push(range);
-    this.activeDecorations.set(filePath, existingRanges);
+    // Get existing data for this file
+    const existing = this.activeDecorations.get(filePath);
 
-    // Apply all decorations for this editor
-    editor.setDecorations(this.decorationType, existingRanges);
+    if (existing && existing.color === color) {
+      // Same color - add to existing ranges
+      existing.ranges.push(range);
+    } else {
+      // Different color or first decoration - clear any existing and start fresh
+      if (existing) {
+        this.clearFile(filePath);
+      }
+      this.activeDecorations.set(filePath, { color, ranges: [range] });
+    }
+
+    // Apply decorations
+    const decorationType = this.decorationTypes.get(color);
+    const decorationData = this.activeDecorations.get(filePath);
+    if (decorationType && decorationData) {
+      editor.setDecorations(decorationType, decorationData.ranges);
+    }
   }
 
   public clearFile(filePath: string): void {
-    this.activeDecorations.delete(filePath);
+    // Also handle URI strings
+    const normalizedPath = filePath.startsWith('file://') ? filePath : `file://${filePath}`;
+    const decorationData = this.activeDecorations.get(filePath) || this.activeDecorations.get(normalizedPath);
 
-    // Find editor and clear decorations
-    const editor = vscode.window.visibleTextEditors.find(
-      e => e.document.uri.fsPath === filePath
-    );
+    if (decorationData) {
+      // Find editor and clear decorations
+      const editor = vscode.window.visibleTextEditors.find(
+        e => e.document.uri.toString() === filePath ||
+             e.document.uri.fsPath === filePath ||
+             e.document.uri.toString() === normalizedPath
+      );
 
-    if (editor) {
-      editor.setDecorations(this.decorationType, []);
+      if (editor) {
+        const decorationType = this.decorationTypes.get(decorationData.color);
+        if (decorationType) {
+          editor.setDecorations(decorationType, []);
+        }
+      }
+
+      this.activeDecorations.delete(filePath);
+      this.activeDecorations.delete(normalizedPath);
     }
   }
 
   public clearAll(): void {
-    // Clear decorations from all visible editors
+    // Clear decorations from all visible editors for all colors
     for (const editor of vscode.window.visibleTextEditors) {
-      editor.setDecorations(this.decorationType, []);
+      for (const decorationType of this.decorationTypes.values()) {
+        editor.setDecorations(decorationType, []);
+      }
     }
 
     this.activeDecorations.clear();
   }
 
   public refreshEditor(editor: vscode.TextEditor): void {
-    const filePath = editor.document.uri.fsPath;
-    const ranges = this.activeDecorations.get(filePath);
+    const filePath = editor.document.uri.toString();
+    const decorationData = this.activeDecorations.get(filePath);
 
-    if (ranges && ranges.length > 0) {
-      editor.setDecorations(this.decorationType, ranges);
+    if (decorationData && decorationData.ranges.length > 0) {
+      const decorationType = this.decorationTypes.get(decorationData.color);
+      if (decorationType) {
+        editor.setDecorations(decorationType, decorationData.ranges);
+      }
     }
   }
 
   public dispose(): void {
     this.clearAll();
-    this.decorationType.dispose();
+    for (const decorationType of this.decorationTypes.values()) {
+      decorationType.dispose();
+    }
+    this.decorationTypes.clear();
   }
 }

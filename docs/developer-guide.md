@@ -247,22 +247,92 @@ The `getHtml()` method generates the HTML for the detail panel.
 
 The `HighlightManager` creates and manages text decorations that highlight code ranges.
 
+**Color variants:**
+
+| Context | Color | CSS Background |
+|---------|-------|----------------|
+| Point-in-time (default) | Blue | `rgba(86, 156, 214, 0.1)` |
+| Head file (diff mode) | Green | `rgba(72, 180, 97, 0.15)` |
+| Base file (diff mode) | Red | `rgba(220, 80, 80, 0.15)` |
+
 **Decoration style:**
 
-- Subtle blue background (`rgba(86, 156, 214, 0.1)`)
-- Left border accent (`rgba(86, 156, 214, 0.6)`)
+- Background color based on context
+- Left border accent matching the color
 - `isWholeLine: true` highlights entire lines
 - Appears in overview ruler (minimap) for navigation
 
 **State management:**
 
-- Tracks decorations per file in a `Map<string, Range[]>`
-- `highlightRange()` adds decorations to a file
+- Tracks decorations per file with color in a `Map<string, { color, ranges }>`
+- `highlightRange(editor, start, end, color)` adds decorations with specified color
 - `clearFile()` removes decorations from a specific file
 - `clearAll()` removes all decorations
 - `refreshEditor()` reapplies decorations when editor is reopened
 
-**Usage:** Called by `showCurrentStep()` to highlight step locations.
+**Usage:** Called by `showCurrentStep()` to highlight step locations with appropriate colors.
+
+## DiffContentProvider - Git File Content
+
+[View code (1-100)](/src/DiffContentProvider.ts)
+
+The `DiffContentProvider` implements VS Code's `TextDocumentContentProvider` to serve file content from specific git commits.
+
+**URI scheme:** `virgil-git:///<commit>/<file-path>`
+
+**Key methods:**
+
+- `createUri(commit, filePath)` - Creates a URI for a file at a commit
+- `parseUri(uri)` - Extracts commit and path from a URI
+- `provideTextDocumentContent(uri)` - Returns file content via `git show`
+- `fileExistsAtCommit(commit, filePath)` - Checks if file exists at commit
+
+**Usage:**
+
+```typescript
+// Create URI for file at specific commit
+const uri = DiffContentProvider.createUri('abc123', 'src/auth.ts');
+
+// Open the file
+const doc = await vscode.workspace.openTextDocument(uri);
+```
+
+**Error handling:**
+
+- Invalid commit references
+- Files that don't exist at the specified commit
+- Git command failures
+
+## DiffResolver - Base Reference Resolution
+
+[View code (1-200)](/src/DiffResolver.ts)
+
+The `DiffResolver` resolves and validates base references for diff mode walkthroughs.
+
+**Resolution priority:**
+
+1. `baseCommit` - Direct commit SHA
+2. `baseBranch` - Resolved to branch's current commit
+3. `pr` - Resolved via GitHub CLI or merge-base fallback
+
+**Key methods:**
+
+- `resolveBase(repository)` - Returns resolved commit SHA and source
+- `validateSingleBaseRef(repository)` - Warns if multiple refs specified
+- `validateStepBaseRef(hasBaseLocation, repository)` - Checks step requirements
+- `getHeadCommit()` - Gets current HEAD commit
+
+**Usage:**
+
+```typescript
+const diffResolver = new DiffResolver(workspaceRoot);
+const result = diffResolver.resolveBase(walkthrough.repository);
+
+if (result.commit) {
+  // Use result.commit as the base reference
+  // result.source tells you which field it came from
+}
+```
 
 ## Comments System
 

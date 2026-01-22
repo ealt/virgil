@@ -6,6 +6,7 @@ Named after Dante's guide through the Inferno, Virgil transforms written walkthr
 
 - **Interactive Code Walkthroughs**: Navigate through code with step-by-step explanations
 - **Code Highlighting**: Automatically highlights relevant code sections as you progress
+- **Diff Mode**: Compare changes between commits with 3-way toggle (Diff/Head/Base)
 - **Multiple Navigation Methods**: Use the sidebar, keyboard shortcuts, or detail panel buttons
 - **Comments**: Add comments to steps for collaboration and notes
 - **Commit Awareness**: Warns when viewing walkthroughs created for different codebase states
@@ -208,6 +209,70 @@ You can scope walkthroughs to specific repositories:
 ```
 
 When `repository.remote` is specified, the walkthrough only appears for workspaces with matching git remotes. This allows storing walkthroughs in shared locations while only showing them for relevant repositories.
+
+### Diff Walkthroughs
+
+For PR reviews or comparing changes between commits, use diff mode by specifying a base reference and `base_location` on steps:
+
+```json
+{
+  "title": "PR Review: Auth Refactor",
+  "repository": {
+    "remote": "https://github.com/org/repo",
+    "commit": "abc123",
+    "baseBranch": "main"
+  },
+  "steps": [
+    {
+      "id": 1,
+      "title": "Overview",
+      "body": "This PR refactors the authentication system..."
+    },
+    {
+      "id": 2,
+      "title": "JWT validation changes",
+      "body": "Key changes to the JWT validation logic:",
+      "location": "src/auth/jwt.ts:15-45",
+      "base_location": "src/auth/jwt.ts:15-40"
+    },
+    {
+      "id": 3,
+      "title": "New helper added",
+      "body": "This function was added:",
+      "location": "src/auth/helpers.ts:1-20"
+    },
+    {
+      "id": 4,
+      "title": "Removed legacy code",
+      "body": "This code was removed:",
+      "base_location": "src/auth/legacy.ts:1-50"
+    }
+  ]
+}
+```
+
+**Base reference options** (pick one):
+
+- `baseBranch`: Branch name (e.g., "main") - resolved at runtime
+- `baseCommit`: Explicit commit SHA
+- `pr`: PR number - uses the PR's base branch
+
+**Step types:**
+
+- Steps with both `location` and `base_location` show a 3-way toggle (Diff/Head/Base)
+- Steps with only `location` show in blue (unchanged behavior)
+- Steps with only `base_location` show in red (base file view)
+
+**Markdown format:**
+
+```markdown
+## JWT validation changes
+
+[View code (15-45)](/src/auth/jwt.ts)
+[Base (15-40)](/src/auth/jwt.ts)
+
+Key changes to the JWT validation logic.
+```
 
 ### Complete Example
 

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { Walkthrough, WalkthroughStep, Comment, parseLocation, normalizeRemoteUrl } from './types';
+import { Walkthrough, WalkthroughStep, Comment, parseLocation, normalizeRemoteUrl, getStepType } from './types';
 
 export class WalkthroughTreeItem extends vscode.TreeItem {
   constructor(
@@ -398,10 +398,17 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     }
     items.push(titleItem);
 
+    // Check if repository has a base reference configured
+    const hasBaseRef = !!(
+      this.walkthrough.repository?.baseCommit ||
+      this.walkthrough.repository?.baseBranch ||
+      this.walkthrough.repository?.pr
+    );
+
     // Steps
     this.walkthrough.steps.forEach((step, index) => {
       const isCurrent = index === this.currentStepIndex;
-      const hasLocation = !!step.location;
+      const stepType = getStepType(step);
 
       const stepItem = new WalkthroughTreeItem(
         `${step.id}. ${step.title}`,
@@ -412,10 +419,29 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       if (isCurrent) {
         stepItem.iconPath = new vscode.ThemeIcon('arrow-right', new vscode.ThemeColor('charts.green'));
         stepItem.description = '(current)';
-      } else if (hasLocation) {
-        stepItem.iconPath = new vscode.ThemeIcon('file-code');
       } else {
-        stepItem.iconPath = new vscode.ThemeIcon('note');
+        // Set icon based on step type
+        switch (stepType) {
+          case 'diff':
+            stepItem.iconPath = new vscode.ThemeIcon('git-compare');
+            if (!hasBaseRef) {
+              stepItem.description = '⚠️ no base ref';
+            }
+            break;
+          case 'base-only':
+            stepItem.iconPath = new vscode.ThemeIcon('history', new vscode.ThemeColor('charts.red'));
+            if (!hasBaseRef) {
+              stepItem.description = '⚠️ no base ref';
+            }
+            break;
+          case 'point-in-time':
+            stepItem.iconPath = new vscode.ThemeIcon('file-code');
+            break;
+          case 'informational':
+          default:
+            stepItem.iconPath = new vscode.ThemeIcon('note');
+            break;
+        }
       }
 
       items.push(stepItem);
