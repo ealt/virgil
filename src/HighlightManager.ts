@@ -6,12 +6,12 @@ export class HighlightManager {
 
   constructor() {
     this.decorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
-      borderColor: new vscode.ThemeColor('editor.findMatchHighlightBorder'),
-      borderWidth: '1px',
+      backgroundColor: 'rgba(86, 156, 214, 0.1)',
+      borderColor: 'rgba(86, 156, 214, 0.6)',
+      borderWidth: '0 0 0 3px',
       borderStyle: 'solid',
       isWholeLine: true,
-      overviewRulerColor: new vscode.ThemeColor('editorOverviewRuler.findMatchForeground'),
+      overviewRulerColor: 'rgba(86, 156, 214, 0.8)',
       overviewRulerLane: vscode.OverviewRulerLane.Center
     });
   }
