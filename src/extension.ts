@@ -149,8 +149,21 @@ export function activate(context: vscode.ExtensionContext) {
   // Handle tree view selection
   treeView.onDidChangeSelection(async (e) => {
     const selected = e.selection[0];
-    if (selected && selected.stepIndex !== undefined) {
-      walkthroughProvider?.goToStep(selected.stepIndex);
+    if (!selected || !walkthroughProvider) {
+      return;
+    }
+
+    const walkthrough = walkthroughProvider.getWalkthrough();
+    if (!walkthrough) {
+      return;
+    }
+
+    if (selected.itemType === 'overview') {
+      StepDetailPanel.showOverview(context.extensionUri, walkthrough);
+    } else if (selected.itemType === 'summary') {
+      StepDetailPanel.showSummary(context.extensionUri, walkthrough);
+    } else if (selected.stepIndex !== undefined) {
+      walkthroughProvider.goToStep(selected.stepIndex);
       await showCurrentStep();
     }
   });
@@ -199,7 +212,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Show step detail panel
-    StepDetailPanel.createOrShow(context.extensionUri, step, currentIndex, walkthrough.steps.length);
+    StepDetailPanel.showStep(context.extensionUri, step, currentIndex, walkthrough.steps.length);
   }
 
   async function openFileAtLocation(root: string, filePath: string, startLine: number, endLine: number) {
