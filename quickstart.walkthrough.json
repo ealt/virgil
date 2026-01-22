@@ -3,7 +3,7 @@
   "description": "Get up and running with Virgil in 5 steps",
   "repository": {
     "remote": "git@github.com:ealt/virgil.git",
-    "commit": "919ee5d0000000000000000000000000000000000"
+    "commit": "919ee5d67c42194d5aa2a59e4c65b44f82975bd2"
   },
   "metadata": {
     "type": "tutorial"
