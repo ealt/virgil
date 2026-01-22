@@ -1,6 +1,6 @@
 # Virgil
 
-Interactive guided walkthroughs for code review and codebase exploration. Named after Dante's guide through the Divine Comedy.
+Named after Dante's guide through the Inferno, Virgil transforms written walkthroughs into interactive journeys. Authors create the guidance—whether for code reviews, codebase onboarding, feature documentation, or any repository content—and Virgil brings it to life as a polished, step-by-step experience within your editor. It's the tooling that turns knowledge into a guided path.
 
 ## Features
 
