@@ -50,11 +50,13 @@ This runs `npm install`, compiles, packages the VSIX, and installs it into Curso
 
 ## Quick Start
 
-1. **Create a walkthrough file**: Create a file ending in `.walkthrough.json` in your workspace root (see [Creating Walkthroughs](#creating-walkthroughs) below)
+1. **Write a Markdown walkthrough**: Create a `.md` file using the [Markdown walkthrough format](#creating-walkthroughs)
 
-2. **Open your workspace**: The Virgil extension will automatically detect the walkthrough file and activate
+2. **Convert to JSON**: Run `Virgil: Convert Markdown to Walkthrough` to generate the `.walkthrough.json`
 
-3. **Navigate**:
+3. **Open your workspace**: The Virgil extension will automatically detect the walkthrough file and activate
+
+4. **Navigate**:
    - Click steps in the Virgil sidebar (book icon in the activity bar)
    - Use keyboard shortcuts (see below)
    - Use Previous/Next buttons in the detail panel
@@ -88,6 +90,7 @@ Access via Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
 - `Virgil: Previous Step` - Go to previous step
 - `Virgil: Refresh Walkthrough` - Reload the JSON file
 - `Virgil: Select Walkthrough` - Switch between multiple walkthrough files
+- `Virgil: Convert Markdown to Walkthrough` - Convert a Markdown walkthrough to JSON
 
 ### Adding Comments
 
@@ -103,9 +106,42 @@ If a walkthrough specifies a `repository.commit`, the extension will warn you if
 
 ## Creating Walkthroughs
 
-Walkthroughs are JSON files that follow a specific schema. Create a file ending in `.walkthrough.json` in your workspace root.
+The easiest way to create a walkthrough is to write it in **Markdown** and convert it using the extension. This keeps authoring simple and readable, and the conversion handles the JSON structure for you.
 
-### Basic Structure
+### Recommended: Markdown Walkthroughs
+
+```markdown
+# Walkthrough Title
+
+---
+metadata_key: value
+remote: git@github.com:org/repo.git
+commit: abc123...
+---
+
+Description text
+
+## Step Title
+
+[View code (10-20)](/src/file.ts)
+
+Step body text.
+```
+
+Convert it with:
+
+1. Open or create a markdown file
+2. Run the command: `Virgil: Convert Markdown to Walkthrough`
+3. Select output location
+4. The JSON file will be created
+
+**Example:** See [docs/developer-guide.md](docs/developer-guide.md) for a complete walkthrough in Markdown.
+
+For detailed markdown format docs, see the [Markdown Format section](docs/SCHEMA.md#markdown-format). Use a leading `/` in link URLs so they resolve from the repo root.
+
+### Advanced: JSON Walkthroughs
+
+If you prefer to author JSON directly, create a file ending in `.walkthrough.json` in your workspace root.
 
 ```json
 {
@@ -196,7 +232,7 @@ Description text
 
 ## Step Title
 
-[View code (10-20)](src/file.ts)
+[View code (10-20)](/src/file.ts)
 
 Step body text.
 ```
@@ -206,7 +242,7 @@ Step body text.
 - Title from first `#` heading
 - YAML frontmatter for metadata and repository info
 - Steps from `##` headings
-- Location links: `[text (10-20)](file.ts)` immediately after step title
+- Location links: `[text (10-20)](/file.ts)` immediately after step title
 - Repository info automatically inferred from git if not in frontmatter
 
 **Converting to JSON:**
@@ -218,7 +254,7 @@ Step body text.
 
 **Example:** See [docs/developer-guide.md](docs/developer-guide.md) for a complete example.
 
-For detailed documentation on the markdown format, see the [Markdown Format section](docs/SCHEMA.md#markdown-format) in the schema documentation.
+For detailed documentation on the markdown format, see the [Markdown Format section](docs/SCHEMA.md#markdown-format) in the schema documentation. Use a leading `/` in link URLs so they resolve from the repo root.
 
 ## Walkthrough Format
 
