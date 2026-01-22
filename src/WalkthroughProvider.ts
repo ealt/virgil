@@ -1,20 +1,15 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Walkthrough, WalkthroughStep } from './types';
+import { Walkthrough, WalkthroughStep, parseLocation } from './types';
 
 export class WalkthroughTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-    public readonly stepIndex?: number,
-    public readonly itemType?: 'overview' | 'step' | 'summary' | 'location'
+    public readonly stepIndex?: number
   ) {
     super(label, collapsibleState);
-
-    if (itemType === 'step') {
-      this.contextValue = 'step';
-    }
   }
 }
 
@@ -60,7 +55,6 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   }
 
   private loadWalkthrough(): void {
-    // Use current file if set, otherwise find first available
     let walkthroughFile = this.currentFile;
 
     if (!walkthroughFile) {
@@ -137,7 +131,6 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
           )
         ]);
       }
-      // Show available walkthroughs to select
       const selectItem = new WalkthroughTreeItem(
         'Select a walkthrough...',
         vscode.TreeItemCollapsibleState.None
@@ -151,21 +144,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     }
 
     if (!element) {
-      // Root level
       return Promise.resolve(this.getRootItems());
-    }
-
-    // Child items
-    if (element.itemType === 'overview') {
-      return Promise.resolve(this.getOverviewItems());
-    }
-
-    if (element.itemType === 'summary') {
-      return Promise.resolve(this.getSummaryItems());
-    }
-
-    if (element.itemType === 'step' && element.stepIndex !== undefined) {
-      return Promise.resolve(this.getStepDetails(element.stepIndex));
     }
 
     return Promise.resolve([]);
@@ -200,177 +179,34 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       this.walkthrough.title,
       vscode.TreeItemCollapsibleState.None
     );
-    titleItem.description = this.walkthrough.description;
+    if (this.walkthrough.description) {
+      titleItem.description = this.walkthrough.description;
+    }
     titleItem.iconPath = new vscode.ThemeIcon('book');
     items.push(titleItem);
-
-    // Overview section
-    const overviewItem = new WalkthroughTreeItem(
-      'Overview',
-      vscode.TreeItemCollapsibleState.Collapsed,
-      undefined,
-      'overview'
-    );
-    overviewItem.iconPath = new vscode.ThemeIcon('info');
-    items.push(overviewItem);
 
     // Steps
     this.walkthrough.steps.forEach((step, index) => {
       const isCurrent = index === this.currentStepIndex;
+      const hasLocation = !!step.location;
+
       const stepItem = new WalkthroughTreeItem(
-        `${index + 1}. ${step.title}`,
-        vscode.TreeItemCollapsibleState.Collapsed,
-        index,
-        'step'
+        `${step.id}. ${step.title}`,
+        vscode.TreeItemCollapsibleState.None,
+        index
       );
 
       if (isCurrent) {
         stepItem.iconPath = new vscode.ThemeIcon('arrow-right', new vscode.ThemeColor('charts.green'));
         stepItem.description = '(current)';
+      } else if (hasLocation) {
+        stepItem.iconPath = new vscode.ThemeIcon('file-code');
       } else {
-        stepItem.iconPath = new vscode.ThemeIcon('circle-outline');
+        stepItem.iconPath = new vscode.ThemeIcon('note');
       }
 
       items.push(stepItem);
     });
-
-    // Summary section
-    const summaryItem = new WalkthroughTreeItem(
-      'Summary',
-      vscode.TreeItemCollapsibleState.Collapsed,
-      undefined,
-      'summary'
-    );
-    summaryItem.iconPath = new vscode.ThemeIcon('checklist');
-    items.push(summaryItem);
-
-    return items;
-  }
-
-  private getOverviewItems(): WalkthroughTreeItem[] {
-    if (!this.walkthrough) {
-      return [];
-    }
-
-    const items: WalkthroughTreeItem[] = [];
-
-    // Purpose
-    const purposeItem = new WalkthroughTreeItem(
-      'Purpose',
-      vscode.TreeItemCollapsibleState.None
-    );
-    purposeItem.description = this.walkthrough.overview.purpose;
-    purposeItem.tooltip = this.walkthrough.overview.purpose;
-    items.push(purposeItem);
-
-    // Scope
-    const scopeItem = new WalkthroughTreeItem(
-      'Scope',
-      vscode.TreeItemCollapsibleState.None
-    );
-    scopeItem.description = this.walkthrough.overview.scope;
-    scopeItem.tooltip = this.walkthrough.overview.scope;
-    items.push(scopeItem);
-
-    // Context if available
-    if (this.walkthrough.context) {
-      const contextItem = new WalkthroughTreeItem(
-        'Type',
-        vscode.TreeItemCollapsibleState.None
-      );
-      contextItem.description = this.walkthrough.context.type;
-
-      if (this.walkthrough.context.pr) {
-        const prItem = new WalkthroughTreeItem(
-          `PR #${this.walkthrough.context.pr.number}`,
-          vscode.TreeItemCollapsibleState.None
-        );
-        prItem.tooltip = this.walkthrough.context.pr.url;
-        items.push(prItem);
-      }
-
-      items.push(contextItem);
-    }
-
-    return items;
-  }
-
-  private getStepDetails(stepIndex: number): WalkthroughTreeItem[] {
-    if (!this.walkthrough || stepIndex >= this.walkthrough.steps.length) {
-      return [];
-    }
-
-    const step = this.walkthrough.steps[stepIndex];
-    const items: WalkthroughTreeItem[] = [];
-
-    // Locations
-    step.locations.forEach((loc) => {
-      const locItem = new WalkthroughTreeItem(
-        `${path.basename(loc.path)}:${loc.startLine}-${loc.endLine}`,
-        vscode.TreeItemCollapsibleState.None,
-        undefined,
-        'location'
-      );
-      locItem.description = loc.path;
-      locItem.iconPath = new vscode.ThemeIcon('file-code');
-      locItem.command = {
-        command: 'virgil.openLocation',
-        title: 'Open Location',
-        arguments: [loc.path, loc.startLine, loc.endLine]
-      };
-      locItem.tooltip = `${loc.path} (lines ${loc.startLine}-${loc.endLine})`;
-      items.push(locItem);
-    });
-
-    // Notes
-    if (step.notes && step.notes.length > 0) {
-      step.notes.forEach((note, i) => {
-        const noteItem = new WalkthroughTreeItem(
-          note,
-          vscode.TreeItemCollapsibleState.None
-        );
-        noteItem.iconPath = new vscode.ThemeIcon('note');
-        noteItem.tooltip = note;
-        items.push(noteItem);
-      });
-    }
-
-    return items;
-  }
-
-  private getSummaryItems(): WalkthroughTreeItem[] {
-    if (!this.walkthrough) {
-      return [];
-    }
-
-    const items: WalkthroughTreeItem[] = [];
-
-    // Key takeaways
-    this.walkthrough.summary.keyTakeaways.forEach((takeaway, i) => {
-      const item = new WalkthroughTreeItem(
-        takeaway,
-        vscode.TreeItemCollapsibleState.None
-      );
-      item.iconPath = new vscode.ThemeIcon('lightbulb');
-      item.tooltip = takeaway;
-      items.push(item);
-    });
-
-    // Recommendation
-    if (this.walkthrough.summary.recommendation && this.walkthrough.summary.recommendation !== 'none') {
-      const recItem = new WalkthroughTreeItem(
-        `Recommendation: ${this.walkthrough.summary.recommendation}`,
-        vscode.TreeItemCollapsibleState.None
-      );
-
-      const iconMap: Record<string, string> = {
-        'approve': 'check',
-        'request-changes': 'request-changes',
-        'comment': 'comment'
-      };
-      recItem.iconPath = new vscode.ThemeIcon(iconMap[this.walkthrough.summary.recommendation] || 'info');
-      items.push(recItem);
-    }
 
     return items;
   }

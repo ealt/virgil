@@ -1,201 +1,85 @@
 {
   "title": "Virgil Extension Architecture",
   "description": "A guided tour of how the Virgil VS Code extension works",
-  "author": "claude",
-  "created": "2025-01-21T15:30:00Z",
-  "context": {
+  "metadata": {
     "type": "tour"
-  },
-  "overview": {
-    "purpose": "Understand how Virgil provides interactive code walkthroughs in VS Code/Cursor, from activation to navigation and highlighting",
-    "scope": "Extension entry point, tree view provider, webview panel, and highlight manager"
   },
   "steps": [
     {
       "id": 1,
-      "title": "Extension Manifest - Activation & Commands",
-      "description": "The extension is configured to activate when a workspace contains a `.walkthrough.json` file. It registers commands for navigation (start, next, prev, goToStep, refresh) and contributes a sidebar view in the activity bar.\n\nThe `virgilWalkthrough` view appears in a custom `virgil` view container with a book icon.",
-      "locations": [
-        {
-          "path": "package.json",
-          "startLine": 1,
-          "endLine": 50
-        }
-      ],
-      "notes": [
-        "Activation event: workspaceContains:.walkthrough.json",
-        "Keybindings: Cmd+Shift+] for next, Cmd+Shift+[ for previous"
-      ]
+      "title": "Overview",
+      "body": "This walkthrough explores the Virgil VS Code extension architecture.\n\nVirgil provides interactive code walkthroughs in VS Code/Cursor, from activation to navigation and highlighting.\n\nKey components:\n- Extension entry point (extension.ts)\n- Tree view provider (WalkthroughProvider.ts)\n- Webview panel (StepDetailPanel.ts)\n- Highlight manager (HighlightManager.ts)"
     },
     {
       "id": 2,
-      "title": "TypeScript Interfaces - Data Model",
-      "description": "These interfaces define the shape of the `.walkthrough.json` file. The `Walkthrough` interface is the root, containing metadata, overview, steps, and summary.\n\nEach `WalkthroughStep` has an id, title, description, one or more file locations, and optional notes. Locations specify exact line ranges to highlight.",
-      "locations": [
-        {
-          "path": "src/types.ts",
-          "startLine": 1,
-          "endLine": 40
-        }
-      ],
-      "notes": [
-        "Locations use 1-indexed line numbers",
-        "Context type can be pr-review, tour, or tutorial"
-      ]
+      "title": "Extension Manifest - Activation & Commands",
+      "body": "The extension is configured to activate when a workspace contains a `.walkthrough.json` file. It registers commands for navigation (start, next, prev, goToStep, refresh) and contributes a sidebar view in the activity bar.\n\nThe `virgilWalkthrough` view appears in a custom `virgil` view container with a book icon.\n\n- Activation event: workspaceContains:*.walkthrough.json\n- Keybindings: Cmd+Shift+] for next, Cmd+Shift+[ for previous",
+      "location": "package.json:1-50"
     },
     {
       "id": 3,
-      "title": "Extension Entry Point - Initialization",
-      "description": "When activated, the extension initializes the HighlightManager, creates the WalkthroughProvider for the tree view, and registers all commands.\n\nA FileSystemWatcher monitors `.walkthrough.json` for changes, automatically refreshing the view when the file is created, modified, or deleted.",
-      "locations": [
-        {
-          "path": "src/extension.ts",
-          "startLine": 14,
-          "endLine": 45
-        }
-      ],
-      "notes": [
-        "Early return if no workspace folder is open",
-        "Sets virgilWalkthroughActive context for keybinding conditions"
-      ]
+      "title": "TypeScript Interfaces - Data Model",
+      "body": "These interfaces define the shape of the `.walkthrough.json` file. The `Walkthrough` interface is the root, containing title, description, optional metadata, and steps.\n\nEach `WalkthroughStep` has an id, title, optional body, and optional location string.\n\n- Locations use format: path:startLine-endLine\n- Multiple ranges supported: path:10-20,30-40",
+      "location": "src/types.ts:1-40"
     },
     {
       "id": 4,
-      "title": "Command Registration - Navigation Controls",
-      "description": "Commands are registered for walkthrough navigation. Each command delegates to the WalkthroughProvider for state management, then calls `showCurrentStep()` to update the UI.\n\nThe `virgil.openLocation` command is used internally to open files at specific line ranges when clicking locations in the tree view or detail panel.",
-      "locations": [
-        {
-          "path": "src/extension.ts",
-          "startLine": 39,
-          "endLine": 89
-        }
-      ],
-      "notes": [
-        "Commands: start, next, prev, goToStep, refresh, openLocation",
-        "openLocation takes filePath, startLine, and endLine arguments"
-      ]
+      "title": "Extension Entry Point - Initialization",
+      "body": "When activated, the extension initializes the HighlightManager, creates the WalkthroughProvider for the tree view, and registers all commands.\n\nA FileSystemWatcher monitors `*.walkthrough.json` for changes, automatically refreshing the view when files are created, modified, or deleted.\n\n- Early return if no workspace folder is open\n- Sets virgilWalkthroughActive context for keybinding conditions",
+      "location": "src/extension.ts:13-50"
     },
     {
       "id": 5,
-      "title": "File Watching - Auto-refresh",
-      "description": "The extension watches for changes to `.walkthrough.json` using VS Code's FileSystemWatcher. When the file changes, it refreshes the tree view. When created, it shows a notification. When deleted, it clears highlights and updates the context.",
-      "locations": [
-        {
-          "path": "src/extension.ts",
-          "startLine": 91,
-          "endLine": 113
-        }
-      ],
-      "notes": [
-        "Uses RelativePattern to watch only the workspace root",
-        "Handles create, change, and delete events separately"
-      ]
+      "title": "Command Registration - Navigation Controls",
+      "body": "Commands are registered for walkthrough navigation. Each command delegates to the WalkthroughProvider for state management, then calls `showCurrentStep()` to update the UI.\n\nThe `virgil.openLocation` command is used internally to open files at specific line ranges when clicking locations in the detail panel.\n\n- Commands: start, next, prev, goToStep, refresh, selectWalkthrough, openLocation",
+      "location": "src/extension.ts:44-119"
     },
     {
       "id": 6,
-      "title": "Show Current Step - Core Navigation Logic",
-      "description": "This function orchestrates what happens when navigating to a step: clears previous highlights, opens the first file location, applies highlights to all locations, and shows the detail panel.\n\nIt coordinates between WalkthroughProvider (state), HighlightManager (decorations), and StepDetailPanel (UI).",
-      "locations": [
-        {
-          "path": "src/extension.ts",
-          "startLine": 129,
-          "endLine": 172
-        }
-      ],
-      "notes": [
-        "Opens first location in ViewColumn.One (main editor)",
-        "Highlights can span multiple files per step"
-      ]
+      "title": "File Watching - Auto-refresh",
+      "body": "The extension watches for changes to `*.walkthrough.json` using VS Code's FileSystemWatcher. When the file changes, it refreshes the tree view. When created, it shows a notification. When deleted, it clears highlights and updates the context.\n\n- Uses RelativePattern to watch only the workspace root\n- Handles create, change, and delete events separately",
+      "location": "src/extension.ts:156-178"
     },
     {
       "id": 7,
-      "title": "Tree View Provider - Parsing & Structure",
-      "description": "The WalkthroughProvider implements VS Code's TreeDataProvider interface. It loads and parses the JSON file, maintains the current step index, and provides tree items for the sidebar.\n\nThe tree has a flat structure: title header, overview section, numbered steps, and summary section.",
-      "locations": [
-        {
-          "path": "src/WalkthroughProvider.ts",
-          "startLine": 1,
-          "endLine": 80
-        }
-      ],
-      "notes": [
-        "Implements refresh(), goToStep(), nextStep(), prevStep()",
-        "Fires onDidChangeTreeData event to update the view"
-      ]
+      "title": "Show Current Step - Core Navigation Logic",
+      "body": "This function orchestrates what happens when navigating to a step: clears previous highlights, opens the file location, applies highlights to all ranges, and shows the detail panel.\n\nIt coordinates between WalkthroughProvider (state), HighlightManager (decorations), and StepDetailPanel (UI).\n\n- Opens location in ViewColumn.One (main editor)\n- Highlights can span multiple ranges per step",
+      "location": "src/extension.ts:198-254"
     },
     {
       "id": 8,
-      "title": "Tree Items - Building the Sidebar",
-      "description": "The `getRootItems()` method builds the top-level tree structure. Steps show their index and title, with the current step highlighted with an arrow icon and '(current)' label.\n\nChild items for steps include clickable file locations and notes. Each location triggers the `virgil.openLocation` command when clicked.",
-      "locations": [
-        {
-          "path": "src/WalkthroughProvider.ts",
-          "startLine": 100,
-          "endLine": 175
-        }
-      ],
-      "notes": [
-        "Uses ThemeIcon for consistent VS Code styling",
-        "Current step gets charts.green color for the arrow"
-      ]
+      "title": "Tree View Provider - Parsing & Structure",
+      "body": "The WalkthroughProvider implements VS Code's TreeDataProvider interface. It loads and parses the JSON file, maintains the current step index, and provides tree items for the sidebar.\n\nThe tree has a flat structure: optional file selector, title header, and numbered steps.\n\n- Implements refresh(), goToStep(), nextStep(), prevStep()\n- Fires onDidChangeTreeData event to update the view",
+      "location": "src/WalkthroughProvider.ts:1-88"
     },
     {
       "id": 9,
-      "title": "Step Detail Panel - Webview UI",
-      "description": "The StepDetailPanel creates a webview that shows rich step information: title, description, clickable locations, and notes. It includes Previous/Next buttons for navigation.\n\nThe webview communicates with the extension via postMessage, sending commands like 'next', 'prev', and 'openLocation'.",
-      "locations": [
-        {
-          "path": "src/StepDetailPanel.ts",
-          "startLine": 1,
-          "endLine": 60
-        }
-      ],
-      "notes": [
-        "Webview opens in ViewColumn.Two (side panel)",
-        "retainContextWhenHidden preserves state when hidden"
-      ]
+      "title": "Tree Items - Building the Sidebar",
+      "body": "The `getRootItems()` method builds the top-level tree structure. Steps show their id and title, with the current step highlighted with an arrow icon and '(current)' label.\n\nSteps with locations show a file-code icon, steps without show a note icon.\n\n- Uses ThemeIcon for consistent VS Code styling\n- Current step gets charts.green color for the arrow",
+      "location": "src/WalkthroughProvider.ts:153-212"
     },
     {
       "id": 10,
-      "title": "Webview HTML Generation",
-      "description": "The `getWebviewContent()` method generates the HTML for the detail panel. It uses VS Code CSS variables for theming, ensuring the panel matches the user's color scheme.\n\nLocations are rendered as clickable divs that call `openLocation()` via the VS Code API. Navigation buttons are disabled at the first/last steps.",
-      "locations": [
-        {
-          "path": "src/StepDetailPanel.ts",
-          "startLine": 62,
-          "endLine": 180
-        }
-      ],
-      "notes": [
-        "Content Security Policy restricts scripts to inline only",
-        "HTML is escaped to prevent XSS from walkthrough content"
-      ]
+      "title": "Step Detail Panel - Webview UI",
+      "body": "The StepDetailPanel creates a webview that shows rich step information: title, body, clickable location, and metadata (on first step). It includes Previous/Next buttons for navigation.\n\nThe webview communicates with the extension via postMessage, sending commands like 'next', 'prev', and 'openLocation'.\n\n- Webview opens in ViewColumn.Two (side panel)\n- retainContextWhenHidden preserves state when hidden",
+      "location": "src/StepDetailPanel.ts:1-61"
     },
     {
       "id": 11,
+      "title": "Webview HTML Generation",
+      "body": "The `getHtml()` method generates the HTML for the detail panel. It uses VS Code CSS variables for theming, ensuring the panel matches the user's color scheme.\n\nLocations are rendered as clickable divs that call `openLocation()` via the VS Code API. Navigation buttons are disabled at the first/last steps.\n\n- Content Security Policy restricts scripts to inline only\n- HTML is escaped to prevent XSS from walkthrough content",
+      "location": "src/StepDetailPanel.ts:69-231"
+    },
+    {
+      "id": 12,
       "title": "Highlight Manager - Code Decorations",
-      "description": "The HighlightManager creates and manages text decorations that highlight code ranges. It uses VS Code's `createTextEditorDecorationType` with theme colors for the background and border.\n\nDecorations appear in the overview ruler (minimap) for easy navigation to highlighted sections.",
-      "locations": [
-        {
-          "path": "src/HighlightManager.ts",
-          "startLine": 1,
-          "endLine": 75
-        }
-      ],
-      "notes": [
-        "Uses editor.findMatchHighlightBackground for consistent theming",
-        "isWholeLine: true highlights the entire line, not just content"
-      ]
+      "body": "The HighlightManager creates and manages text decorations that highlight code ranges. It uses VS Code's `createTextEditorDecorationType` with a subtle blue background and left border accent.\n\nDecorations appear in the overview ruler (minimap) for easy navigation to highlighted sections.\n\n- Uses rgba(86, 156, 214, 0.1) for subtle highlighting\n- isWholeLine: true highlights the entire line, not just content",
+      "location": "src/HighlightManager.ts:1-40"
+    },
+    {
+      "id": 13,
+      "title": "Summary",
+      "body": "Key takeaways:\n\n- Extension activates on *.walkthrough.json presence and watches for changes\n- WalkthroughProvider manages state and builds the sidebar tree view\n- StepDetailPanel shows rich step info in a themed webview\n- HighlightManager applies line decorations to editors\n- All components coordinate through the extension.ts entry point\n\nThe modular architecture makes it easy to extend with new features like multiple walkthrough support and improved navigation."
     }
-  ],
-  "summary": {
-    "keyTakeaways": [
-      "Extension activates on .walkthrough.json presence and watches for changes",
-      "WalkthroughProvider manages state and builds the sidebar tree view",
-      "StepDetailPanel shows rich step info in a themed webview",
-      "HighlightManager applies line decorations to editors",
-      "All components coordinate through the extension.ts entry point"
-    ],
-    "recommendation": "none"
-  }
+  ]
 }

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Walkthrough, WalkthroughStep } from './types';
+import { Walkthrough, WalkthroughStep, parseLocation } from './types';
 
 export class StepDetailPanel {
   public static currentPanel: StepDetailPanel | undefined;
@@ -7,19 +7,15 @@ export class StepDetailPanel {
   private readonly extensionUri: vscode.Uri;
   private disposables: vscode.Disposable[] = [];
 
-  public static showStep(extensionUri: vscode.Uri, step: WalkthroughStep, currentIndex: number, totalSteps: number): void {
+  public static show(
+    extensionUri: vscode.Uri,
+    walkthrough: Walkthrough,
+    step: WalkthroughStep,
+    currentIndex: number,
+    totalSteps: number
+  ): void {
     const panel = StepDetailPanel.getOrCreate(extensionUri);
-    panel.showStepContent(step, currentIndex, totalSteps);
-  }
-
-  public static showOverview(extensionUri: vscode.Uri, walkthrough: Walkthrough): void {
-    const panel = StepDetailPanel.getOrCreate(extensionUri);
-    panel.showOverviewContent(walkthrough);
-  }
-
-  public static showSummary(extensionUri: vscode.Uri, walkthrough: Walkthrough, totalSteps: number): void {
-    const panel = StepDetailPanel.getOrCreate(extensionUri);
-    panel.showSummaryContent(walkthrough, totalSteps);
+    panel.render(walkthrough, step, currentIndex, totalSteps);
   }
 
   private static getOrCreate(extensionUri: vscode.Uri): StepDetailPanel {
@@ -34,7 +30,7 @@ export class StepDetailPanel {
 
     this.panel = vscode.window.createWebviewPanel(
       'virgilStepDetail',
-      'Virgil: Step Details',
+      'Virgil',
       vscode.ViewColumn.Two,
       {
         enableScripts: true,
@@ -54,25 +50,8 @@ export class StepDetailPanel {
           case 'prev':
             vscode.commands.executeCommand('virgil.prev');
             break;
-          case 'start':
-            vscode.commands.executeCommand('virgil.start');
-            break;
-          case 'overview':
-            vscode.commands.executeCommand('virgil.showOverview');
-            break;
-          case 'summary':
-            vscode.commands.executeCommand('virgil.showSummary');
-            break;
-          case 'goToStep':
-            vscode.commands.executeCommand('virgil.goToStep', message.step);
-            break;
           case 'openLocation':
-            vscode.commands.executeCommand(
-              'virgil.openLocation',
-              message.path,
-              message.startLine,
-              message.endLine
-            );
+            vscode.commands.executeCommand('virgil.openLocation', message.location);
             break;
         }
       },
@@ -81,363 +60,105 @@ export class StepDetailPanel {
     );
   }
 
-  private showStepContent(step: WalkthroughStep, currentIndex: number, totalSteps: number): void {
-    this.panel.title = `Step ${currentIndex + 1}: ${step.title}`;
-    this.panel.webview.html = this.getStepHtml(step, currentIndex, totalSteps);
+  private render(walkthrough: Walkthrough, step: WalkthroughStep, currentIndex: number, totalSteps: number): void {
+    this.panel.title = `${step.id}. ${step.title}`;
+    this.panel.webview.html = this.getHtml(walkthrough, step, currentIndex, totalSteps);
     this.panel.reveal(vscode.ViewColumn.Two, true);
   }
 
-  private showOverviewContent(walkthrough: Walkthrough): void {
-    this.panel.title = `Overview: ${walkthrough.title}`;
-    this.panel.webview.html = this.getOverviewHtml(walkthrough);
-    this.panel.reveal(vscode.ViewColumn.Two, true);
-  }
-
-  private showSummaryContent(walkthrough: Walkthrough, totalSteps: number): void {
-    this.panel.title = `Summary: ${walkthrough.title}`;
-    this.panel.webview.html = this.getSummaryHtml(walkthrough, totalSteps);
-    this.panel.reveal(vscode.ViewColumn.Two, true);
-  }
-
-  private getBaseStyles(): string {
-    return `
-    body {
-      font-family: var(--vscode-font-family);
-      color: var(--vscode-foreground);
-      background-color: var(--vscode-editor-background);
-      padding: 16px;
-      line-height: 1.5;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--vscode-panel-border);
-    }
-    .label {
-      font-size: 12px;
-      color: var(--vscode-descriptionForeground);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .title {
-      font-size: 18px;
-      font-weight: 600;
-      margin: 0 0 16px 0;
-      color: var(--vscode-editor-foreground);
-    }
-    .description {
-      margin-bottom: 20px;
-      white-space: pre-wrap;
-    }
-    .section {
-      margin-bottom: 20px;
-    }
-    h3 {
-      font-size: 14px;
-      font-weight: 600;
-      margin: 0 0 8px 0;
-      color: var(--vscode-descriptionForeground);
-    }
-    .item {
-      padding: 8px 12px;
-      background-color: var(--vscode-editor-inactiveSelectionBackground);
-      border-radius: 4px;
-      margin-bottom: 6px;
-    }
-    .location {
-      display: flex;
-      align-items: center;
-      padding: 8px 12px;
-      background-color: var(--vscode-editor-inactiveSelectionBackground);
-      border-radius: 4px;
-      margin-bottom: 6px;
-      cursor: pointer;
-      transition: background-color 0.15s;
-    }
-    .location:hover {
-      background-color: var(--vscode-list-hoverBackground);
-    }
-    .location-icon { margin-right: 8px; }
-    .location-path { color: var(--vscode-textLink-foreground); flex: 1; }
-    .location-lines { color: var(--vscode-descriptionForeground); font-size: 12px; }
-    .notes-list, .takeaways-list {
-      margin: 0;
-      padding-left: 20px;
-    }
-    .notes-list li, .takeaways-list li {
-      margin-bottom: 6px;
-      color: var(--vscode-editor-foreground);
-    }
-    .recommendation {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-    .recommendation.approve { background-color: #28a745; color: white; }
-    .recommendation.request-changes { background-color: #dc3545; color: white; }
-    .recommendation.comment { background-color: #6c757d; color: white; }
-    .navigation {
-      display: flex;
-      gap: 8px;
-      margin-top: 24px;
-      padding-top: 16px;
-      border-top: 1px solid var(--vscode-panel-border);
-    }
-    button {
-      flex: 1;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-      background-color: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
-      transition: background-color 0.15s;
-    }
-    button:hover:not(:disabled) { background-color: var(--vscode-button-hoverBackground); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    button.secondary {
-      background-color: var(--vscode-button-secondaryBackground);
-      color: var(--vscode-button-secondaryForeground);
-    }
-    button.secondary:hover:not(:disabled) { background-color: var(--vscode-button-secondaryHoverBackground); }
-    `;
-  }
-
-  private getOverviewHtml(walkthrough: Walkthrough): string {
-    const contextHtml = walkthrough.context ? `
-      <div class="section">
-        <h3>Context</h3>
-        <div class="item">
-          <strong>Type:</strong> ${this.escapeHtml(walkthrough.context.type)}
-          ${walkthrough.context.pr ? `<br><strong>PR:</strong> <a href="${walkthrough.context.pr.url}">#${walkthrough.context.pr.number}</a>` : ''}
-        </div>
-      </div>
-    ` : '';
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.panel.webview.cspSource} 'unsafe-inline'; script-src 'unsafe-inline';">
-  <title>Overview</title>
-  <style>${this.getBaseStyles()}</style>
-</head>
-<body>
-  <div class="header">
-    <span class="label">Overview</span>
-  </div>
-
-  <h1 class="title">${this.escapeHtml(walkthrough.title)}</h1>
-  <p class="description">${this.escapeHtml(walkthrough.description)}</p>
-
-  <div class="section">
-    <h3>Purpose</h3>
-    <div class="item">${this.escapeHtml(walkthrough.overview.purpose)}</div>
-  </div>
-
-  <div class="section">
-    <h3>Scope</h3>
-    <div class="item">${this.escapeHtml(walkthrough.overview.scope)}</div>
-  </div>
-
-  ${contextHtml}
-
-  <div class="section">
-    <h3>Details</h3>
-    <div class="item">
-      <strong>Author:</strong> ${this.escapeHtml(walkthrough.author)}<br>
-      <strong>Created:</strong> ${new Date(walkthrough.created).toLocaleDateString()}<br>
-      <strong>Steps:</strong> ${walkthrough.steps.length}
-    </div>
-  </div>
-
-  <div class="navigation">
-    <button onclick="vscode.postMessage({command: 'start'})">
-      Start Walkthrough →
-    </button>
-  </div>
-
-  <script>
-    const vscode = acquireVsCodeApi();
-  </script>
-</body>
-</html>`;
-  }
-
-  private getSummaryHtml(walkthrough: Walkthrough, totalSteps: number): string {
-    const recClass = walkthrough.summary.recommendation || 'none';
-    const recHtml = walkthrough.summary.recommendation && walkthrough.summary.recommendation !== 'none' ? `
-      <div class="section">
-        <h3>Recommendation</h3>
-        <span class="recommendation ${recClass}">${walkthrough.summary.recommendation}</span>
-      </div>
-    ` : '';
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.panel.webview.cspSource} 'unsafe-inline'; script-src 'unsafe-inline';">
-  <title>Summary</title>
-  <style>${this.getBaseStyles()}</style>
-</head>
-<body>
-  <div class="header">
-    <span class="label">Summary</span>
-  </div>
-
-  <h1 class="title">${this.escapeHtml(walkthrough.title)}</h1>
-
-  <div class="section">
-    <h3>Key Takeaways</h3>
-    <ul class="takeaways-list">
-      ${walkthrough.summary.keyTakeaways.map(t => `<li>${this.escapeHtml(t)}</li>`).join('')}
-    </ul>
-  </div>
-
-  ${recHtml}
-
-  <div class="navigation">
-    <button class="secondary" onclick="vscode.postMessage({command: 'goToStep', step: ${totalSteps - 1}})">
-      ← Back to Step ${totalSteps}
-    </button>
-  </div>
-
-  <script>
-    const vscode = acquireVsCodeApi();
-  </script>
-</body>
-</html>`;
-  }
-
-  private getStepHtml(step: WalkthroughStep, currentIndex: number, totalSteps: number): string {
-    const styleUri = this.panel.webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, 'media', 'panel.css')
-    );
-
-    const locationsHtml = step.locations.map(loc => `
-      <div class="location" onclick="openLocation('${loc.path}', ${loc.startLine}, ${loc.endLine})">
-        <span class="location-icon">📄</span>
-        <span class="location-path">${loc.path}</span>
-        <span class="location-lines">:${loc.startLine}-${loc.endLine}</span>
-      </div>
-    `).join('');
-
-    const notesHtml = step.notes && step.notes.length > 0
-      ? `
-        <div class="notes-section">
-          <h3>Notes</h3>
-          <ul class="notes-list">
-            ${step.notes.map(note => `<li>${this.escapeHtml(note)}</li>`).join('')}
-          </ul>
-        </div>
-      `
-      : '';
-
+  private getHtml(walkthrough: Walkthrough, step: WalkthroughStep, currentIndex: number, totalSteps: number): string {
     const isFirst = currentIndex === 0;
     const isLast = currentIndex === totalSteps - 1;
 
+    // Parse location if present
+    const parsedLocation = step.location ? parseLocation(step.location) : null;
+
+    const locationHtml = parsedLocation ? `
+      <div class="location" onclick="openLocation('${step.location}')">
+        <span class="location-path">${parsedLocation.path}</span>
+        <span class="location-lines">:${parsedLocation.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',')}</span>
+      </div>
+    ` : '';
+
+    // Render metadata if this is the first step and metadata exists
+    const metadataHtml = currentIndex === 0 && walkthrough.metadata && Object.keys(walkthrough.metadata).length > 0 ? `
+      <div class="metadata">
+        ${Object.entries(walkthrough.metadata).map(([key, value]) =>
+          `<span class="metadata-item"><strong>${this.escapeHtml(key)}:</strong> ${this.escapeHtml(String(value))}</span>`
+        ).join('')}
+      </div>
+    ` : '';
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.panel.webview.cspSource} 'unsafe-inline'; script-src 'unsafe-inline';">
-  <title>Step Details</title>
+  <title>${step.title}</title>
   <style>
     body {
       font-family: var(--vscode-font-family);
       color: var(--vscode-foreground);
       background-color: var(--vscode-editor-background);
       padding: 16px;
-      line-height: 1.5;
+      line-height: 1.6;
     }
-
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--vscode-panel-border);
     }
-
     .step-counter {
       font-size: 12px;
       color: var(--vscode-descriptionForeground);
     }
-
     .title {
       font-size: 18px;
       font-weight: 600;
       margin: 0 0 16px 0;
       color: var(--vscode-editor-foreground);
     }
-
-    .description {
+    .metadata {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 8px 12px;
+      background-color: var(--vscode-editor-inactiveSelectionBackground);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .metadata-item {
+      color: var(--vscode-descriptionForeground);
+    }
+    .body {
       margin-bottom: 20px;
       white-space: pre-wrap;
     }
-
-    .locations-section, .notes-section {
-      margin-bottom: 20px;
-    }
-
-    h3 {
-      font-size: 14px;
-      font-weight: 600;
-      margin: 0 0 8px 0;
-      color: var(--vscode-descriptionForeground);
-    }
-
     .location {
       display: flex;
       align-items: center;
       padding: 8px 12px;
       background-color: var(--vscode-editor-inactiveSelectionBackground);
       border-radius: 4px;
-      margin-bottom: 6px;
+      margin-bottom: 20px;
       cursor: pointer;
       transition: background-color 0.15s;
     }
-
     .location:hover {
       background-color: var(--vscode-list-hoverBackground);
     }
-
-    .location-icon {
-      margin-right: 8px;
-    }
-
     .location-path {
       color: var(--vscode-textLink-foreground);
-      flex: 1;
     }
-
     .location-lines {
       color: var(--vscode-descriptionForeground);
       font-size: 12px;
     }
-
-    .notes-list {
-      margin: 0;
-      padding-left: 20px;
-    }
-
-    .notes-list li {
-      margin-bottom: 6px;
-      color: var(--vscode-editor-foreground);
-    }
-
     .navigation {
       display: flex;
       gap: 8px;
@@ -445,7 +166,6 @@ export class StepDetailPanel {
       padding-top: 16px;
       border-top: 1px solid var(--vscode-panel-border);
     }
-
     button {
       flex: 1;
       padding: 8px 16px;
@@ -457,21 +177,17 @@ export class StepDetailPanel {
       color: var(--vscode-button-foreground);
       transition: background-color 0.15s;
     }
-
     button:hover:not(:disabled) {
       background-color: var(--vscode-button-hoverBackground);
     }
-
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-
     button.secondary {
       background-color: var(--vscode-button-secondaryBackground);
       color: var(--vscode-button-secondaryForeground);
     }
-
     button.secondary:hover:not(:disabled) {
       background-color: var(--vscode-button-secondaryHoverBackground);
     }
@@ -484,21 +200,18 @@ export class StepDetailPanel {
 
   <h1 class="title">${this.escapeHtml(step.title)}</h1>
 
-  <div class="description">${this.escapeHtml(step.description)}</div>
+  ${metadataHtml}
 
-  <div class="locations-section">
-    <h3>Locations</h3>
-    ${locationsHtml}
-  </div>
+  ${locationHtml}
 
-  ${notesHtml}
+  ${step.body ? `<div class="body">${this.escapeHtml(step.body)}</div>` : ''}
 
   <div class="navigation">
-    <button class="secondary" onclick="navigate('${isFirst ? 'overview' : 'prev'}')">
-      ← ${isFirst ? 'Overview' : 'Previous'}
+    <button class="secondary" onclick="navigate('prev')" ${isFirst ? 'disabled' : ''}>
+      ← Previous
     </button>
-    <button onclick="navigate('${isLast ? 'summary' : 'next'}')">
-      ${isLast ? 'Summary' : 'Next'} →
+    <button onclick="navigate('next')" ${isLast ? 'disabled' : ''}>
+      Next →
     </button>
   </div>
 
@@ -509,13 +222,8 @@ export class StepDetailPanel {
       vscode.postMessage({ command: direction });
     }
 
-    function openLocation(path, startLine, endLine) {
-      vscode.postMessage({
-        command: 'openLocation',
-        path: path,
-        startLine: startLine,
-        endLine: endLine
-      });
+    function openLocation(location) {
+      vscode.postMessage({ command: 'openLocation', location: location });
     }
   </script>
 </body>

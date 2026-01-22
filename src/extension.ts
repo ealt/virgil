@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Walkthrough } from './types';
+import { parseLocation } from './types';
 import { WalkthroughProvider } from './WalkthroughProvider';
 import { StepDetailPanel } from './StepDetailPanel';
 import { HighlightManager } from './HighlightManager';
@@ -33,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Register tree view
   const treeView = vscode.window.createTreeView('virgilWalkthrough', {
     treeDataProvider: walkthroughProvider,
-    showCollapseAll: true
+    showCollapseAll: false
   });
   context.subscriptions.push(treeView);
 
@@ -111,41 +111,44 @@ export function activate(context: vscode.ExtensionContext) {
       if (selected) {
         walkthroughProvider.setWalkthroughFile(selected.label);
         highlightManager?.clearAll();
-        // Show overview for newly selected walkthrough
-        const walkthrough = walkthroughProvider.getWalkthrough();
-        if (walkthrough) {
-          StepDetailPanel.showOverview(context.extensionUri, walkthrough);
-        }
+        // Show first step of newly selected walkthrough
+        walkthroughProvider.goToStep(0);
+        showCurrentStep();
       }
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('virgil.openLocation', async (filePath: string, startLine: number, endLine: number) => {
-      await openFileAtLocation(workspaceRoot, filePath, startLine, endLine);
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('virgil.showOverview', () => {
-      if (walkthroughProvider) {
-        const walkthrough = walkthroughProvider.getWalkthrough();
-        if (walkthrough) {
-          highlightManager?.clearAll();
-          StepDetailPanel.showOverview(context.extensionUri, walkthrough);
-        }
+    vscode.commands.registerCommand('virgil.openLocation', async (location: string) => {
+      const parsed = parseLocation(location);
+      if (!parsed) {
+        return;
       }
-    })
-  );
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand('virgil.showSummary', () => {
-      if (walkthroughProvider) {
-        const walkthrough = walkthroughProvider.getWalkthrough();
-        if (walkthrough) {
-          highlightManager?.clearAll();
-          StepDetailPanel.showSummary(context.extensionUri, walkthrough, walkthrough.steps.length);
+      const fullPath = path.join(workspaceRoot, parsed.path);
+
+      try {
+        const doc = await vscode.workspace.openTextDocument(fullPath);
+        const editor = await vscode.window.showTextDocument(doc, {
+          viewColumn: vscode.ViewColumn.One,
+          preserveFocus: false
+        });
+
+        // Go to first range
+        const firstRange = parsed.ranges[0];
+        const start = new vscode.Position(firstRange.startLine - 1, 0);
+        const end = new vscode.Position(firstRange.endLine - 1, doc.lineAt(firstRange.endLine - 1).text.length);
+
+        editor.selection = new vscode.Selection(start, start);
+        editor.revealRange(new vscode.Range(start, end), vscode.TextEditorRevealType.InCenter);
+
+        // Highlight all ranges
+        highlightManager?.clearAll();
+        for (const range of parsed.ranges) {
+          highlightManager?.highlightRange(editor, range.startLine, range.endLine);
         }
+      } catch (error) {
+        vscode.window.showErrorMessage(`Could not open file: ${parsed.path}`);
       }
     })
   );
@@ -177,30 +180,18 @@ export function activate(context: vscode.ExtensionContext) {
   // Handle tree view selection
   treeView.onDidChangeSelection(async (e) => {
     const selected = e.selection[0];
-    if (!selected || !walkthroughProvider) {
-      return;
-    }
-
-    const walkthrough = walkthroughProvider.getWalkthrough();
-    if (!walkthrough) {
-      return;
-    }
-
-    if (selected.itemType === 'overview') {
-      StepDetailPanel.showOverview(context.extensionUri, walkthrough);
-    } else if (selected.itemType === 'summary') {
-      StepDetailPanel.showSummary(context.extensionUri, walkthrough, walkthrough.steps.length);
-    } else if (selected.stepIndex !== undefined) {
-      walkthroughProvider.goToStep(selected.stepIndex);
+    if (selected && selected.stepIndex !== undefined) {
+      walkthroughProvider?.goToStep(selected.stepIndex);
       await showCurrentStep();
     }
   });
 
-  // Load walkthrough if it exists - show overview automatically
+  // Auto-show first step if walkthrough exists
   if (findWalkthroughFile() && walkthroughProvider) {
     const walkthrough = walkthroughProvider.getWalkthrough();
-    if (walkthrough) {
-      StepDetailPanel.showOverview(context.extensionUri, walkthrough);
+    if (walkthrough && walkthrough.steps.length > 0) {
+      walkthroughProvider.goToStep(0);
+      showCurrentStep();
     }
   }
 
@@ -221,55 +212,45 @@ export function activate(context: vscode.ExtensionContext) {
     // Clear previous highlights
     highlightManager.clearAll();
 
-    // Open first location and highlight all
-    if (step.locations.length > 0) {
-      const firstLoc = step.locations[0];
-      await openFileAtLocation(workspaceRoot, firstLoc.path, firstLoc.startLine, firstLoc.endLine);
+    // If step has a location, open the file and highlight
+    if (step.location) {
+      const parsed = parseLocation(step.location);
+      if (parsed) {
+        const fullPath = path.join(workspaceRoot, parsed.path);
 
-      // Highlight all locations
-      for (const loc of step.locations) {
-        const fullPath = path.join(workspaceRoot, loc.path);
-        const uri = vscode.Uri.file(fullPath);
+        try {
+          const doc = await vscode.workspace.openTextDocument(fullPath);
+          const editor = await vscode.window.showTextDocument(doc, {
+            viewColumn: vscode.ViewColumn.One,
+            preserveFocus: true
+          });
 
-        // Find if document is open
-        const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === fullPath);
-        if (doc) {
-          const editor = vscode.window.visibleTextEditors.find(e => e.document.uri.fsPath === fullPath);
-          if (editor) {
-            highlightManager.highlightRange(editor, loc.startLine, loc.endLine);
+          // Go to first range
+          const firstRange = parsed.ranges[0];
+          const start = new vscode.Position(firstRange.startLine - 1, 0);
+          const end = new vscode.Position(firstRange.endLine - 1, doc.lineAt(firstRange.endLine - 1).text.length);
+
+          editor.selection = new vscode.Selection(start, start);
+          editor.revealRange(new vscode.Range(start, end), vscode.TextEditorRevealType.InCenter);
+
+          // Highlight all ranges
+          for (const range of parsed.ranges) {
+            highlightManager.highlightRange(editor, range.startLine, range.endLine);
           }
+        } catch (error) {
+          // File not found - still show the panel
         }
       }
     }
 
     // Show step detail panel
-    StepDetailPanel.showStep(context.extensionUri, step, currentIndex, walkthrough.steps.length);
-  }
-
-  async function openFileAtLocation(root: string, filePath: string, startLine: number, endLine: number) {
-    const fullPath = path.join(root, filePath);
-
-    try {
-      const doc = await vscode.workspace.openTextDocument(fullPath);
-      const editor = await vscode.window.showTextDocument(doc, {
-        viewColumn: vscode.ViewColumn.One,
-        preserveFocus: false
-      });
-
-      // Convert to 0-indexed
-      const start = new vscode.Position(startLine - 1, 0);
-      const end = new vscode.Position(endLine - 1, doc.lineAt(endLine - 1).text.length);
-
-      editor.selection = new vscode.Selection(start, start);
-      editor.revealRange(new vscode.Range(start, end), vscode.TextEditorRevealType.InCenter);
-
-      // Apply highlight
-      if (highlightManager) {
-        highlightManager.highlightRange(editor, startLine, endLine);
-      }
-    } catch (error) {
-      vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
-    }
+    StepDetailPanel.show(
+      context.extensionUri,
+      walkthrough,
+      step,
+      currentIndex,
+      walkthrough.steps.length
+    );
   }
 }
 

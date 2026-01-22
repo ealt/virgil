@@ -1,68 +1,37 @@
 {
   "title": "Virgil Quick Start",
-  "description": "A brief introduction to using the Virgil extension",
-  "author": "claude",
-  "created": "2025-01-21T16:00:00Z",
-  "context": {
+  "description": "Get up and running with Virgil in 5 steps",
+  "metadata": {
     "type": "tutorial"
-  },
-  "overview": {
-    "purpose": "Get up and running with Virgil in 3 steps",
-    "scope": "Extension entry point and tree view"
   },
   "steps": [
     {
       "id": 1,
-      "title": "Extension activates on walkthrough files",
-      "description": "Virgil activates when it detects any `*.walkthrough.json` file in your workspace. The activation event is defined in package.json.",
-      "locations": [
-        {
-          "path": "package.json",
-          "startLine": 13,
-          "endLine": 15
-        }
-      ],
-      "notes": [
-        "Supports any filename ending in .walkthrough.json"
-      ]
+      "title": "Welcome to Virgil",
+      "body": "Virgil is an extension that provides interactive guided walkthroughs for any codebase.\n\nThis quick start will show you the basics:\n- How walkthroughs activate\n- How to navigate between steps\n- How to create your own walkthroughs"
     },
     {
       "id": 2,
-      "title": "Tree view shows walkthrough structure",
-      "description": "The WalkthroughProvider parses the JSON and builds a tree view with the title, overview, steps, and summary sections.",
-      "locations": [
-        {
-          "path": "src/WalkthroughProvider.ts",
-          "startLine": 148,
-          "endLine": 165
-        }
-      ],
-      "notes": [
-        "Current step is highlighted with a green arrow"
-      ]
+      "title": "Extension activates on walkthrough files",
+      "body": "Virgil activates when it detects any `*.walkthrough.json` file in your workspace. The activation event is defined in package.json.\n\n- Supports any filename ending in .walkthrough.json\n- Multiple walkthroughs can coexist in one workspace",
+      "location": "package.json:13-15"
     },
     {
       "id": 3,
+      "title": "Tree view shows walkthrough structure",
+      "body": "The WalkthroughProvider parses the JSON and builds a tree view with the title and steps.\n\n- Current step is highlighted with a green arrow\n- Steps with file locations show a file-code icon\n- Steps without locations show a note icon",
+      "location": "src/WalkthroughProvider.ts:153-212"
+    },
+    {
+      "id": 4,
       "title": "Navigate with keyboard shortcuts",
-      "description": "Use Cmd+Shift+] for next step and Cmd+Shift+[ for previous step. These keybindings are defined in package.json.",
-      "locations": [
-        {
-          "path": "package.json",
-          "startLine": 72,
-          "endLine": 85
-        }
-      ],
-      "notes": [
-        "Keybindings only active when a walkthrough is loaded"
-      ]
+      "body": "Use Cmd+Shift+] for next step and Cmd+Shift+[ for previous step. These keybindings are defined in package.json.\n\n- Keybindings only active when a walkthrough is loaded\n- You can also click steps in the sidebar or use the panel buttons",
+      "location": "package.json:72-85"
+    },
+    {
+      "id": 5,
+      "title": "Next Steps",
+      "body": "You're ready to use Virgil!\n\n- Create *.walkthrough.json files to define guided tours\n- Use the sidebar to navigate between steps\n- Keyboard shortcuts make navigation fast\n\nCheck out virgil-architecture.walkthrough.json for a deeper dive into how the extension works."
     }
-  ],
-  "summary": {
-    "keyTakeaways": [
-      "Create *.walkthrough.json files to define guided tours",
-      "Use the sidebar to navigate between steps",
-      "Keyboard shortcuts make navigation fast"
-    ],
-    "recommendation": "none"
-  }
+  ]
 }
