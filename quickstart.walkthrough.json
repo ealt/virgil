@@ -1,6 +1,9 @@
 {
   "title": "Virgil Quick Start",
   "description": "Get up and running with Virgil in 5 steps",
+  "repository": {
+    "remote": "git@github.com:ealt/virgil.git"
+  },
   "metadata": {
     "type": "tutorial"
   },

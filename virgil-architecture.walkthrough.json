@@ -1,6 +1,10 @@
 {
   "title": "Virgil Extension Architecture",
   "description": "A guided tour of how the Virgil VS Code extension works",
+  "repository": {
+    "remote": "git@github.com:ealt/virgil.git",
+    "commit": "4a3a1ef31a3f6abee358fd78093419f86693172d"
+  },
   "metadata": {
     "type": "tour"
   },
