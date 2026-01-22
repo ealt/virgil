@@ -7,7 +7,19 @@ export class StepDetailPanel {
   private readonly extensionUri: vscode.Uri;
   private disposables: vscode.Disposable[] = [];
 
-  constructor(extensionUri: vscode.Uri) {
+  public static createOrShow(extensionUri: vscode.Uri, step: WalkthroughStep, currentIndex: number, totalSteps: number): void {
+    // If panel exists and is not disposed, reuse it
+    if (StepDetailPanel.currentPanel) {
+      StepDetailPanel.currentPanel.show(step, currentIndex, totalSteps);
+      return;
+    }
+
+    // Create new panel
+    StepDetailPanel.currentPanel = new StepDetailPanel(extensionUri);
+    StepDetailPanel.currentPanel.show(step, currentIndex, totalSteps);
+  }
+
+  private constructor(extensionUri: vscode.Uri) {
     this.extensionUri = extensionUri;
 
     this.panel = vscode.window.createWebviewPanel(
@@ -45,11 +57,9 @@ export class StepDetailPanel {
       null,
       this.disposables
     );
-
-    StepDetailPanel.currentPanel = this;
   }
 
-  public show(step: WalkthroughStep, currentIndex: number, totalSteps: number): void {
+  private show(step: WalkthroughStep, currentIndex: number, totalSteps: number): void {
     this.panel.title = `Step ${currentIndex + 1}: ${step.title}`;
     this.panel.webview.html = this.getWebviewContent(step, currentIndex, totalSteps);
     this.panel.reveal(vscode.ViewColumn.Two, true);

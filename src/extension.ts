@@ -8,7 +8,6 @@ import { HighlightManager } from './HighlightManager';
 
 let walkthroughProvider: WalkthroughProvider | undefined;
 let highlightManager: HighlightManager | undefined;
-let stepDetailPanel: StepDetailPanel | undefined;
 let fileWatcher: vscode.FileSystemWatcher | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -200,10 +199,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Show step detail panel
-    if (!stepDetailPanel) {
-      stepDetailPanel = new StepDetailPanel(context.extensionUri);
-    }
-    stepDetailPanel.show(step, currentIndex, walkthrough.steps.length);
+    StepDetailPanel.createOrShow(context.extensionUri, step, currentIndex, walkthrough.steps.length);
   }
 
   async function openFileAtLocation(root: string, filePath: string, startLine: number, endLine: number) {
@@ -235,6 +231,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
   highlightManager?.clearAll();
-  stepDetailPanel?.dispose();
+  StepDetailPanel.currentPanel?.dispose();
   fileWatcher?.dispose();
 }
