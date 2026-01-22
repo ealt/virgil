@@ -12,12 +12,7 @@ export class WalkthroughTreeItem extends vscode.TreeItem {
   ) {
     super(label, collapsibleState);
 
-    if (itemType === 'step' && stepIndex !== undefined) {
-      this.command = {
-        command: 'virgil.goToStep',
-        title: 'Go to Step',
-        arguments: [stepIndex]
-      };
+    if (itemType === 'step') {
       this.contextValue = 'step';
     }
   }
