@@ -17,9 +17,9 @@ export class StepDetailPanel {
     panel.showOverviewContent(walkthrough);
   }
 
-  public static showSummary(extensionUri: vscode.Uri, walkthrough: Walkthrough): void {
+  public static showSummary(extensionUri: vscode.Uri, walkthrough: Walkthrough, totalSteps: number): void {
     const panel = StepDetailPanel.getOrCreate(extensionUri);
-    panel.showSummaryContent(walkthrough);
+    panel.showSummaryContent(walkthrough, totalSteps);
   }
 
   private static getOrCreate(extensionUri: vscode.Uri): StepDetailPanel {
@@ -57,6 +57,15 @@ export class StepDetailPanel {
           case 'start':
             vscode.commands.executeCommand('virgil.start');
             break;
+          case 'overview':
+            vscode.commands.executeCommand('virgil.showOverview');
+            break;
+          case 'summary':
+            vscode.commands.executeCommand('virgil.showSummary');
+            break;
+          case 'goToStep':
+            vscode.commands.executeCommand('virgil.goToStep', message.step);
+            break;
           case 'openLocation':
             vscode.commands.executeCommand(
               'virgil.openLocation',
@@ -84,9 +93,9 @@ export class StepDetailPanel {
     this.panel.reveal(vscode.ViewColumn.Two, true);
   }
 
-  private showSummaryContent(walkthrough: Walkthrough): void {
+  private showSummaryContent(walkthrough: Walkthrough, totalSteps: number): void {
     this.panel.title = `Summary: ${walkthrough.title}`;
-    this.panel.webview.html = this.getSummaryHtml(walkthrough);
+    this.panel.webview.html = this.getSummaryHtml(walkthrough, totalSteps);
     this.panel.reveal(vscode.ViewColumn.Two, true);
   }
 
@@ -263,7 +272,7 @@ export class StepDetailPanel {
 </html>`;
   }
 
-  private getSummaryHtml(walkthrough: Walkthrough): string {
+  private getSummaryHtml(walkthrough: Walkthrough, totalSteps: number): string {
     const recClass = walkthrough.summary.recommendation || 'none';
     const recHtml = walkthrough.summary.recommendation && walkthrough.summary.recommendation !== 'none' ? `
       <div class="section">
@@ -296,6 +305,12 @@ export class StepDetailPanel {
   </div>
 
   ${recHtml}
+
+  <div class="navigation">
+    <button class="secondary" onclick="vscode.postMessage({command: 'goToStep', step: ${totalSteps - 1}})">
+      ← Back to Step ${totalSteps}
+    </button>
+  </div>
 
   <script>
     const vscode = acquireVsCodeApi();
@@ -479,11 +494,11 @@ export class StepDetailPanel {
   ${notesHtml}
 
   <div class="navigation">
-    <button class="secondary" onclick="navigate('prev')" ${isFirst ? 'disabled' : ''}>
-      ← Previous
+    <button class="secondary" onclick="navigate('${isFirst ? 'overview' : 'prev'}')">
+      ← ${isFirst ? 'Overview' : 'Previous'}
     </button>
-    <button onclick="navigate('next')" ${isLast ? 'disabled' : ''}>
-      Next →
+    <button onclick="navigate('${isLast ? 'summary' : 'next'}')">
+      ${isLast ? 'Summary' : 'Next'} →
     </button>
   </div>
 

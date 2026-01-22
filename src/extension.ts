@@ -126,6 +126,30 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.showOverview', () => {
+      if (walkthroughProvider) {
+        const walkthrough = walkthroughProvider.getWalkthrough();
+        if (walkthrough) {
+          highlightManager?.clearAll();
+          StepDetailPanel.showOverview(context.extensionUri, walkthrough);
+        }
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.showSummary', () => {
+      if (walkthroughProvider) {
+        const walkthrough = walkthroughProvider.getWalkthrough();
+        if (walkthrough) {
+          highlightManager?.clearAll();
+          StepDetailPanel.showSummary(context.extensionUri, walkthrough, walkthrough.steps.length);
+        }
+      }
+    })
+  );
+
   // Watch for walkthrough file changes
   fileWatcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(workspaceRoot, '*.walkthrough.json')
@@ -165,7 +189,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (selected.itemType === 'overview') {
       StepDetailPanel.showOverview(context.extensionUri, walkthrough);
     } else if (selected.itemType === 'summary') {
-      StepDetailPanel.showSummary(context.extensionUri, walkthrough);
+      StepDetailPanel.showSummary(context.extensionUri, walkthrough, walkthrough.steps.length);
     } else if (selected.stepIndex !== undefined) {
       walkthroughProvider.goToStep(selected.stepIndex);
       await showCurrentStep();
