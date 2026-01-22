@@ -26,7 +26,14 @@ Files must end with `.walkthrough.json`. Examples:
       "id": 1,
       "title": "string (required)",
       "body": "string (optional)",
-      "location": "path:start-end (optional)"
+      "location": "path:start-end (optional)",
+      "comments": [
+        {
+          "id": "string (required)",
+          "author": "string (required)",
+          "body": "string (required)"
+        }
+      ]
     }
   ]
 }
@@ -59,23 +66,37 @@ URL matching is normalized to handle variations:
 - With or without `.git` suffix
 - Case-insensitive comparison
 
+When `repository.commit` is specified, the extension will warn users if their current commit doesn't match, helping ensure they're viewing the walkthrough with the correct codebase state.
+
 ### Step
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | number | Yes | Step identifier |
+| `id` | number | Yes | Step identifier (typically sequential: 1, 2, 3, ...) |
 | `title` | string | Yes | Step name |
-| `body` | string | No | Explanation text |
+| `body` | string | No | Explanation text (supports Markdown) |
 | `location` | string | No | File location (see format below) |
-| `comments` | array | No | User comments on this step |
+| `comments` | array | No | User comments on this step (see Comment below) |
+
+The `body` field supports **Markdown formatting**, including:
+
+- Headers (`#`, `##`, `###`)
+- Bold (`**text**`) and italic (`*text*`)
+- Code blocks with syntax highlighting (use language identifier: ` ```typescript`)
+- Inline code (`` `code` ``)
+- Lists (ordered and unordered)
+- Links (`[text](url)`)
+- Blockquotes (`> text`)
 
 ### Comment
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | string | Yes | Unique identifier |
-| `author` | string | Yes | Comment author (from git config) |
-| `body` | string | Yes | Comment text |
+| `id` | string | Yes | Unique identifier (auto-generated when added via UI) |
+| `author` | string | Yes | Comment author (from git config `user.name`) |
+| `body` | string | Yes | Comment text (supports Markdown) |
+
+Comments can be added to steps through the extension's UI. The comment `body` field also supports Markdown formatting, same as step `body`.
 
 ### Location Format
 
@@ -87,9 +108,15 @@ Examples:
 
 - `src/auth.ts:10-45` - lines 10 to 45
 - `src/auth.ts:10` - single line 10
-- `src/auth.ts:10-45,100-120` - multiple ranges
+- `src/auth.ts:10-45,100-120` - multiple ranges (comma-separated)
 
-Line numbers are 1-indexed.
+Line numbers are **1-indexed** (first line is 1, not 0).
+
+When a step has a `location`, the extension will:
+
+- Open the file in the editor
+- Highlight the specified line ranges
+- Show the location as a clickable link in the detail panel
 
 ## Example
 
@@ -110,15 +137,19 @@ Line numbers are 1-indexed.
     {
       "id": 1,
       "title": "Overview",
-      "body": "This PR migrates from session-based auth to JWT tokens.\n\n- Affects 12 files\n- Backward compatible"
+      "body": "This PR migrates from session-based auth to JWT tokens.\n\n**Changes:**\n- Affects 12 files\n- Backward compatible\n\nSee the [full diff](https://github.com/acme/backend/pull/123) for details."
     },
     {
       "id": 2,
       "title": "JWT utility module",
-      "body": "Handles token generation and validation.\n\n- Uses RS256 signing\n- Tokens expire in 15 minutes",
+      "body": "Handles token generation and validation.\n\n**Key features:**\n- Uses RS256 signing\n- Tokens expire in 15 minutes\n\n```typescript\nconst token = generateToken(payload);\n```",
       "location": "src/auth/jwt.ts:1-45",
       "comments": [
-        { "id": "a1b2c3", "author": "bob", "body": "Should we add rate limiting here?" }
+        {
+          "id": "a1b2c3",
+          "author": "bob",
+          "body": "Should we add rate limiting here?"
+        }
       ]
     },
     {
@@ -130,7 +161,7 @@ Line numbers are 1-indexed.
     {
       "id": 4,
       "title": "Summary",
-      "body": "Implementation looks good.\n\n- Approve\n- Consider token rotation later"
+      "body": "Implementation looks good.\n\n- ✅ Approve\n- 💡 Consider token rotation later"
     }
   ]
 }
@@ -138,12 +169,16 @@ Line numbers are 1-indexed.
 
 ## Notes
 
-- Steps with `location` open files and highlight code
+- Steps with `location` open files and highlight code automatically
 - Steps without `location` are informational (overview, summary, etc.)
 - Use `metadata` for any custom fields (PR numbers, recommendations, tags, etc.)
-- The `body` field supports plain text with newlines for formatting
+- The `body` field supports Markdown for rich formatting
+- Comments are persisted to the JSON file when added through the extension UI
+- Multiple walkthrough files can coexist in a workspace; use `repository.remote` to scope them to specific repositories
 
 ## TypeScript Interface
+
+For reference, here are the TypeScript interfaces used by the extension:
 
 ```typescript
 interface Repository {

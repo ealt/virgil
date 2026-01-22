@@ -4,65 +4,61 @@ Interactive guided walkthroughs for code review and codebase exploration. Named 
 
 ## Features
 
-- **PR Reviews**: Walk through pull request changes with context and explanations
-- **Codebase Tours**: Generate guided tours for onboarding or documentation
-- **Code Highlighting**: Automatically highlights relevant code sections
-- **Step Navigation**: Navigate through steps via sidebar, keyboard shortcuts, or detail panel
+- **Interactive Code Walkthroughs**: Navigate through code with step-by-step explanations
+- **Code Highlighting**: Automatically highlights relevant code sections as you progress
+- **Multiple Navigation Methods**: Use the sidebar, keyboard shortcuts, or detail panel buttons
+- **Comments**: Add comments to steps for collaboration and notes
+- **Commit Awareness**: Warns when viewing walkthroughs created for different codebase states
+- **Repository Scoping**: Walkthroughs can be scoped to specific repositories
 
 ## Installation
 
 ### From Source
 
-```bash
-cd ~/Documents/virgil
-npm install
-npm run compile
-```
+1. Clone or download this repository
+2. Install dependencies:
 
-Then package and install:
+   ```bash
+   npm install
+   ```
 
-```bash
-npx vsce package --allow-missing-repository
+3. Compile the extension:
 
-# VS Code
-code --install-extension virgil-0.1.0.vsix
+   ```bash
+   npm run compile
+   ```
 
-# Cursor
-cursor --install-extension virgil-0.1.0.vsix
-```
+4. Package the extension:
 
-### Development
+   ```bash
+   npx vsce package --allow-missing-repository
+   ```
 
-```bash
-npm run watch  # Compile on file changes
-```
+5. Install the `.vsix` file:
+   - **VS Code**: `code --install-extension virgil-0.1.0.vsix`
+   - **Cursor**: `cursor --install-extension virgil-0.1.0.vsix`
+
+## Quick Start
+
+1. **Create a walkthrough file**: Create a file ending in `.walkthrough.json` in your workspace root (see [Creating Walkthroughs](#creating-walkthroughs) below)
+
+2. **Open your workspace**: The Virgil extension will automatically detect the walkthrough file and activate
+
+3. **Navigate**:
+   - Click steps in the Virgil sidebar (book icon in the activity bar)
+   - Use keyboard shortcuts (see below)
+   - Use Previous/Next buttons in the detail panel
+
+4. **View details**: The detail panel opens automatically showing step descriptions, code locations, and comments
 
 ## Usage
 
-### 1. Generate a Walkthrough
+### Navigating Walkthroughs
 
-Use the Claude Code `/walkthrough` skill:
-
-```bash
-# For a PR review
-/walkthrough 123
-
-# For a general codebase tour
-/walkthrough tour
-
-# For a focused tour (e.g., authentication system)
-/walkthrough auth
-```
-
-This creates a `*.walkthrough.json` file in your repository root (e.g., `pr-123.walkthrough.json` or `architecture.walkthrough.json`).
-
-### 2. Navigate the Walkthrough
-
-1. Open the repository in VS Code/Cursor
-2. The Virgil sidebar appears automatically when any `*.walkthrough.json` file is detected
-3. Click on steps in the sidebar to navigate
-4. Use the detail panel for descriptions and notes
-5. Code sections are highlighted automatically
+- **Sidebar**: Click any step in the Virgil sidebar to jump to it
+- **Keyboard Shortcuts**: Use shortcuts to move between steps (see below)
+- **Detail Panel**: Use the Previous/Next buttons in the detail panel
+- **Code Locations**: Click on location links in the detail panel to open files
 
 ### Keyboard Shortcuts
 
@@ -71,83 +67,113 @@ This creates a `*.walkthrough.json` file in your repository root (e.g., `pr-123.
 | Next Step | `Cmd+Shift+]` | `Ctrl+Shift+]` |
 | Previous Step | `Cmd+Shift+[` | `Ctrl+Shift+[` |
 
+Keyboard shortcuts are only active when a walkthrough is loaded.
+
 ### Commands
+
+Access via Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
 
 - `Virgil: Start Walkthrough` - Jump to the first step
 - `Virgil: Next Step` - Go to next step
 - `Virgil: Previous Step` - Go to previous step
 - `Virgil: Refresh Walkthrough` - Reload the JSON file
+- `Virgil: Select Walkthrough` - Switch between multiple walkthrough files
 
-## Walkthrough JSON Schema
+### Adding Comments
+
+1. Navigate to a step
+2. Scroll to the Comments section in the detail panel
+3. Type your comment in the text area
+4. Click "Add Comment" or press `Ctrl+Enter` / `Cmd+Enter`
+5. Comments are saved to the walkthrough JSON file and attributed to your git `user.name`
+
+### Commit Mismatch Warnings
+
+If a walkthrough specifies a `repository.commit`, the extension will warn you if your current commit doesn't match. This helps ensure you're viewing the walkthrough with the correct codebase state. You can choose to checkout the specified commit or continue anyway.
+
+## Creating Walkthroughs
+
+Walkthroughs are JSON files that follow a specific schema. Create a file ending in `.walkthrough.json` in your workspace root.
+
+### Basic Structure
 
 ```json
 {
-  "title": "Authentication System Overview",
-  "description": "A walkthrough of how auth works",
-  "author": "username",
-  "created": "2025-01-21T12:00:00Z",
-  "context": {
-    "type": "pr-review",
-    "pr": {
-      "number": 123,
-      "url": "https://github.com/org/repo/pull/123"
-    }
-  },
-  "overview": {
-    "purpose": "What this walkthrough covers",
-    "scope": "Areas/files involved"
-  },
+  "title": "My Walkthrough",
+  "description": "A brief description",
   "steps": [
     {
       "id": 1,
-      "title": "Entry point - Login handler",
-      "description": "Detailed explanation...",
-      "locations": [
-        {
-          "path": "src/auth/login.ts",
-          "startLine": 10,
-          "endLine": 45
-        }
-      ],
-      "notes": ["Important observation"]
+      "title": "First Step",
+      "body": "Explanation of what this step covers",
+      "location": "src/file.ts:10-25"
     }
-  ],
-  "summary": {
-    "keyTakeaways": ["Main point 1", "Main point 2"],
-    "recommendation": "approve"
-  }
+  ]
 }
 ```
 
-### Context Types
+### Key Fields
 
-- `pr-review` - Pull request review with recommendation
-- `tour` - General codebase exploration
-- `tutorial` - Focused learning path
+- **title** (required): The walkthrough name
+- **description** (optional): Brief summary
+- **steps** (required): Array of step objects
+- **repository** (optional): Git repository info for scoping and commit tracking
+- **metadata** (optional): Freeform key-value pairs
 
-### Recommendations (for PR reviews)
+### Step Fields
 
-- `approve` - Changes look good
-- `request-changes` - Changes needed before merge
-- `comment` - General feedback, no blocking issues
-- `none` - No recommendation
+- **id** (required): Step identifier (typically 1, 2, 3, ...)
+- **title** (required): Step name
+- **body** (optional): Explanation text (supports Markdown)
+- **location** (optional): File location in format `path:startLine-endLine`
+- **comments** (optional): Array of user comments
 
-## Project Structure
+### Location Format
 
+Locations use the format: `path:startLine-endLine`
+
+Examples:
+
+- `src/auth.ts:10-45` - lines 10 to 45
+- `src/auth.ts:10` - single line 10
+- `src/auth.ts:10-45,100-120` - multiple ranges (comma-separated)
+
+### Markdown Support
+
+The `body` field supports Markdown formatting:
+
+- Headers, bold, italic
+- Code blocks with syntax highlighting
+- Lists, links, blockquotes
+
+### Repository Scoping
+
+You can scope walkthroughs to specific repositories:
+
+```json
+{
+  "title": "PR Review",
+  "repository": {
+    "remote": "https://github.com/org/repo",
+    "commit": "a1b2c3d4e5f6..."
+  },
+  "steps": [...]
+}
 ```
-virgil/
-├── package.json          # Extension manifest
-├── tsconfig.json         # TypeScript config
-├── src/
-│   ├── extension.ts      # Entry point, activation
-│   ├── types.ts          # TypeScript interfaces
-│   ├── WalkthroughProvider.ts  # Sidebar tree view
-│   ├── StepDetailPanel.ts      # Step detail webview
-│   └── HighlightManager.ts     # Code highlighting
-├── media/
-│   └── panel.css         # Webview styles
-└── out/                  # Compiled JavaScript
-```
+
+When `repository.remote` is specified, the walkthrough only appears for workspaces with matching git remotes. This allows storing walkthroughs in shared locations while only showing them for relevant repositories.
+
+### Complete Example
+
+See [docs/SCHEMA.md](docs/SCHEMA.md) for the complete schema documentation with detailed examples.
+
+## Walkthrough Format
+
+For complete documentation of the walkthrough JSON format, including all fields, examples, and TypeScript interfaces, see [docs/SCHEMA.md](docs/SCHEMA.md).
+
+## Contributing
+
+Interested in contributing to Virgil? See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for development setup, architecture overview, and contributing guidelines.
 
 ## License
 
