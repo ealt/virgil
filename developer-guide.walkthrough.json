@@ -2,7 +2,7 @@
   "title": "Virgil Developer Guide",
   "description": "A comprehensive guide to understanding and contributing to the Virgil extension",
   "repository": {
-    "remote": "git@github.com:ealt/virgil.git",
+    "remote": "<git@github.com>:ealt/virgil.git",
     "commit": "650427ba9686081d02291711998d80a8ae3b6c9f"
   },
   "metadata": {
@@ -12,119 +12,119 @@
     {
       "id": 1,
       "title": "Welcome to Virgil Development",
-      "body": "This walkthrough will help you understand how the Virgil extension works and how to contribute to it.\n\n**What you'll learn:**\n- How the extension activates and detects walkthroughs\n- The architecture and key components\n- How navigation and highlighting work\n- How to extend the extension\n\n**Prerequisites:**\n- Basic TypeScript knowledge\n- Familiarity with VS Code extensions\n- Understanding of VS Code API basics\n\nLet's start by understanding how the extension activates."
+      "body": "This walkthrough will help you understand how the Virgil extension works and how to contribute to it.\n\n**What you'll learn:**\n\n- How the extension activates and detects walkthroughs\n- The architecture and key components\n- How navigation and highlighting work\n- How to extend the extension\n\n**Prerequisites:**\n\n- Basic TypeScript knowledge\n- Familiarity with VS Code extensions\n- Understanding of VS Code API basics\n\nLet's start by understanding how the extension activates."
     },
     {
       "id": 2,
       "title": "Extension Activation",
-      "body": "Virgil activates when it detects any `*.walkthrough.json` file in your workspace root.\n\nThe activation event is defined in `package.json`. The extension uses `workspaceContains:*.walkthrough.json` which means it only activates when the workspace contains matching files.\n\n**Key points:**\n- Activation is lazy (only when needed)\n- Multiple walkthrough files can coexist\n- The extension watches for file changes automatically",
-      "location": "package.json:13-15"
+      "body": "Virgil activates when it detects any `*.walkthrough.json` file in your workspace root.\n\nThe activation event is defined in `package.json`. The extension uses `workspaceContains:*.walkthrough.json` which means it only activates when the workspace contains matching files.\n\n**Key points:**\n\n- Activation is lazy (only when needed)\n- Multiple walkthrough files can coexist\n- The extension watches for file changes automatically",
+      "location": "/package.json:13-15"
     },
     {
       "id": 3,
       "title": "Extension Entry Point",
-      "body": "The `activate()` function in `extension.ts` is called when the extension activates.\n\n**What happens on activation:**\n1. Creates a `HighlightManager` instance\n2. Finds walkthrough files in the workspace root\n3. Initializes the `WalkthroughProvider`\n4. Registers the tree view in the sidebar\n5. Registers all commands\n6. Sets up file watching\n7. Auto-shows the first step if a walkthrough exists\n\n**Early return:** If no workspace folder is open, the extension returns early.",
-      "location": "src/extension.ts:13-41"
+      "body": "The `activate()` function in `extension.ts` is called when the extension activates.\n\n**What happens on activation:**\n\n1. Creates a `HighlightManager` instance\n2. Finds walkthrough files in the workspace root\n3. Initializes the `WalkthroughProvider`\n4. Registers the tree view in the sidebar\n5. Registers all commands\n6. Sets up file watching\n7. Auto-shows the first step if a walkthrough exists\n\n**Early return:** If no workspace folder is open, the extension returns early.",
+      "location": "/src/extension.ts:13-41"
     },
     {
       "id": 4,
       "title": "TypeScript Interfaces - Data Model",
-      "body": "The `types.ts` file defines the shape of walkthrough JSON files.\n\n**Key interfaces:**\n- `Walkthrough` - Root object with title, description, repository, metadata, steps\n- `WalkthroughStep` - Individual step with id, title, body, location, comments\n- `Comment` - User comments with id, author, body\n- `Repository` - Git repository info (remote URL, commit SHA)\n\n**Utility functions:**\n- `parseLocation()` - Parses location strings like `path:10-45,100-120`\n- `normalizeRemoteUrl()` - Normalizes git URLs for comparison (SSH ↔ HTTPS)\n\nThese types ensure type safety throughout the extension.",
-      "location": "src/types.ts:1-96"
+      "body": "The `types.ts` file defines the shape of walkthrough JSON files.\n\n**Key interfaces:**\n\n- `Walkthrough` - Root object with title, description, repository, metadata, steps\n- `WalkthroughStep` - Individual step with id, title, body, location, comments\n- `Comment` - User comments with id, author, body\n- `Repository` - Git repository info (remote URL, commit SHA)\n\n**Utility functions:**\n\n- `parseLocation()` - Parses location strings like `path:10-45,100-120`\n- `normalizeRemoteUrl()` - Normalizes git URLs for comparison (SSH ↔ HTTPS)\n\nThese types ensure type safety throughout the extension.",
+      "location": "/src/types.ts:1-96"
     },
     {
       "id": 5,
       "title": "Command Registration",
-      "body": "The extension registers several commands for navigation and control.\n\n**Navigation commands:**\n- `virgil.start` - Jump to first step\n- `virgil.next` - Go to next step\n- `virgil.prev` - Go to previous step\n- `virgil.goToStep` - Jump to specific step index\n\n**Control commands:**\n- `virgil.refresh` - Reload walkthrough from file\n- `virgil.selectWalkthrough` - Switch between multiple walkthrough files\n- `virgil.submitComment` - Add a comment to current step\n- `virgil.openLocation` - Open file at specific location\n- `virgil.checkoutCommit` - Checkout the commit specified in walkthrough\n\nAll commands delegate to `WalkthroughProvider` for state management, then call `showCurrentStep()` to update the UI.",
-      "location": "src/extension.ts:43-119"
+      "body": "The extension registers several commands for navigation and control.\n\n**Navigation commands:**\n\n- `virgil.start` - Jump to first step\n- `virgil.next` - Go to next step\n- `virgil.prev` - Go to previous step\n- `virgil.goToStep` - Jump to specific step index\n\n**Control commands:**\n\n- `virgil.refresh` - Reload walkthrough from file\n- `virgil.selectWalkthrough` - Switch between multiple walkthrough files\n- `virgil.submitComment` - Add a comment to current step\n- `virgil.openLocation` - Open file at specific location\n- `virgil.checkoutCommit` - Checkout the commit specified in walkthrough\n\nAll commands delegate to `WalkthroughProvider` for state management, then call `showCurrentStep()` to update the UI.",
+      "location": "/src/extension.ts:43-119"
     },
     {
       "id": 6,
       "title": "File Watching - Auto-refresh",
-      "body": "The extension uses VS Code's `FileSystemWatcher` to monitor `*.walkthrough.json` files.\n\n**Event handling:**\n- **onDidCreate**: Shows notification, refreshes provider, sets context\n- **onDidChange**: Refreshes provider to reload walkthrough\n- **onDidDelete**: Clears highlights, updates context, refreshes provider\n\n**Benefits:**\n- No need to manually refresh when editing walkthrough files\n- Automatic detection of new walkthroughs\n- Clean state management when files are deleted\n\nThe watcher uses `RelativePattern` to only watch the workspace root, not subdirectories.",
-      "location": "src/extension.ts:271-293"
+      "body": "The extension uses VS Code's `FileSystemWatcher` to monitor `*.walkthrough.json` files.\n\n**Event handling:**\n\n- **onDidCreate**: Shows notification, refreshes provider, sets context\n- **onDidChange**: Refreshes provider to reload walkthrough\n- **onDidDelete**: Clears highlights, updates context, refreshes provider\n\n**Benefits:**\n\n- No need to manually refresh when editing walkthrough files\n- Automatic detection of new walkthroughs\n- Clean state management when files are deleted\n\nThe watcher uses `RelativePattern` to only watch the workspace root, not subdirectories.",
+      "location": "/src/extension.ts:271-293"
     },
     {
       "id": 7,
       "title": "Show Current Step - Core Navigation",
-      "body": "The `showCurrentStep()` function orchestrates what happens when navigating to a step.\n\n**Flow:**\n1. Gets current walkthrough and step index from provider\n2. Clears all previous highlights\n3. If step has a location:\n   - Parses the location string\n   - Opens the file in the editor\n   - Scrolls to the first range\n   - Applies highlights to all ranges\n4. Updates the detail panel with step content\n\n**Key coordination:**\n- `WalkthroughProvider` manages state\n- `HighlightManager` handles decorations\n- `StepDetailPanel` displays UI\n\nThis function is called by all navigation commands to keep the UI in sync.",
-      "location": "src/extension.ts:315-371"
+      "body": "The `showCurrentStep()` function orchestrates what happens when navigating to a step.\n\n**Flow:**\n\n1. Gets current walkthrough and step index from provider\n2. Clears all previous highlights\n3. If step has a location:\n   - Parses the location string\n   - Opens the file in the editor\n   - Scrolls to the first range\n   - Applies highlights to all ranges\n4. Updates the detail panel with step content\n\n**Key coordination:**\n\n- `WalkthroughProvider` manages state\n- `HighlightManager` handles decorations\n- `StepDetailPanel` displays UI\n\nThis function is called by all navigation commands to keep the UI in sync.",
+      "location": "/src/extension.ts:315-371"
     },
     {
       "id": 8,
       "title": "WalkthroughProvider - State Management",
-      "body": "The `WalkthroughProvider` class implements VS Code's `TreeDataProvider` interface.\n\n**Responsibilities:**\n- Loads and parses walkthrough JSON files\n- Maintains current step index\n- Builds tree items for the sidebar\n- Handles git operations (remote matching, commit checking)\n- Manages comments (add, save to file)\n- Filters walkthroughs by repository remote\n\n**Key methods:**\n- `loadWalkthrough()` - Loads JSON file and parses it\n- `getAvailableWalkthroughs()` - Finds all matching walkthrough files\n- `goToStep()`, `nextStep()`, `prevStep()` - Navigation\n- `addComment()` - Adds comment and saves to file\n- `hasCommitMismatch()` - Checks if current commit matches walkthrough\n\n**Repository matching:** Uses `normalizeRemoteUrl()` to handle SSH/HTTPS variations.",
-      "location": "src/WalkthroughProvider.ts:17-220"
+      "body": "The `WalkthroughProvider` class implements VS Code's `TreeDataProvider` interface.\n\n**Responsibilities:**\n\n- Loads and parses walkthrough JSON files\n- Maintains current step index\n- Builds tree items for the sidebar\n- Handles git operations (remote matching, commit checking)\n- Manages comments (add, save to file)\n- Filters walkthroughs by repository remote\n\n**Key methods:**\n\n- `loadWalkthrough()` - Loads JSON file and parses it\n- `getAvailableWalkthroughs()` - Finds all matching walkthrough files\n- `goToStep()`, `nextStep()`, `prevStep()` - Navigation\n- `addComment()` - Adds comment and saves to file\n- `hasCommitMismatch()` - Checks if current commit matches walkthrough\n\n**Repository matching:** Uses `normalizeRemoteUrl()` to handle SSH/HTTPS variations.",
+      "location": "/src/WalkthroughProvider.ts:17-220"
     },
     {
       "id": 9,
       "title": "Tree View - Building the Sidebar",
-      "body": "The `getRootItems()` method builds the sidebar tree structure.\n\n**Tree structure:**\n1. **File selector** (if multiple walkthroughs) - Shows current file with count\n2. **Title header** - Walkthrough title with description or commit mismatch warning\n3. **Steps** - Numbered list of all steps\n\n**Step indicators:**\n- Current step: Green arrow icon + \"(current)\" label\n- Steps with locations: File-code icon\n- Steps without locations: Note icon\n\n**Commit mismatch:** If the walkthrough commit doesn't match current HEAD, the title shows a warning icon and tooltip.\n\nThe tree view automatically updates when steps change via `_onDidChangeTreeData` event.",
-      "location": "src/WalkthroughProvider.ts:358-425"
+      "body": "The `getRootItems()` method builds the sidebar tree structure.\n\n**Tree structure:**\n\n1. **File selector** (if multiple walkthroughs) - Shows current file with count\n2. **Title header** - Walkthrough title with description or commit mismatch warning\n3. **Steps** - Numbered list of all steps\n\n**Step indicators:**\n\n- Current step: Green arrow icon + \"(current)\" label\n- Steps with locations: File-code icon\n- Steps without locations: Note icon\n\n**Commit mismatch:** If the walkthrough commit doesn't match current HEAD, the title shows a warning icon and tooltip.\n\nThe tree view automatically updates when steps change via `_onDidChangeTreeData` event.",
+      "location": "/src/WalkthroughProvider.ts:358-425"
     },
     {
       "id": 10,
       "title": "StepDetailPanel - Webview UI",
-      "body": "The `StepDetailPanel` creates a webview that displays rich step information.\n\n**What it shows:**\n- Step title and counter (e.g., \"Step 2 of 5\")\n- Metadata (on first step only)\n- Clickable location link\n- Step body with Markdown rendering\n- Comments section with add comment form\n- Previous/Next navigation buttons\n\n**Webview features:**\n- Opens in `ViewColumn.Two` (side panel)\n- `retainContextWhenHidden` preserves state\n- Uses VS Code CSS variables for theming\n- Communicates via `postMessage` API\n\n**Markdown rendering:** Uses `marked` library with `highlight.js` for syntax highlighting in code blocks.",
-      "location": "src/StepDetailPanel.ts:46-106"
+      "body": "The `StepDetailPanel` creates a webview that displays rich step information.\n\n**What it shows:**\n\n- Step title and counter (e.g., \"Step 2 of 5\")\n- Metadata (on first step only)\n- Clickable location link\n- Step body with Markdown rendering\n- Comments section with add comment form\n- Previous/Next navigation buttons\n\n**Webview features:**\n\n- Opens in `ViewColumn.Two` (side panel)\n- `retainContextWhenHidden` preserves state\n- Uses VS Code CSS variables for theming\n- Communicates via `postMessage` API\n\n**Markdown rendering:** Uses `marked` library with `highlight.js` for syntax highlighting in code blocks.",
+      "location": "/src/StepDetailPanel.ts:46-106"
     },
     {
       "id": 11,
       "title": "Webview HTML Generation",
-      "body": "The `getHtml()` method generates the HTML for the detail panel.\n\n**Key features:**\n- **Theming**: Uses VS Code CSS variables (`var(--vscode-foreground)`, etc.)\n- **Markdown rendering**: Converts step body and comments from Markdown to HTML\n- **Security**: Content Security Policy restricts scripts, HTML is escaped to prevent XSS\n- **Interactivity**: JavaScript handles button clicks and comment submission\n- **Responsive**: Navigation buttons disabled at first/last steps\n\n**Styling:**\n- Matches VS Code's native UI appearance\n- Syntax highlighting uses VS Code-compatible colors\n- Supports dark/light themes automatically\n\n**Communication:** JavaScript uses `acquireVsCodeApi()` to send messages back to extension.",
-      "location": "src/StepDetailPanel.ts:114-465"
+      "body": "The `getHtml()` method generates the HTML for the detail panel.\n\n**Key features:**\n\n- **Theming**: Uses VS Code CSS variables (`var(--vscode-foreground)`, etc.)\n- **Markdown rendering**: Converts step body and comments from Markdown to HTML\n- **Security**: Content Security Policy restricts scripts, HTML is escaped to prevent XSS\n- **Interactivity**: JavaScript handles button clicks and comment submission\n- **Responsive**: Navigation buttons disabled at first/last steps\n\n**Styling:**\n\n- Matches VS Code's native UI appearance\n- Syntax highlighting uses VS Code-compatible colors\n- Supports dark/light themes automatically\n\n**Communication:** JavaScript uses `acquireVsCodeApi()` to send messages back to extension.",
+      "location": "/src/StepDetailPanel.ts:114-465"
     },
     {
       "id": 12,
       "title": "HighlightManager - Code Decorations",
-      "body": "The `HighlightManager` creates and manages text decorations that highlight code ranges.\n\n**Decoration style:**\n- Subtle blue background (`rgba(86, 156, 214, 0.1)`)\n- Left border accent (`rgba(86, 156, 214, 0.6)`)\n- `isWholeLine: true` highlights entire lines\n- Appears in overview ruler (minimap) for navigation\n\n**State management:**\n- Tracks decorations per file in a `Map<string, Range[]>`\n- `highlightRange()` adds decorations to a file\n- `clearFile()` removes decorations from a specific file\n- `clearAll()` removes all decorations\n- `refreshEditor()` reapplies decorations when editor is reopened\n\n**Usage:** Called by `showCurrentStep()` to highlight step locations.",
-      "location": "src/HighlightManager.ts:1-71"
+      "body": "The `HighlightManager` creates and manages text decorations that highlight code ranges.\n\n**Decoration style:**\n\n- Subtle blue background (`rgba(86, 156, 214, 0.1)`)\n- Left border accent (`rgba(86, 156, 214, 0.6)`)\n- `isWholeLine: true` highlights entire lines\n- Appears in overview ruler (minimap) for navigation\n\n**State management:**\n\n- Tracks decorations per file in a `Map<string, Range[]>`\n- `highlightRange()` adds decorations to a file\n- `clearFile()` removes decorations from a specific file\n- `clearAll()` removes all decorations\n- `refreshEditor()` reapplies decorations when editor is reopened\n\n**Usage:** Called by `showCurrentStep()` to highlight step locations.",
+      "location": "/src/HighlightManager.ts:1-71"
     },
     {
       "id": 13,
       "title": "Comments System",
-      "body": "Users can add comments to steps, which are persisted to the walkthrough JSON file.\n\n**How it works:**\n1. User types comment in webview textarea\n2. Webview sends `submitComment` message via `postMessage`\n3. Extension command handler calls `WalkthroughProvider.addComment()`\n4. Comment is created with:\n   - Auto-generated ID (timestamp + random)\n   - Author from `git config user.name` (or \"Anonymous\")\n   - Body text (supports Markdown)\n5. Walkthrough JSON is saved to disk\n6. Panel is refreshed to show new comment\n\n**Comment features:**\n- Markdown rendering in comments\n- Author attribution\n- Persisted to JSON file\n- Can be edited manually in JSON if needed",
-      "location": "src/WalkthroughProvider.ts:290-322"
+      "body": "Users can add comments to steps, which are persisted to the walkthrough JSON file.\n\n**How it works:**\n\n1. User types comment in webview textarea\n2. Webview sends `submitComment` message via `postMessage`\n3. Extension command handler calls `WalkthroughProvider.addComment()`\n4. Comment is created with:\n   - Auto-generated ID (timestamp + random)\n   - Author from `git config user.name` (or \"Anonymous\")\n   - Body text (supports Markdown)\n5. Walkthrough JSON is saved to disk\n6. Panel is refreshed to show new comment\n\n**Comment features:**\n\n- Markdown rendering in comments\n- Author attribution\n- Persisted to JSON file\n- Can be edited manually in JSON if needed",
+      "location": "/src/WalkthroughProvider.ts:290-322"
     },
     {
       "id": 14,
       "title": "Commit Mismatch Detection",
-      "body": "The extension can warn users when viewing walkthroughs created for different codebase states.\n\n**How it works:**\n1. Walkthrough specifies `repository.commit`\n2. Extension compares current HEAD to walkthrough commit\n3. If mismatch detected:\n   - Shows warning dialog with commit SHAs\n   - Offers to checkout the commit (with stash option)\n   - User can ignore and continue\n\n**Git operations:**\n- `hasCommitMismatch()` - Compares commits\n- `checkoutCommit()` - Checks out specified commit\n- `stashChanges()` - Stashes uncommitted changes\n- `isWorkingTreeDirty()` - Checks for uncommitted changes\n\n**Benefits:**\n- Ensures walkthroughs are viewed with correct code\n- Prevents confusion from code changes\n- Optional (can be ignored if needed)",
-      "location": "src/WalkthroughProvider.ts:69-135"
+      "body": "The extension can warn users when viewing walkthroughs created for different codebase states.\n\n**How it works:**\n\n1. Walkthrough specifies `repository.commit`\n2. Extension compares current HEAD to walkthrough commit\n3. If mismatch detected:\n   - Shows warning dialog with commit SHAs\n   - Offers to checkout the commit (with stash option)\n   - User can ignore and continue\n\n**Git operations:**\n\n- `hasCommitMismatch()` - Compares commits\n- `checkoutCommit()` - Checks out specified commit\n- `stashChanges()` - Stashes uncommitted changes\n- `isWorkingTreeDirty()` - Checks for uncommitted changes\n\n**Benefits:**\n\n- Ensures walkthroughs are viewed with correct code\n- Prevents confusion from code changes\n- Optional (can be ignored if needed)",
+      "location": "/src/WalkthroughProvider.ts:69-135"
     },
     {
       "id": 15,
       "title": "Repository Remote Matching",
-      "body": "Walkthroughs can be scoped to specific repositories using `repository.remote`.\n\n**How it works:**\n1. Walkthrough specifies `repository.remote`\n2. Extension gets workspace git remote\n3. `normalizeRemoteUrl()` normalizes both URLs:\n   - Removes `.git` suffix\n   - Converts SSH to HTTPS format\n   - Case-insensitive comparison\n   - Removes authentication info\n4. Only matching walkthroughs appear in `getAvailableWalkthroughs()`\n\n**Benefits:**\n- Walkthrough files can be stored in shared locations\n- Only show for relevant repositories\n- Prevents confusion from wrong walkthroughs\n\n**Example:** `git@github.com:org/repo.git` matches `https://github.com/org/repo`",
-      "location": "src/types.ts:28-55"
+      "body": "Walkthroughs can be scoped to specific repositories using `repository.remote`.\n\n**How it works:**\n\n1. Walkthrough specifies `repository.remote`\n2. Extension gets workspace git remote\n3. `normalizeRemoteUrl()` normalizes both URLs:\n   - Removes `.git` suffix\n   - Converts SSH to HTTPS format\n   - Case-insensitive comparison\n   - Removes authentication info\n4. Only matching walkthroughs appear in `getAvailableWalkthroughs()`\n\n**Benefits:**\n\n- Walkthrough files can be stored in shared locations\n- Only show for relevant repositories\n- Prevents confusion from wrong walkthroughs\n\n**Example:** `git@github.com:org/repo.git` matches `https://github.com/org/repo`",
+      "location": "/src/types.ts:28-55"
     },
     {
       "id": 16,
       "title": "Location Parsing",
-      "body": "The `parseLocation()` function parses location strings into structured data.\n\n**Location format:** `path:startLine-endLine` or `path:startLine-endLine,startLine-endLine`\n\n**Examples:**\n- `src/auth.ts:10-45` - Single range\n- `src/auth.ts:10` - Single line (treated as range 10-10)\n- `src/auth.ts:10-45,100-120` - Multiple ranges (comma-separated)\n\n**Parsing logic:**\n1. Finds last `:` to separate path from ranges\n2. Splits ranges by comma\n3. For each range:\n   - If contains `-`, splits into start/end\n   - Otherwise, treats as single line\n4. Returns `ParsedLocation` with path and array of ranges\n\n**Error handling:** Returns `null` if format is invalid.\n\n**Usage:** Used by `showCurrentStep()` and `virgil.openLocation` command.",
-      "location": "src/types.ts:63-96"
+      "body": "The `parseLocation()` function parses location strings into structured data.\n\n**Location format:** `path:startLine-endLine` or `path:startLine-endLine,startLine-endLine`\n\n**Examples:**\n\n- `src/auth.ts:10-45` - Single range\n- `src/auth.ts:10` - Single line (treated as range 10-10)\n- `src/auth.ts:10-45,100-120` - Multiple ranges (comma-separated)\n\n**Parsing logic:**\n\n1. Finds last `:` to separate path from ranges\n2. Splits ranges by comma\n3. For each range:\n   - If contains `-`, splits into start/end\n   - Otherwise, treats as single line\n4. Returns `ParsedLocation` with path and array of ranges\n\n**Error handling:** Returns `null` if format is invalid.\n\n**Usage:** Used by `showCurrentStep()` and `virgil.openLocation` command.",
+      "location": "/src/types.ts:63-96"
     },
     {
       "id": 17,
       "title": "Project Structure Overview",
-      "body": "Understanding the project structure helps when contributing.\n\n**Key directories:**\n- `src/` - TypeScript source files\n- `out/` - Compiled JavaScript (generated)\n- `docs/` - Documentation (SCHEMA.md, DEVELOPMENT.md)\n- `media/` - Assets (currently just panel.css, though styles are inline)\n\n**Key files:**\n- `package.json` - Extension manifest, commands, views, keybindings\n- `tsconfig.json` - TypeScript configuration\n- `extension.ts` - Entry point and coordination\n- `types.ts` - Data model and utilities\n- `WalkthroughProvider.ts` - State and tree view\n- `StepDetailPanel.ts` - Webview UI\n- `HighlightManager.ts` - Code decorations\n\n**Build output:** TypeScript compiles to `out/` directory, which is what VS Code loads.",
-      "location": "package.json:1-50"
+      "body": "Understanding the project structure helps when contributing.\n\n**Key directories:**\n\n- `src/` - TypeScript source files\n- `out/` - Compiled JavaScript (generated)\n- `docs/` - Documentation (SCHEMA.md, DEVELOPMENT.md)\n- `media/` - Assets (currently just panel.css, though styles are inline)\n\n**Key files:**\n\n- `package.json` - Extension manifest, commands, views, keybindings\n- `tsconfig.json` - TypeScript configuration\n- `extension.ts` - Entry point and coordination\n- `types.ts` - Data model and utilities\n- `WalkthroughProvider.ts` - State and tree view\n- `StepDetailPanel.ts` - Webview UI\n- `HighlightManager.ts` - Code decorations\n\n**Build output:** TypeScript compiles to `out/` directory, which is what VS Code loads.",
+      "location": "/package.json:1-50"
     },
     {
       "id": 18,
       "title": "How to Extend the Extension",
-      "body": "Here are some ways you can extend Virgil:\n\n**Adding new commands:**\n1. Add command to `package.json` `contributes.commands`\n2. Register in `extension.ts` with `vscode.commands.registerCommand()`\n3. Add to subscriptions for cleanup\n\n**Enhancing the webview:**\n- Modify `StepDetailPanel.getHtml()` to add new UI elements\n- Add new message handlers in `onDidReceiveMessage`\n- Update CSS for styling\n\n**Adding features:**\n- **Walkthrough validation**: Add schema validation on load\n- **Export/import**: Add commands to export walkthroughs\n- **Templates**: Create walkthrough templates\n- **Search**: Add search functionality for steps\n- **Multiple walkthroughs**: Show multiple walkthroughs simultaneously\n\n**Testing:**\n- Use Extension Development Host (`F5`)\n- Test with various walkthrough files\n- Test edge cases (missing files, invalid JSON, etc.)",
-      "location": "src/extension.ts:1-12"
+      "body": "Here are some ways you can extend Virgil:\n\n**Adding new commands:**\n\n1. Add command to `package.json` `contributes.commands`\n2. Register in `extension.ts` with `vscode.commands.registerCommand()`\n3. Add to subscriptions for cleanup\n\n**Enhancing the webview:**\n\n- Modify `StepDetailPanel.getHtml()` to add new UI elements\n- Add new message handlers in `onDidReceiveMessage`\n- Update CSS for styling\n\n**Adding features:**\n\n- **Walkthrough validation**: Add schema validation on load\n- **Export/import**: Add commands to export walkthroughs\n- **Templates**: Create walkthrough templates\n- **Search**: Add search functionality for steps\n- **Multiple walkthroughs**: Show multiple walkthroughs simultaneously\n\n**Testing:**\n\n- Use Extension Development Host (`F5`)\n- Test with various walkthrough files\n- Test edge cases (missing files, invalid JSON, etc.)",
+      "location": "/src/extension.ts:1-12"
     },
     {
       "id": 19,
       "title": "Development Workflow",
-      "body": "Here's the recommended workflow for contributing:\n\n**Setup:**\n1. Clone repository and run `npm install`\n2. Run `npm run watch` for auto-compilation\n3. Press `F5` to launch Extension Development Host\n\n**Making changes:**\n1. Edit TypeScript files in `src/`\n2. Watch mode automatically recompiles\n3. Reload Extension Development Host window (`Cmd+R` / `Ctrl+R`)\n4. Test changes with a walkthrough file\n\n**Packaging:**\n- Run `npx vsce package --allow-missing-repository`\n- Install `.vsix` file to test installation\n\n**Documentation:**\n- Update `docs/SCHEMA.md` for schema changes\n- Update `docs/DEVELOPMENT.md` for architecture changes\n- Update `README.md` for user-facing changes\n\n**See `docs/DEVELOPMENT.md` for more details.**"
+      "body": "Here's the recommended workflow for contributing:\n\n**Setup:**\n\n1. Clone repository and run `npm install`\n2. Run `npm run watch` for auto-compilation\n3. Press `F5` to launch Extension Development Host\n\n**Making changes:**\n\n1. Edit TypeScript files in `src/`\n2. Watch mode automatically recompiles\n3. Reload Extension Development Host window (`Cmd+R` / `Ctrl+R`)\n4. Test changes with a walkthrough file\n\n**Packaging:**\n\n- Run `npx vsce package --allow-missing-repository`\n- Install `.vsix` file to test installation\n\n**Documentation:**\n\n- Update `docs/SCHEMA.md` for schema changes\n- Update `docs/DEVELOPMENT.md` for architecture changes\n- Update `README.md` for user-facing changes\n\n**See `docs/DEVELOPMENT.md` for more details.**"
     },
     {
       "id": 20,
       "title": "Summary and Next Steps",
-      "body": "**Key takeaways:**\n\n- Extension activates on `*.walkthrough.json` detection\n- `WalkthroughProvider` manages state and builds sidebar\n- `StepDetailPanel` shows rich step info in themed webview\n- `HighlightManager` applies line decorations to editors\n- All components coordinate through `extension.ts`\n- Comments are persisted to JSON files\n- Repository matching enables portable walkthroughs\n- Commit mismatch warnings help ensure correct code state\n\n**Next steps for contributors:**\n\n1. Read `docs/DEVELOPMENT.md` for detailed setup instructions\n2. Explore the codebase using this walkthrough\n3. Try making a small change (e.g., add a new command)\n4. Test thoroughly in Extension Development Host\n5. Submit a pull request\n\n**Resources:**\n- [VS Code Extension API](https://code.visualstudio.com/api)\n- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)\n- `docs/SCHEMA.md` - Walkthrough JSON format\n- `docs/DEVELOPMENT.md` - Development guide\n\nHappy contributing! 🚀"
+      "body": "**Key takeaways:**\n\n- Extension activates on `*.walkthrough.json` detection\n- `WalkthroughProvider` manages state and builds sidebar\n- `StepDetailPanel` shows rich step info in themed webview\n- `HighlightManager` applies line decorations to editors\n- All components coordinate through `extension.ts`\n- Comments are persisted to JSON files\n- Repository matching enables portable walkthroughs\n- Commit mismatch warnings help ensure correct code state\n\n**Next steps for contributors:**\n\n1. Read `docs/DEVELOPMENT.md` for detailed setup instructions\n2. Explore the codebase using this walkthrough\n3. Try making a small change (e.g., add a new command)\n4. Test thoroughly in Extension Development Host\n5. Submit a pull request\n\n**Resources:**\n\n- [VS Code Extension API](https://code.visualstudio.com/api)\n- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)\n- `docs/SCHEMA.md` - Walkthrough JSON format\n- `docs/DEVELOPMENT.md` - Development guide\n\nHappy contributing! 🚀"
     }
   ]
 }
