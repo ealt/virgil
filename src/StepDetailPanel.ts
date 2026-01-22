@@ -1,5 +1,47 @@
 import * as vscode from 'vscode';
+import { Marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
+import hljs from 'highlight.js/lib/core';
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import python from 'highlight.js/lib/languages/python';
+import json from 'highlight.js/lib/languages/json';
+import bash from 'highlight.js/lib/languages/bash';
+import xml from 'highlight.js/lib/languages/xml';
+import css from 'highlight.js/lib/languages/css';
 import { Walkthrough, WalkthroughStep, parseLocation } from './types';
+
+// Register languages
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('js', javascript);
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('ts', typescript);
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('py', python);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('sh', bash);
+hljs.registerLanguage('shell', bash);
+hljs.registerLanguage('html', xml);
+hljs.registerLanguage('xml', xml);
+hljs.registerLanguage('css', css);
+
+// Configure marked with syntax highlighting
+const markedInstance = new Marked(
+  markedHighlight({
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(code, { language: lang }).value;
+      }
+      return code;
+    }
+  })
+);
+
+markedInstance.setOptions({
+  breaks: true,  // Convert \n to <br>
+});
 
 export class StepDetailPanel {
   public static currentPanel: StepDetailPanel | undefined;
@@ -140,7 +182,6 @@ export class StepDetailPanel {
     }
     .body {
       margin-bottom: 20px;
-      white-space: pre-wrap;
     }
     .location {
       display: flex;
@@ -229,7 +270,6 @@ export class StepDetailPanel {
     }
     .comment-body {
       font-size: 13px;
-      white-space: pre-wrap;
     }
     .no-comments {
       font-size: 12px;
@@ -269,6 +309,86 @@ export class StepDetailPanel {
       flex: none;
       padding: 6px 16px;
     }
+    /* Markdown styles */
+    .markdown-content {
+      line-height: 1.6;
+    }
+    .markdown-content p {
+      margin: 0 0 12px 0;
+    }
+    .markdown-content p:last-child {
+      margin-bottom: 0;
+    }
+    .markdown-content code {
+      background-color: var(--vscode-textCodeBlock-background);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: var(--vscode-editor-font-family), monospace;
+      font-size: 0.9em;
+    }
+    .markdown-content pre {
+      background-color: var(--vscode-textCodeBlock-background);
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .markdown-content pre code {
+      padding: 0;
+      background: none;
+      font-size: 0.85em;
+    }
+    .markdown-content ul, .markdown-content ol {
+      margin: 8px 0;
+      padding-left: 24px;
+    }
+    .markdown-content li {
+      margin: 4px 0;
+    }
+    .markdown-content blockquote {
+      border-left: 3px solid var(--vscode-textBlockQuote-border);
+      margin: 12px 0;
+      padding: 4px 12px;
+      color: var(--vscode-textBlockQuote-foreground);
+    }
+    .markdown-content a {
+      color: var(--vscode-textLink-foreground);
+    }
+    .markdown-content a:hover {
+      color: var(--vscode-textLink-activeForeground);
+    }
+    .markdown-content strong {
+      font-weight: 600;
+    }
+    .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+      margin: 16px 0 8px 0;
+      font-weight: 600;
+    }
+    .markdown-content h1 { font-size: 1.4em; }
+    .markdown-content h2 { font-size: 1.2em; }
+    .markdown-content h3 { font-size: 1.1em; }
+    /* Syntax highlighting - VS Code compatible colors */
+    .hljs-keyword { color: var(--vscode-debugTokenExpression-name, #569cd6); }
+    .hljs-string { color: var(--vscode-debugTokenExpression-string, #ce9178); }
+    .hljs-number { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
+    .hljs-comment { color: var(--vscode-descriptionForeground, #6a9955); font-style: italic; }
+    .hljs-function { color: var(--vscode-symbolIcon-functionForeground, #dcdcaa); }
+    .hljs-class { color: var(--vscode-symbolIcon-classForeground, #4ec9b0); }
+    .hljs-variable { color: var(--vscode-debugTokenExpression-value, #9cdcfe); }
+    .hljs-operator { color: var(--vscode-foreground, #d4d4d4); }
+    .hljs-punctuation { color: var(--vscode-foreground, #d4d4d4); }
+    .hljs-property { color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe); }
+    .hljs-attr { color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe); }
+    .hljs-tag { color: var(--vscode-debugTokenExpression-name, #569cd6); }
+    .hljs-name { color: var(--vscode-debugTokenExpression-name, #569cd6); }
+    .hljs-selector-tag { color: var(--vscode-debugTokenExpression-name, #d7ba7d); }
+    .hljs-selector-class { color: var(--vscode-debugTokenExpression-name, #d7ba7d); }
+    .hljs-built_in { color: var(--vscode-symbolIcon-functionForeground, #4ec9b0); }
+    .hljs-literal { color: var(--vscode-debugTokenExpression-boolean, #569cd6); }
+    .hljs-params { color: var(--vscode-foreground, #9cdcfe); }
+    .hljs-title { color: var(--vscode-symbolIcon-functionForeground, #dcdcaa); }
+    .hljs-title.function_ { color: var(--vscode-symbolIcon-functionForeground, #dcdcaa); }
+    .hljs-title.class_ { color: var(--vscode-symbolIcon-classForeground, #4ec9b0); }
   </style>
 </head>
 <body>
@@ -282,7 +402,7 @@ export class StepDetailPanel {
 
   ${locationHtml}
 
-  ${step.body ? `<div class="body">${this.escapeHtml(step.body)}</div>` : ''}
+  ${step.body ? `<div class="body markdown-content">${this.renderMarkdown(step.body)}</div>` : ''}
 
   <div class="comments-section">
     <div class="comments-header">
@@ -292,7 +412,7 @@ export class StepDetailPanel {
       ? step.comments.map(comment => `
         <div class="comment">
           <div class="comment-author">${this.escapeHtml(comment.author)}</div>
-          <div class="comment-body">${this.escapeHtml(comment.body)}</div>
+          <div class="comment-body markdown-content">${this.renderMarkdown(comment.body)}</div>
         </div>
       `).join('')
       : '<div class="no-comments">No comments yet</div>'
@@ -354,6 +474,14 @@ export class StepDetailPanel {
       "'": '&#039;'
     };
     return text.replace(/[&<>"']/g, char => map[char]);
+  }
+
+  private renderMarkdown(text: string): string {
+    // Use a custom renderer to disable HTML tags
+    const renderer = new markedInstance.Renderer();
+    renderer.html = () => ''; // Strip raw HTML
+
+    return markedInstance.parse(text, { renderer }) as string;
   }
 
   public dispose(): void {
