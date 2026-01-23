@@ -363,7 +363,14 @@ For complete documentation of the walkthrough JSON format, including all fields,
 
 ## Contributing
 
-Interested in contributing to Virgil? See [docs/development.md](docs/development.md) for development setup, architecture overview, and contributing guidelines.
+Interested in contributing to Virgil?
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** and set up the upstream remote
+3. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for a quick start guide
+4. See [docs/development.md](docs/development.md) for detailed development setup and architecture
+
+Your interest in contributing is appreciated! Please open an issue first to discuss major changes, or submit a pull request for smaller fixes and improvements.
 
 ## License
 
