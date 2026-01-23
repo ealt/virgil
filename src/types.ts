@@ -104,8 +104,16 @@ export function parseLocation(location: string): ParsedLocation | null {
 // View mode for diff steps
 export type ViewMode = 'diff' | 'head' | 'base';
 
+// View mode for markdown files (single-state view)
+export type MarkdownViewMode = 'raw' | 'rendered';
+
 // Step type based on location fields
 export type StepType = 'point-in-time' | 'base-only' | 'diff' | 'informational';
+
+// Check if a file path is a markdown file
+export function isMarkdownFile(filePath: string): boolean {
+  return /\.(md|markdown)$/i.test(filePath);
+}
 
 // Determine the step type based on location fields
 export function getStepType(step: WalkthroughStep): StepType {

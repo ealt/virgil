@@ -124,17 +124,23 @@
     },
     {
       "id": 20,
+      "title": "Project Documentation - README",
+      "body": "The project's main documentation lives in the README.md file. This section showcases the core features of Virgil.\n\n**Tip:** When viewing this step, try toggling between **Raw** and **Rendered** modes using the Markdown toggle in the detail panel. This demonstrates how Virgil can display markdown files either as raw source (with line highlighting) or as rendered markdown.\n\n**Documentation structure:**\n\n- `README.md` - User-facing documentation, installation, usage\n- `docs/schema.md` - Complete walkthrough JSON schema\n- `docs/development.md` - Development setup and guidelines\n- `docs/developer-guide.md` - This walkthrough (meta!)\n\nWhen contributing, keep documentation in sync with code changes.",
+      "location": "/README.md:9-17"
+    },
+    {
+      "id": 21,
       "title": "How to Extend the Extension",
       "body": "Here are some ways you can extend Virgil:\n\n**Adding new commands:**\n\n1. Add command to `package.json` `contributes.commands`\n2. Register in `extension.ts` with `vscode.commands.registerCommand()`\n3. Add to subscriptions for cleanup\n\n**Enhancing the webview:**\n\n- Modify `StepDetailPanel.getHtml()` to add new UI elements\n- Add new message handlers in `onDidReceiveMessage`\n- Update CSS for styling\n\n**Adding features:**\n\n- **Walkthrough validation**: Add schema validation on load\n- **Export/import**: Add commands to export walkthroughs\n- **Templates**: Create walkthrough templates\n- **Search**: Add search functionality for steps\n- **Multiple walkthroughs**: Show multiple walkthroughs simultaneously\n\n**Testing:**\n\n- Use Extension Development Host (`F5`)\n- Test with various walkthrough files\n- Test edge cases (missing files, invalid JSON, etc.)",
       "location": "/src/extension.ts:1-12"
     },
     {
-      "id": 21,
+      "id": 22,
       "title": "Development Workflow",
       "body": "Here's the recommended workflow for contributing:\n\n**Setup:**\n\n1. Clone repository and run `npm install`\n2. Run `npm run watch` for auto-compilation\n3. Press `F5` to launch Extension Development Host\n\n**Making changes:**\n\n1. Edit TypeScript files in `src/`\n2. Watch mode automatically recompiles\n3. Reload Extension Development Host window (`Cmd+R` / `Ctrl+R`)\n4. Test changes with a walkthrough file\n\n**Packaging:**\n\n- Run `npx vsce package --allow-missing-repository`\n- Install `.vsix` file to test installation\n\n**Documentation:**\n\n- Update `docs/schema.md` for schema changes\n- Update `docs/development.md` for architecture changes\n- Update `README.md` for user-facing changes\n\n**See `docs/development.md` for more details.**"
     },
     {
-      "id": 22,
+      "id": 23,
       "title": "Summary and Next Steps",
       "body": "**Key takeaways:**\n\n- Extension activates on `*.walkthrough.json` detection\n- `WalkthroughProvider` manages state and builds sidebar\n- `StepDetailPanel` shows rich step info in themed webview\n- `HighlightManager` applies line decorations to editors\n- All components coordinate through `extension.ts`\n- Comments are persisted to JSON files\n- Repository matching enables portable walkthroughs\n- Commit mismatch warnings help ensure correct code state\n\n**Next steps for contributors:**\n\n1. Read `docs/development.md` for detailed setup instructions\n2. Explore the codebase using this walkthrough\n3. Try making a small change (e.g., add a new command)\n4. Test thoroughly in Extension Development Host\n5. Submit a pull request\n\n**Resources:**\n\n- [VS Code Extension API](https://code.visualstudio.com/api)\n- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)\n- `docs/schema.md` - Walkthrough JSON format\n- `docs/development.md` - Development guide\n\nHappy contributing! 🚀"
     }

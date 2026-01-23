@@ -8,7 +8,22 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-node_modules/**
+# Exclude dev dependencies but keep production deps (highlight.js, marked, js-yaml, marked-highlight)
+node_modules/.bin/**
+node_modules/@vscode/**
+node_modules/@typescript-eslint/**
+node_modules/@types/**
+node_modules/eslint/**
+node_modules/eslint-*/**
+node_modules/typescript/**
+node_modules/prettier/**
+node_modules/husky/**
+node_modules/lint-staged/**
+node_modules/@eslint/**
+node_modules/@nodelib/**
+node_modules/glob/**
+node_modules/minimatch/**
+node_modules/rimraf/**
 *.vsix
 .DS_Store
 *.log

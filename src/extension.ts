@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseLocation, ViewMode, getStepType } from './types';
+import { parseLocation, ViewMode, getStepType, MarkdownViewMode, isMarkdownFile } from './types';
 import { WalkthroughProvider } from './WalkthroughProvider';
 import { StepDetailPanel } from './StepDetailPanel';
 import { HighlightManager, HighlightColor } from './HighlightManager';
@@ -15,6 +15,7 @@ let fileWatchers: vscode.FileSystemWatcher[] = [];
 let diffContentProvider: DiffContentProvider | undefined;
 let diffResolver: DiffResolver | undefined;
 let currentViewMode: ViewMode = 'diff';
+let currentMarkdownViewMode: MarkdownViewMode = 'raw';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Virgil extension is now active');
@@ -351,6 +352,18 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Markdown view mode command (raw vs rendered)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.setMarkdownViewMode', (mode: MarkdownViewMode) => {
+      if (!walkthroughProvider) {
+        return;
+      }
+
+      currentMarkdownViewMode = mode;
+      showCurrentStep();
+    })
+  );
+
   // Check for commit mismatch and show warning
   async function checkCommitMismatch() {
     if (!walkthroughProvider) {
@@ -597,6 +610,7 @@ export function activate(context: vscode.ExtensionContext) {
             stepType,
             viewMode: currentViewMode,
             error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
+            markdownViewMode: currentMarkdownViewMode,
           }
         );
         return;
@@ -629,6 +643,7 @@ export function activate(context: vscode.ExtensionContext) {
             stepType,
             viewMode: currentViewMode,
             error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
+            markdownViewMode: currentMarkdownViewMode,
           }
         );
         return;
@@ -649,6 +664,7 @@ export function activate(context: vscode.ExtensionContext) {
         viewMode: currentViewMode,
         baseCommit: baseResult.commit || undefined,
         headCommit: headCommit || undefined,
+        markdownViewMode: currentMarkdownViewMode,
       }
     );
   }
@@ -664,17 +680,23 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     try {
-      let doc: vscode.TextDocument;
-
+      // Create URI first (needed for both markdown preview and regular editor)
+      let uri: vscode.Uri;
       if (commit && diffContentProvider) {
-        // Open file at specific commit using virtual document
-        const uri = DiffContentProvider.createUri(commit, parsed.path);
-        doc = await vscode.workspace.openTextDocument(uri);
+        uri = DiffContentProvider.createUri(commit, parsed.path);
       } else {
-        // Open current file from workspace
         const fullPath = path.join(workspaceRoot!, parsed.path);
-        doc = await vscode.workspace.openTextDocument(fullPath);
+        uri = vscode.Uri.file(fullPath);
       }
+
+      // For markdown files in 'rendered' mode, use VS Code's built-in preview
+      if (isMarkdownFile(parsed.path) && currentMarkdownViewMode === 'rendered') {
+        await vscode.commands.executeCommand('markdown.showPreview', uri);
+        return;
+      }
+
+      // Open in text editor with highlighting (for non-markdown or 'raw' mode)
+      const doc = await vscode.workspace.openTextDocument(uri);
 
       const editor = await vscode.window.showTextDocument(doc, {
         viewColumn: vscode.ViewColumn.One,

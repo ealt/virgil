@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Initial release of Virgil extension
 - Interactive code walkthroughs with step-by-step navigation
 - Code highlighting for walkthrough steps
@@ -16,25 +17,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comments support for walkthrough steps
 - Repository scoping and commit awareness
 - Multiple navigation methods (sidebar, keyboard shortcuts, detail panel)
+- Markdown file rendering toggle (Raw/Rendered) for steps referencing `.md` files
 
 ### Changed
-- 
+
+-
 
 ### Deprecated
-- 
+
+-
 
 ### Removed
-- 
+
+-
 
 ### Fixed
-- 
+
+-
 
 ### Security
-- 
+
+-
 
 ## [0.1.0] - 2024-01-XX
 
 ### Added
+
 - Initial release
 
 [Unreleased]: https://github.com/ealt/virgil/compare/v0.1.0...HEAD

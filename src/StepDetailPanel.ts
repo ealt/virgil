@@ -9,7 +9,15 @@ import json from 'highlight.js/lib/languages/json';
 import bash from 'highlight.js/lib/languages/bash';
 import xml from 'highlight.js/lib/languages/xml';
 import css from 'highlight.js/lib/languages/css';
-import { Walkthrough, WalkthroughStep, parseLocation, ViewMode, StepType } from './types';
+import {
+  Walkthrough,
+  WalkthroughStep,
+  parseLocation,
+  ViewMode,
+  StepType,
+  MarkdownViewMode,
+  isMarkdownFile,
+} from './types';
 
 // Register languages
 hljs.registerLanguage('javascript', javascript);
@@ -49,6 +57,7 @@ export interface DiffModeOptions {
   baseCommit?: string;
   headCommit?: string;
   error?: string;
+  markdownViewMode?: MarkdownViewMode;
 }
 
 export class StepDetailPanel {
@@ -110,6 +119,9 @@ export class StepDetailPanel {
           case 'setViewMode':
             vscode.commands.executeCommand('virgil.setViewMode', message.mode);
             break;
+          case 'setMarkdownViewMode':
+            vscode.commands.executeCommand('virgil.setMarkdownViewMode', message.mode);
+            break;
         }
       },
       null,
@@ -146,10 +158,23 @@ export class StepDetailPanel {
     const isLast = currentIndex === totalSteps - 1;
     const stepType = diffOptions?.stepType || 'point-in-time';
     const viewMode = diffOptions?.viewMode || 'diff';
+    const markdownViewMode = diffOptions?.markdownViewMode || 'raw';
 
     // Parse locations if present
     const parsedLocation = step.location ? parseLocation(step.location) : null;
     const parsedBaseLocation = step.base_location ? parseLocation(step.base_location) : null;
+
+    // Determine if we're viewing a markdown file in single-state mode
+    const currentFilePath =
+      viewMode === 'base' || stepType === 'base-only'
+        ? parsedBaseLocation?.path
+        : parsedLocation?.path;
+    const isMarkdown = currentFilePath ? isMarkdownFile(currentFilePath) : false;
+    const showMarkdownToggle =
+      isMarkdown &&
+      (stepType === 'point-in-time' ||
+        stepType === 'base-only' ||
+        (stepType === 'diff' && (viewMode === 'head' || viewMode === 'base')));
 
     // Build location display
     let locationHtml = '';
@@ -181,6 +206,17 @@ export class StepDetailPanel {
           <button class="toggle-btn head ${viewMode === 'head' ? 'active' : ''}" onclick="setViewMode('head')">Head</button>
           <button class="toggle-btn base ${viewMode === 'base' ? 'active' : ''}" onclick="setViewMode('base')">Base</button>
         </div>
+        ${
+          showMarkdownToggle
+            ? `
+        <div class="view-toggle markdown-toggle">
+          <span class="toggle-label">Markdown:</span>
+          <button class="toggle-btn ${markdownViewMode === 'raw' ? 'active' : ''}" onclick="setMarkdownViewMode('raw')">Raw</button>
+          <button class="toggle-btn ${markdownViewMode === 'rendered' ? 'active' : ''}" onclick="setMarkdownViewMode('rendered')">Rendered</button>
+        </div>
+        `
+            : ''
+        }
         <div class="location-info">
           ${
             viewMode === 'diff' || viewMode === 'head'
@@ -211,6 +247,17 @@ export class StepDetailPanel {
       // Base-only step
       locationHtml = parsedBaseLocation
         ? `
+        ${
+          showMarkdownToggle
+            ? `
+        <div class="view-toggle markdown-toggle">
+          <span class="toggle-label">Markdown:</span>
+          <button class="toggle-btn ${markdownViewMode === 'raw' ? 'active' : ''}" onclick="setMarkdownViewMode('raw')">Raw</button>
+          <button class="toggle-btn ${markdownViewMode === 'rendered' ? 'active' : ''}" onclick="setMarkdownViewMode('rendered')">Rendered</button>
+        </div>
+        `
+            : ''
+        }
         <div class="location base-only" onclick="openLocation('${step.base_location}')">
           <span class="location-indicator base">●</span>
           <span class="location-path">${parsedBaseLocation.path}</span>
@@ -223,6 +270,17 @@ export class StepDetailPanel {
       // Point-in-time step (existing behavior)
       locationHtml = parsedLocation
         ? `
+        ${
+          showMarkdownToggle
+            ? `
+        <div class="view-toggle markdown-toggle">
+          <span class="toggle-label">Markdown:</span>
+          <button class="toggle-btn ${markdownViewMode === 'raw' ? 'active' : ''}" onclick="setMarkdownViewMode('raw')">Raw</button>
+          <button class="toggle-btn ${markdownViewMode === 'rendered' ? 'active' : ''}" onclick="setMarkdownViewMode('rendered')">Rendered</button>
+        </div>
+        `
+            : ''
+        }
         <div class="location" onclick="openLocation('${step.location}')">
           <span class="location-path">${parsedLocation.path}</span>
           <span class="location-lines">:${parsedLocation.ranges.map((r) => (r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`)).join(',')}</span>
@@ -332,6 +390,11 @@ export class StepDetailPanel {
     .toggle-btn.base.active {
       background-color: rgba(220, 80, 80, 0.8);
       border-color: rgba(220, 80, 80, 0.8);
+    }
+
+    /* Markdown toggle styling */
+    .markdown-toggle {
+      margin-bottom: 12px;
     }
 
     /* Location display */
@@ -655,6 +718,10 @@ export class StepDetailPanel {
 
     function setViewMode(mode) {
       vscode.postMessage({ command: 'setViewMode', mode: mode });
+    }
+
+    function setMarkdownViewMode(mode) {
+      vscode.postMessage({ command: 'setMarkdownViewMode', mode: mode });
     }
 
     function submitComment() {

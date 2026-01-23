@@ -11,6 +11,7 @@ Named after Dante's guide through the Inferno, Virgil transforms written walkthr
 - **Interactive Code Walkthroughs**: Navigate through code with step-by-step explanations
 - **Code Highlighting**: Automatically highlights relevant code sections as you progress
 - **Diff Mode**: Compare changes between commits with 3-way toggle (Diff/Head/Base)
+- **Markdown Rendering**: Toggle between raw source (with highlighting) and rendered preview for markdown files
 - **Multiple Navigation Methods**: Use the sidebar, keyboard shortcuts, or detail panel buttons
 - **Comments**: Add comments to steps for collaboration and notes
 - **Commit Awareness**: Warns when viewing walkthroughs created for different codebase states
@@ -92,9 +93,9 @@ This runs `npm install`, compiles, packages the VSIX, and installs it into Curso
 
 ### Keyboard Shortcuts
 
-| Command | Mac | Windows/Linux |
-|---------|-----|---------------|
-| Next Step | `Cmd+Shift+]` | `Ctrl+Shift+]` |
+| Command       | Mac           | Windows/Linux  |
+| ------------- | ------------- | -------------- |
+| Next Step     | `Cmd+Shift+]` | `Ctrl+Shift+]` |
 | Previous Step | `Cmd+Shift+[` | `Ctrl+Shift+[` |
 
 Keyboard shortcuts are only active when a walkthrough is loaded.
@@ -122,6 +123,15 @@ Access via Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
 
 If a walkthrough specifies a `repository.commit`, the extension will warn you if your current commit doesn't match. This helps ensure you're viewing the walkthrough with the correct codebase state. You can choose to checkout the specified commit or continue anyway.
 
+### Viewing Markdown Files
+
+When a walkthrough step references a markdown file (`.md` or `.markdown`), a **Markdown: Raw / Rendered** toggle appears in the detail panel:
+
+- **Raw**: Shows the markdown source in the text editor with line highlighting - useful for seeing exactly which lines are referenced
+- **Rendered**: Shows VS Code's built-in markdown preview - useful for reading the rendered content
+
+This is helpful for walkthroughs that reference documentation files like README.md or other markdown content.
+
 ## Creating Walkthroughs
 
 The easiest way to create a walkthrough is to write it in **Markdown** and convert it using the extension. This keeps authoring simple and readable, and the conversion handles the JSON structure for you.
@@ -132,9 +142,11 @@ The easiest way to create a walkthrough is to write it in **Markdown** and conve
 # Walkthrough Title
 
 ---
+
 metadata_key: value
 remote: git@github.com:org/repo.git
 commit: abc123...
+
 ---
 
 Description text
@@ -309,9 +321,11 @@ You can write walkthroughs in Markdown format and convert them to JSON using the
 # Walkthrough Title
 
 ---
+
 metadata_key: value
 remote: git@github.com:org/repo.git
 commit: abc123...
+
 ---
 
 Description text

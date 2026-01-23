@@ -5,6 +5,7 @@
 type: developer-onboarding
 remote: <git@github.com>:ealt/virgil.git
 commit: d4b85b5b1f5ab646b671bfff01e7d1c46ccf57db
+
 ---
 
 A comprehensive guide to understanding and contributing to the Virgil extension
@@ -257,8 +258,8 @@ The `HighlightManager` creates and manages text decorations that highlight code 
 
 **Color variants:**
 
-| Context                 | Color | CSS Background              |
-|-------------------------|-------|-----------------------------|
+| Context                 | Color | CSS Background            |
+| ----------------------- | ----- | ------------------------- |
 | Point-in-time (default) | Blue  | `rgba(86, 156, 214, 0.1)` |
 | Head file (diff mode)   | Green | `rgba(72, 180, 97, 0.15)` |
 | Base file (diff mode)   | Red   | `rgba(220, 80, 80, 0.15)` |
@@ -471,6 +472,23 @@ Understanding the project structure helps when contributing.
 - `HighlightManager.ts` - Code decorations
 
 **Build output:** TypeScript compiles to `out/` directory, which is what VS Code loads.
+
+## Project Documentation - README
+
+[View code (9-17)](/README.md)
+
+The project's main documentation lives in the README.md file. This section showcases the core features of Virgil.
+
+**Tip:** When viewing this step, try toggling between **Raw** and **Rendered** modes using the Markdown toggle in the detail panel. This demonstrates how Virgil can display markdown files either as raw source (with line highlighting) or as rendered markdown.
+
+**Documentation structure:**
+
+- `README.md` - User-facing documentation, installation, usage
+- `docs/schema.md` - Complete walkthrough JSON schema
+- `docs/development.md` - Development setup and guidelines
+- `docs/developer-guide.md` - This walkthrough (meta!)
+
+When contributing, keep documentation in sync with code changes.
 
 ## How to Extend the Extension
 
