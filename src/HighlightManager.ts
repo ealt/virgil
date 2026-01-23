@@ -12,37 +12,41 @@ const COLOR_CONFIGS: Record<HighlightColor, ColorConfig> = {
   blue: {
     backgroundColor: 'rgba(86, 156, 214, 0.1)',
     borderColor: 'rgba(86, 156, 214, 0.6)',
-    overviewRulerColor: 'rgba(86, 156, 214, 0.8)'
+    overviewRulerColor: 'rgba(86, 156, 214, 0.8)',
   },
   green: {
     backgroundColor: 'rgba(72, 180, 97, 0.15)',
     borderColor: 'rgba(72, 180, 97, 0.6)',
-    overviewRulerColor: 'rgba(72, 180, 97, 0.8)'
+    overviewRulerColor: 'rgba(72, 180, 97, 0.8)',
   },
   red: {
     backgroundColor: 'rgba(220, 80, 80, 0.15)',
     borderColor: 'rgba(220, 80, 80, 0.6)',
-    overviewRulerColor: 'rgba(220, 80, 80, 0.8)'
-  }
+    overviewRulerColor: 'rgba(220, 80, 80, 0.8)',
+  },
 };
 
 export class HighlightManager {
   private decorationTypes: Map<HighlightColor, vscode.TextEditorDecorationType> = new Map();
-  private activeDecorations: Map<string, { color: HighlightColor; ranges: vscode.Range[] }> = new Map();
+  private activeDecorations: Map<string, { color: HighlightColor; ranges: vscode.Range[] }> =
+    new Map();
 
   constructor() {
     // Create decoration types for each color
     for (const color of Object.keys(COLOR_CONFIGS) as HighlightColor[]) {
       const config = COLOR_CONFIGS[color];
-      this.decorationTypes.set(color, vscode.window.createTextEditorDecorationType({
-        backgroundColor: config.backgroundColor,
-        borderColor: config.borderColor,
-        borderWidth: '0 0 0 3px',
-        borderStyle: 'solid',
-        isWholeLine: true,
-        overviewRulerColor: config.overviewRulerColor,
-        overviewRulerLane: vscode.OverviewRulerLane.Center
-      }));
+      this.decorationTypes.set(
+        color,
+        vscode.window.createTextEditorDecorationType({
+          backgroundColor: config.backgroundColor,
+          borderColor: config.borderColor,
+          borderWidth: '0 0 0 3px',
+          borderStyle: 'solid',
+          isWholeLine: true,
+          overviewRulerColor: config.overviewRulerColor,
+          overviewRulerLane: vscode.OverviewRulerLane.Center,
+        })
+      );
     }
   }
 
@@ -84,14 +88,16 @@ export class HighlightManager {
   public clearFile(filePath: string): void {
     // Also handle URI strings
     const normalizedPath = filePath.startsWith('file://') ? filePath : `file://${filePath}`;
-    const decorationData = this.activeDecorations.get(filePath) || this.activeDecorations.get(normalizedPath);
+    const decorationData =
+      this.activeDecorations.get(filePath) || this.activeDecorations.get(normalizedPath);
 
     if (decorationData) {
       // Find editor and clear decorations
       const editor = vscode.window.visibleTextEditors.find(
-        e => e.document.uri.toString() === filePath ||
-             e.document.uri.fsPath === filePath ||
-             e.document.uri.toString() === normalizedPath
+        (e) =>
+          e.document.uri.toString() === filePath ||
+          e.document.uri.fsPath === filePath ||
+          e.document.uri.toString() === normalizedPath
       );
 
       if (editor) {

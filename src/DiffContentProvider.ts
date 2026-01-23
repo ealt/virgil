@@ -34,7 +34,7 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
     }
 
     // URI format: virgil-git:///<commit>/<file-path>
-    const pathParts = uri.path.split('/').filter(p => p);
+    const pathParts = uri.path.split('/').filter((p) => p);
     if (pathParts.length < 2) {
       return null;
     }
@@ -61,7 +61,7 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
-        maxBuffer: 10 * 1024 * 1024 // 10MB buffer for large files
+        maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large files
       });
       return content;
     } catch (error) {
@@ -84,7 +84,7 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
       execSync(`git cat-file -e ${commit}:${filePath}`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return true;
     } catch {
@@ -102,7 +102,7 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
-        maxBuffer: 10 * 1024 * 1024
+        maxBuffer: 10 * 1024 * 1024,
       });
     } catch {
       return null;

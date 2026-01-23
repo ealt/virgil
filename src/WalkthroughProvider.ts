@@ -39,7 +39,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       const remote = execSync('git remote get-url origin', {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
       return remote || undefined;
     } catch {
@@ -53,7 +53,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       const commit = execSync('git rev-parse HEAD', {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
       return commit || undefined;
     } catch {
@@ -85,7 +85,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     }
     return {
       expected: this.walkthrough!.repository!.commit!,
-      current: this.workspaceCommit!
+      current: this.workspaceCommit!,
     };
   }
 
@@ -98,7 +98,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       const status = execSync('git status --porcelain', {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
       return status.length > 0;
     } catch {
@@ -111,7 +111,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       execSync(`git checkout ${commit}`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       this.workspaceCommit = this.getGitCommit();
       this._onDidChangeTreeData.fire();
@@ -126,7 +126,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       execSync('git stash', {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true };
     } catch (error) {
@@ -157,7 +157,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       const walkthroughsDir = path.join(this.workspaceRoot, 'walkthroughs');
       if (fs.existsSync(walkthroughsDir) && fs.statSync(walkthroughsDir).isDirectory()) {
         const files = fs.readdirSync(walkthroughsDir);
-        const jsonFiles = files.filter(f => f.endsWith('.json'));
+        const jsonFiles = files.filter((f) => f.endsWith('.json'));
         for (const jsonFile of jsonFiles) {
           walkthroughFiles.push(path.join('walkthroughs', jsonFile));
         }
@@ -247,7 +247,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       const name = execSync('git config user.name', {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
       return name.length > 0;
     } catch {
@@ -260,7 +260,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       const name = execSync('git config user.name', {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
       return name || 'Anonymous';
     } catch {
@@ -273,7 +273,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       execSync(`git config user.name "${name.replace(/"/g, '\\"')}"`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true };
     } catch (error) {
@@ -298,7 +298,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     const comment: Comment = {
       id: Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
       author: this.getGitUserName(),
-      body: body
+      body: body,
     };
 
     step.comments.push(comment);
@@ -329,7 +329,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
         );
         selectItem.command = {
           command: 'virgil.selectWalkthrough',
-          title: 'Select Walkthrough'
+          title: 'Select Walkthrough',
         };
         selectItem.iconPath = new vscode.ThemeIcon('folder-opened');
         selectItem.tooltip = 'Select a walkthrough file (JSON or Markdown)';
@@ -342,7 +342,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       );
       selectItem.command = {
         command: 'virgil.selectWalkthrough',
-        title: 'Select Walkthrough'
+        title: 'Select Walkthrough',
       };
       selectItem.iconPath = new vscode.ThemeIcon('folder-opened');
       selectItem.tooltip = 'Select a walkthrough file (JSON or Markdown)';
@@ -379,11 +379,12 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     fileItem.iconPath = new vscode.ThemeIcon('files');
     fileItem.command = {
       command: 'virgil.selectWalkthrough',
-      title: 'Select Walkthrough'
+      title: 'Select Walkthrough',
     };
-    fileItem.tooltip = available.length > 1
-      ? 'Click to switch walkthrough or select a file'
-      : 'Click to select a walkthrough file (JSON or Markdown)';
+    fileItem.tooltip =
+      available.length > 1
+        ? 'Click to switch walkthrough or select a file'
+        : 'Click to select a walkthrough file (JSON or Markdown)';
     items.push(fileItem);
 
     // Title as header (with warning if commit mismatch)
@@ -396,7 +397,10 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       const mismatchInfo = this.getCommitMismatchInfo();
       titleItem.description = '⚠️ commit mismatch';
       titleItem.tooltip = `Walkthrough expects commit ${mismatchInfo?.expected.substring(0, 7)}...\nCurrent commit: ${mismatchInfo?.current.substring(0, 7)}...\n\nCode may have changed since this walkthrough was created.`;
-      titleItem.iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('editorWarning.foreground'));
+      titleItem.iconPath = new vscode.ThemeIcon(
+        'warning',
+        new vscode.ThemeColor('editorWarning.foreground')
+      );
     } else {
       if (this.walkthrough.description) {
         titleItem.description = this.walkthrough.description;
@@ -424,7 +428,10 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       );
 
       if (isCurrent) {
-        stepItem.iconPath = new vscode.ThemeIcon('arrow-right', new vscode.ThemeColor('charts.green'));
+        stepItem.iconPath = new vscode.ThemeIcon(
+          'arrow-right',
+          new vscode.ThemeColor('charts.green')
+        );
         stepItem.description = '(current)';
       } else {
         // Set icon based on step type
@@ -436,7 +443,10 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
             }
             break;
           case 'base-only':
-            stepItem.iconPath = new vscode.ThemeIcon('history', new vscode.ThemeColor('charts.red'));
+            stepItem.iconPath = new vscode.ThemeIcon(
+              'history',
+              new vscode.ThemeColor('charts.red')
+            );
             if (!hasBaseRef) {
               stepItem.description = '⚠️ no base ref';
             }

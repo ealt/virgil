@@ -35,12 +35,12 @@ const markedInstance = new Marked(
         return hljs.highlight(code, { language: lang }).value;
       }
       return code;
-    }
+    },
   })
 );
 
 markedInstance.setOptions({
-  breaks: true,  // Convert \n to <br>
+  breaks: true, // Convert \n to <br>
 });
 
 export interface DiffModeOptions {
@@ -86,14 +86,14 @@ export class StepDetailPanel {
       {
         enableScripts: true,
         retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')]
+        localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
       }
     );
 
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
 
     this.panel.webview.onDidReceiveMessage(
-      message => {
+      (message) => {
         switch (message.command) {
           case 'next':
             vscode.commands.executeCommand('virgil.next');
@@ -125,7 +125,13 @@ export class StepDetailPanel {
     diffOptions?: DiffModeOptions
   ): void {
     this.panel.title = `${step.id}. ${step.title}`;
-    this.panel.webview.html = this.getHtml(walkthrough, step, currentIndex, totalSteps, diffOptions);
+    this.panel.webview.html = this.getHtml(
+      walkthrough,
+      step,
+      currentIndex,
+      totalSteps,
+      diffOptions
+    );
     this.panel.reveal(vscode.ViewColumn.Two, true);
   }
 
@@ -154,13 +160,17 @@ export class StepDetailPanel {
           <span class="error-icon">⚠️</span>
           <span>${this.escapeHtml(diffOptions.error)}</span>
         </div>
-        ${parsedLocation ? `
+        ${
+          parsedLocation
+            ? `
           <div class="location fallback" onclick="openLocation('${step.location}')">
             <span class="location-label">View Current File:</span>
             <span class="location-path">${parsedLocation.path}</span>
-            <span class="location-lines">:${parsedLocation.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',')}</span>
+            <span class="location-lines">:${parsedLocation.ranges.map((r) => (r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`)).join(',')}</span>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       `;
     } else if (stepType === 'diff') {
       // Diff mode with 3-way toggle
@@ -172,51 +182,69 @@ export class StepDetailPanel {
           <button class="toggle-btn base ${viewMode === 'base' ? 'active' : ''}" onclick="setViewMode('base')">Base</button>
         </div>
         <div class="location-info">
-          ${viewMode === 'diff' || viewMode === 'head' ? `
+          ${
+            viewMode === 'diff' || viewMode === 'head'
+              ? `
             <div class="location head-location">
               <span class="location-indicator head">●</span>
               <span class="location-path">${parsedLocation?.path || ''}</span>
-              <span class="location-lines">:${parsedLocation?.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',') || ''}</span>
+              <span class="location-lines">:${parsedLocation?.ranges.map((r) => (r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`)).join(',') || ''}</span>
             </div>
-          ` : ''}
-          ${viewMode === 'diff' || viewMode === 'base' ? `
+          `
+              : ''
+          }
+          ${
+            viewMode === 'diff' || viewMode === 'base'
+              ? `
             <div class="location base-location">
               <span class="location-indicator base">●</span>
               <span class="location-path">${parsedBaseLocation?.path || ''}</span>
-              <span class="location-lines">:${parsedBaseLocation?.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',') || ''}</span>
+              <span class="location-lines">:${parsedBaseLocation?.ranges.map((r) => (r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`)).join(',') || ''}</span>
               <span class="location-suffix">(base)</span>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `;
     } else if (stepType === 'base-only') {
       // Base-only step
-      locationHtml = parsedBaseLocation ? `
+      locationHtml = parsedBaseLocation
+        ? `
         <div class="location base-only" onclick="openLocation('${step.base_location}')">
           <span class="location-indicator base">●</span>
           <span class="location-path">${parsedBaseLocation.path}</span>
-          <span class="location-lines">:${parsedBaseLocation.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',')}</span>
+          <span class="location-lines">:${parsedBaseLocation.ranges.map((r) => (r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`)).join(',')}</span>
           <span class="location-suffix">(base)</span>
         </div>
-      ` : '';
+      `
+        : '';
     } else if (stepType === 'point-in-time') {
       // Point-in-time step (existing behavior)
-      locationHtml = parsedLocation ? `
+      locationHtml = parsedLocation
+        ? `
         <div class="location" onclick="openLocation('${step.location}')">
           <span class="location-path">${parsedLocation.path}</span>
-          <span class="location-lines">:${parsedLocation.ranges.map(r => r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`).join(',')}</span>
+          <span class="location-lines">:${parsedLocation.ranges.map((r) => (r.startLine === r.endLine ? r.startLine : `${r.startLine}-${r.endLine}`)).join(',')}</span>
         </div>
-      ` : '';
+      `
+        : '';
     }
 
     // Render metadata if this is the first step and metadata exists
-    const metadataHtml = currentIndex === 0 && walkthrough.metadata && Object.keys(walkthrough.metadata).length > 0 ? `
+    const metadataHtml =
+      currentIndex === 0 && walkthrough.metadata && Object.keys(walkthrough.metadata).length > 0
+        ? `
       <div class="metadata">
-        ${Object.entries(walkthrough.metadata).map(([key, value]) =>
-          `<span class="metadata-item"><strong>${this.escapeHtml(key)}:</strong> ${this.escapeHtml(String(value))}</span>`
-        ).join('')}
+        ${Object.entries(walkthrough.metadata)
+          .map(
+            ([key, value]) =>
+              `<span class="metadata-item"><strong>${this.escapeHtml(key)}:</strong> ${this.escapeHtml(String(value))}</span>`
+          )
+          .join('')}
       </div>
-    ` : '';
+    `
+        : '';
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -583,14 +611,19 @@ export class StepDetailPanel {
     <div class="comments-header">
       <span class="comments-title">Comments${step.comments?.length ? ` (${step.comments.length})` : ''}</span>
     </div>
-    ${step.comments && step.comments.length > 0
-      ? step.comments.map(comment => `
+    ${
+      step.comments && step.comments.length > 0
+        ? step.comments
+            .map(
+              (comment) => `
         <div class="comment">
           <div class="comment-author">${this.escapeHtml(comment.author)}</div>
           <div class="comment-body markdown-content">${this.renderMarkdown(comment.body)}</div>
         </div>
-      `).join('')
-      : '<div class="no-comments">No comments yet</div>'
+      `
+            )
+            .join('')
+        : '<div class="no-comments">No comments yet</div>'
     }
     <div class="comment-form">
       <textarea id="commentInput" class="comment-input" placeholder="Add a comment..."></textarea>
@@ -650,9 +683,9 @@ export class StepDetailPanel {
       '<': '&lt;',
       '>': '&gt;',
       '"': '&quot;',
-      "'": '&#039;'
+      "'": '&#039;',
     };
-    return text.replace(/[&<>"']/g, char => map[char]);
+    return text.replace(/[&<>"']/g, (char) => map[char]);
   }
 
   private renderMarkdown(text: string): string {

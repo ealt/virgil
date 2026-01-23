@@ -36,7 +36,7 @@ export class DiffResolver {
       return {
         commit: null,
         source: 'baseCommit',
-        error: `Invalid base commit: ${repository.baseCommit}`
+        error: `Invalid base commit: ${repository.baseCommit}`,
       };
     }
 
@@ -49,7 +49,7 @@ export class DiffResolver {
       return {
         commit: null,
         source: 'baseBranch',
-        error: `Cannot resolve branch: ${repository.baseBranch}`
+        error: `Cannot resolve branch: ${repository.baseBranch}`,
       };
     }
 
@@ -62,7 +62,7 @@ export class DiffResolver {
       return {
         commit: null,
         source: 'pr',
-        error: `Cannot determine base for PR #${repository.pr}`
+        error: `Cannot determine base for PR #${repository.pr}`,
       };
     }
 
@@ -88,7 +88,7 @@ export class DiffResolver {
     if (refs.length > 1) {
       warnings.push({
         type: 'multiple_base_refs',
-        message: `Multiple base references specified (${refs.join(', ')}). Using ${refs[0]} (priority: baseCommit > baseBranch > pr).`
+        message: `Multiple base references specified (${refs.join(', ')}). Using ${refs[0]} (priority: baseCommit > baseBranch > pr).`,
       });
     }
 
@@ -110,7 +110,8 @@ export class DiffResolver {
     if (!result.commit) {
       return {
         type: 'missing_base_ref',
-        message: 'Step has base_location but no base reference is configured. Add baseCommit, baseBranch, or pr to repository.'
+        message:
+          'Step has base_location but no base reference is configured. Add baseCommit, baseBranch, or pr to repository.',
       };
     }
 
@@ -125,7 +126,7 @@ export class DiffResolver {
       const fullSha = execSync(`git rev-parse --verify ${commit}`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
       return fullSha || null;
     } catch {
@@ -142,7 +143,7 @@ export class DiffResolver {
       const commit = execSync(`git rev-parse --verify ${branch}`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
       return commit || null;
     } catch {
@@ -151,7 +152,7 @@ export class DiffResolver {
         const commit = execSync(`git rev-parse --verify origin/${branch}`, {
           cwd: this.workspaceRoot,
           encoding: 'utf-8',
-          stdio: ['pipe', 'pipe', 'pipe']
+          stdio: ['pipe', 'pipe', 'pipe'],
         }).trim();
         return commit || null;
       } catch {
@@ -170,7 +171,7 @@ export class DiffResolver {
       const prInfo = execSync(`gh pr view ${prNumber} --json baseRefName -q .baseRefName`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
 
       if (prInfo) {
@@ -187,7 +188,7 @@ export class DiffResolver {
         const mergeBase = execSync(`git merge-base HEAD ${branch}`, {
           cwd: this.workspaceRoot,
           encoding: 'utf-8',
-          stdio: ['pipe', 'pipe', 'pipe']
+          stdio: ['pipe', 'pipe', 'pipe'],
         }).trim();
         if (mergeBase) {
           return mergeBase;
@@ -205,11 +206,13 @@ export class DiffResolver {
    */
   public getHeadCommit(): string | null {
     try {
-      return execSync('git rev-parse HEAD', {
-        cwd: this.workspaceRoot,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe']
-      }).trim() || null;
+      return (
+        execSync('git rev-parse HEAD', {
+          cwd: this.workspaceRoot,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        }).trim() || null
+      );
     } catch {
       return null;
     }

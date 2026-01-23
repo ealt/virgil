@@ -14,13 +14,13 @@ export interface WalkthroughStep {
 }
 
 export interface Repository {
-  remote?: string;  // git remote URL
-  commit?: string;  // git commit SHA (head state)
+  remote?: string; // git remote URL
+  commit?: string; // git commit SHA (head state)
 
   // Optional base reference for diff mode (pick ONE, or omit for point-in-time mode)
-  baseCommit?: string;   // Explicit commit SHA
-  baseBranch?: string;   // Branch name (e.g., "main") - resolved at runtime
-  pr?: number;           // PR number - base is PR's base branch
+  baseCommit?: string; // Explicit commit SHA
+  baseBranch?: string; // Branch name (e.g., "main") - resolved at runtime
+  pr?: number; // PR number - base is PR's base branch
 }
 
 export interface Walkthrough {
@@ -82,7 +82,7 @@ export function parseLocation(location: string): ParsedLocation | null {
   for (const rangeStr of rangesStr.split(',')) {
     const trimmed = rangeStr.trim();
     if (trimmed.includes('-')) {
-      const [start, end] = trimmed.split('-').map(s => parseInt(s.trim(), 10));
+      const [start, end] = trimmed.split('-').map((s) => parseInt(s.trim(), 10));
       if (!isNaN(start) && !isNaN(end)) {
         ranges.push({ startLine: start, endLine: end });
       }

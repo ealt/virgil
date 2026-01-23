@@ -24,7 +24,10 @@ export function activate(context: vscode.ExtensionContext) {
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
   // Shared helper function to convert markdown to JSON in walkthroughs/ directory
-  async function convertMarkdownToWalkthrough(markdownFilePath: string, workspaceRoot: string): Promise<string | null> {
+  async function convertMarkdownToWalkthrough(
+    markdownFilePath: string,
+    workspaceRoot: string
+  ): Promise<string | null> {
     try {
       // Read markdown file
       const markdownContent = fs.readFileSync(markdownFilePath, 'utf-8');
@@ -97,9 +100,9 @@ export function activate(context: vscode.ExtensionContext) {
           canSelectMany: false,
           openLabel: 'Select Markdown File',
           filters: {
-            'Markdown': ['md', 'markdown']
+            Markdown: ['md', 'markdown'],
           },
-          defaultUri: vscode.Uri.file(currentWorkspaceRoot)
+          defaultUri: vscode.Uri.file(currentWorkspaceRoot),
         });
 
         if (!fileUri || fileUri.length === 0) {
@@ -148,7 +151,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (fs.existsSync(walkthroughsDir) && fs.statSync(walkthroughsDir).isDirectory()) {
       try {
         const files = fs.readdirSync(walkthroughsDir);
-        const jsonFile = files.find(f => f.endsWith('.json'));
+        const jsonFile = files.find((f) => f.endsWith('.json'));
         if (jsonFile) {
           return path.join(walkthroughsDir, jsonFile);
         }
@@ -166,7 +169,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Register tree view
   const treeView = vscode.window.createTreeView('virgilWalkthrough', {
     treeDataProvider: walkthroughProvider,
-    showCollapseAll: false
+    showCollapseAll: false,
   });
   context.subscriptions.push(treeView);
 
@@ -232,19 +235,19 @@ export function activate(context: vscode.ExtensionContext) {
       const available = walkthroughProvider.getAvailableWalkthroughs();
       const currentFile = walkthroughProvider.getCurrentFile();
 
-      const items = available.map(file => ({
+      const items = available.map((file) => ({
         label: file,
-        description: file === currentFile ? '(current)' : undefined
+        description: file === currentFile ? '(current)' : undefined,
       }));
 
       // Add "Select file..." option
       items.push({
         label: '$(folder-opened) Select file...',
-        description: 'Browse for a JSON or Markdown file'
+        description: 'Browse for a JSON or Markdown file',
       });
 
       const selected = await vscode.window.showQuickPick(items, {
-        placeHolder: 'Select a walkthrough'
+        placeHolder: 'Select a walkthrough',
       });
 
       if (!selected) {
@@ -260,11 +263,11 @@ export function activate(context: vscode.ExtensionContext) {
           openLabel: 'Select Walkthrough File (JSON or Markdown)',
           filters: {
             'All Supported': ['json', 'md', 'markdown'],
-            'JSON': ['json'],
-            'Markdown': ['md', 'markdown'],
-            'All Files': ['*']
+            JSON: ['json'],
+            Markdown: ['md', 'markdown'],
+            'All Files': ['*'],
           },
-          defaultUri: vscode.Uri.file(workspaceRoot)
+          defaultUri: vscode.Uri.file(workspaceRoot),
         });
 
         if (!fileUri || fileUri.length === 0) {
@@ -289,14 +292,18 @@ export function activate(context: vscode.ExtensionContext) {
             const walkthrough = JSON.parse(content);
             // Basic validation - check if it has required fields
             if (!walkthrough.title || !Array.isArray(walkthrough.steps)) {
-              vscode.window.showErrorMessage('Selected file does not appear to be a valid walkthrough JSON file.');
+              vscode.window.showErrorMessage(
+                'Selected file does not appear to be a valid walkthrough JSON file.'
+              );
               return;
             }
             // Use the file directly (relative path from workspace root)
             const relativePath = path.relative(workspaceRoot, selectedFilePath);
             walkthroughProvider.setWalkthroughFile(relativePath);
           } catch (error) {
-            vscode.window.showErrorMessage(`Failed to read or parse JSON file: ${error instanceof Error ? error.message : String(error)}`);
+            vscode.window.showErrorMessage(
+              `Failed to read or parse JSON file: ${error instanceof Error ? error.message : String(error)}`
+            );
             return;
           }
         } else {
@@ -381,7 +388,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (choice === 'Set Name') {
         const name = await vscode.window.showInputBox({
           prompt: 'Enter your name for git config',
-          placeHolder: 'Your Name'
+          placeHolder: 'Your Name',
         });
 
         if (name) {
@@ -431,7 +438,9 @@ export function activate(context: vscode.ExtensionContext) {
       // Checkout the commit
       const result = walkthroughProvider.checkoutCommit(commit);
       if (result.success) {
-        vscode.window.showInformationMessage(`Checked out commit ${commit.substring(0, 7)}. You are now in detached HEAD state.`);
+        vscode.window.showInformationMessage(
+          `Checked out commit ${commit.substring(0, 7)}. You are now in detached HEAD state.`
+        );
         walkthroughProvider.refresh();
       } else {
         vscode.window.showErrorMessage(`Failed to checkout: ${result.error}`);
@@ -470,13 +479,16 @@ export function activate(context: vscode.ExtensionContext) {
         const doc = await vscode.workspace.openTextDocument(fullPath);
         const editor = await vscode.window.showTextDocument(doc, {
           viewColumn: vscode.ViewColumn.One,
-          preserveFocus: false
+          preserveFocus: false,
         });
 
         // Go to first range
         const firstRange = parsed.ranges[0];
         const start = new vscode.Position(firstRange.startLine - 1, 0);
-        const end = new vscode.Position(firstRange.endLine - 1, doc.lineAt(firstRange.endLine - 1).text.length);
+        const end = new vscode.Position(
+          firstRange.endLine - 1,
+          doc.lineAt(firstRange.endLine - 1).text.length
+        );
 
         editor.selection = new vscode.Selection(start, start);
         editor.revealRange(new vscode.Range(start, end), vscode.TextEditorRevealType.InCenter);
@@ -495,11 +507,11 @@ export function activate(context: vscode.ExtensionContext) {
   // Watch for walkthrough file changes (both .walkthrough.json at root and walkthroughs/*.json)
   const watcherPatterns = [
     new vscode.RelativePattern(workspaceRoot, '.walkthrough.json'),
-    new vscode.RelativePattern(workspaceRoot, 'walkthroughs/*.json')
+    new vscode.RelativePattern(workspaceRoot, 'walkthroughs/*.json'),
   ];
 
   // Create watchers for both patterns
-  fileWatchers = watcherPatterns.map(pattern => {
+  fileWatchers = watcherPatterns.map((pattern) => {
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
     watcher.onDidChange(() => {
@@ -510,7 +522,9 @@ export function activate(context: vscode.ExtensionContext) {
     watcher.onDidCreate(() => {
       walkthroughProvider?.refresh();
       vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
-      vscode.window.showInformationMessage('Walkthrough detected! Click on steps in the Virgil sidebar to begin.');
+      vscode.window.showInformationMessage(
+        'Walkthrough detected! Click on steps in the Virgil sidebar to begin.'
+      );
     });
 
     watcher.onDidDelete(() => {
@@ -523,7 +537,7 @@ export function activate(context: vscode.ExtensionContext) {
     return watcher;
   });
 
-  fileWatchers.forEach(watcher => context.subscriptions.push(watcher));
+  fileWatchers.forEach((watcher) => context.subscriptions.push(watcher));
 
   // Handle tree view selection
   treeView.onDidChangeSelection(async (e) => {
@@ -582,7 +596,7 @@ export function activate(context: vscode.ExtensionContext) {
           {
             stepType,
             viewMode: currentViewMode,
-            error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.'
+            error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
           }
         );
         return;
@@ -614,7 +628,7 @@ export function activate(context: vscode.ExtensionContext) {
           {
             stepType,
             viewMode: currentViewMode,
-            error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.'
+            error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
           }
         );
         return;
@@ -634,7 +648,7 @@ export function activate(context: vscode.ExtensionContext) {
         stepType,
         viewMode: currentViewMode,
         baseCommit: baseResult.commit || undefined,
-        headCommit: headCommit || undefined
+        headCommit: headCommit || undefined,
       }
     );
   }
@@ -664,7 +678,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       const editor = await vscode.window.showTextDocument(doc, {
         viewColumn: vscode.ViewColumn.One,
-        preserveFocus: true
+        preserveFocus: true,
       });
 
       // Go to first range
@@ -687,7 +701,12 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  async function showDiff(headLocation: string, baseLocation: string, baseCommit: string, headCommit: string | null) {
+  async function showDiff(
+    headLocation: string,
+    baseLocation: string,
+    baseCommit: string,
+    headCommit: string | null
+  ) {
     const headParsed = parseLocation(headLocation);
     const baseParsed = parseLocation(baseLocation);
 
@@ -722,6 +741,6 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   highlightManager?.clearAll();
   StepDetailPanel.currentPanel?.dispose();
-  fileWatchers.forEach(watcher => watcher.dispose());
+  fileWatchers.forEach((watcher) => watcher.dispose());
   diffContentProvider?.dispose();
 }

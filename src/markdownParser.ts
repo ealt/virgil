@@ -23,7 +23,7 @@ export function inferRepositoryInfo(workspaceRoot?: string): Repository | undefi
     remote = execSync('git remote get-url origin', {
       cwd: workspaceRoot,
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
     if (!remote) {
       remote = undefined;
@@ -36,7 +36,7 @@ export function inferRepositoryInfo(workspaceRoot?: string): Repository | undefi
     commit = execSync('git rev-parse HEAD', {
       cwd: workspaceRoot,
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
     if (!commit) {
       commit = undefined;
@@ -74,7 +74,7 @@ function parseLocationLink(linkText: string, linkUrl: string): string | null {
   for (const rangeStr of lineNumbersStr.split(',')) {
     const trimmed = rangeStr.trim();
     if (trimmed.includes('-')) {
-      const [start, end] = trimmed.split('-').map(s => s.trim());
+      const [start, end] = trimmed.split('-').map((s) => s.trim());
       if (start && end && !isNaN(parseInt(start, 10)) && !isNaN(parseInt(end, 10))) {
         ranges.push(`${start}-${end}`);
       } else {
@@ -141,10 +141,7 @@ function extractLocationFromLink(line: string): LocationLinkResult | null {
 /**
  * Parses a markdown walkthrough into a Walkthrough object
  */
-export function parseMarkdownWalkthrough(
-  markdown: string,
-  workspaceRoot?: string
-): ParseResult {
+export function parseMarkdownWalkthrough(markdown: string, workspaceRoot?: string): ParseResult {
   const warnings: string[] = [];
   const lines = markdown.split(/\r?\n/);
   let i = 0;
@@ -189,14 +186,27 @@ export function parseMarkdownWalkthrough(
           const frontmatterData = yaml.load(frontmatterText) as Record<string, unknown>;
 
           // Extract repository fields if present
-          if (frontmatterData.remote || frontmatterData.commit ||
-              frontmatterData.baseBranch || frontmatterData.baseCommit || frontmatterData.pr) {
+          if (
+            frontmatterData.remote ||
+            frontmatterData.commit ||
+            frontmatterData.baseBranch ||
+            frontmatterData.baseCommit ||
+            frontmatterData.pr
+          ) {
             repositoryFromFrontmatter = {
-              remote: typeof frontmatterData.remote === 'string' ? frontmatterData.remote : undefined,
-              commit: typeof frontmatterData.commit === 'string' ? frontmatterData.commit : undefined,
-              baseBranch: typeof frontmatterData.baseBranch === 'string' ? frontmatterData.baseBranch : undefined,
-              baseCommit: typeof frontmatterData.baseCommit === 'string' ? frontmatterData.baseCommit : undefined,
-              pr: typeof frontmatterData.pr === 'number' ? frontmatterData.pr : undefined
+              remote:
+                typeof frontmatterData.remote === 'string' ? frontmatterData.remote : undefined,
+              commit:
+                typeof frontmatterData.commit === 'string' ? frontmatterData.commit : undefined,
+              baseBranch:
+                typeof frontmatterData.baseBranch === 'string'
+                  ? frontmatterData.baseBranch
+                  : undefined,
+              baseCommit:
+                typeof frontmatterData.baseCommit === 'string'
+                  ? frontmatterData.baseCommit
+                  : undefined,
+              pr: typeof frontmatterData.pr === 'number' ? frontmatterData.pr : undefined,
             };
           }
 
@@ -207,7 +217,9 @@ export function parseMarkdownWalkthrough(
           }
         }
       } catch (error) {
-        warnings.push(`Invalid YAML frontmatter: ${error instanceof Error ? error.message : String(error)}`);
+        warnings.push(
+          `Invalid YAML frontmatter: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     } else {
       warnings.push('YAML frontmatter not properly closed (missing closing ---)');
@@ -265,7 +277,9 @@ export function parseMarkdownWalkthrough(
         if (parseLocation(locationLink.location)) {
           if (locationLink.isBase) {
             if (base_location) {
-              warnings.push(`Multiple base location links in step "${stepTitle}". Using first one.`);
+              warnings.push(
+                `Multiple base location links in step "${stepTitle}". Using first one.`
+              );
             } else {
               base_location = locationLink.location;
             }
@@ -313,7 +327,9 @@ export function parseMarkdownWalkthrough(
           const extracted = extractLocationFromLink(link);
           if (extracted) {
             const linkType = extracted.isBase ? 'Base location' : 'Location';
-            warnings.push(`${linkType} link found in step body for "${stepTitle}": ${link}. Only location links immediately after the step title are used.`);
+            warnings.push(
+              `${linkType} link found in step body for "${stepTitle}": ${link}. Only location links immediately after the step title are used.`
+            );
           }
         }
       }
@@ -324,7 +340,7 @@ export function parseMarkdownWalkthrough(
       title: stepTitle,
       body,
       location: location || undefined,
-      base_location: base_location || undefined
+      base_location: base_location || undefined,
     });
   }
 
@@ -340,11 +356,11 @@ export function parseMarkdownWalkthrough(
     description,
     repository,
     metadata,
-    steps
+    steps,
   };
 
   return {
     walkthrough,
-    warnings
+    warnings,
   };
 }
