@@ -11,8 +11,7 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:*.walkthrough.json",
-    "onCommand:virgil.convertMarkdown"
+    "workspaceContains:*.walkthrough.json"
   ],
   "main": "./out/extension.js",
   "contributes": {
