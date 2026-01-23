@@ -381,7 +381,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       command: 'virgil.selectWalkthrough',
       title: 'Select Walkthrough'
     };
-    fileItem.tooltip = available.length > 1 
+    fileItem.tooltip = available.length > 1
       ? 'Click to switch walkthrough or select a file'
       : 'Click to select a walkthrough file (JSON or Markdown)';
     items.push(fileItem);
