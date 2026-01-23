@@ -3,13 +3,20 @@
   "displayName": "Virgil",
   "description": "Interactive guided walkthroughs for code review and codebase exploration",
   "version": "0.1.0",
-  "publisher": "virgil",
+  "publisher": "ealt",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
+    "Education",
     "Other"
   ],
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "preview": true,
+  "icon": "icon.png",
   "activationEvents": [
     "workspaceContains:*.walkthrough.json"
   ],
@@ -120,6 +127,9 @@
     "lint": "eslint src --ext ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
+    "prepare": "husky install",
+    "package": "vsce package",
+    "publish": "vsce publish",
     "refresh:extension": "scripts/refresh-extension.sh"
   },
   "dependencies": {
@@ -136,7 +146,29 @@
     "@typescript-eslint/parser": "^6.13.0",
     "eslint": "^8.54.0",
     "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.0",
     "prettier": "^3.2.5",
     "typescript": "^5.3.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ealt/virgil.git"
+  },
+  "homepage": "https://github.com/ealt/virgil#readme",
+  "bugs": {
+    "url": "https://github.com/ealt/virgil/issues"
+  },
+  "keywords": [
+    "vscode",
+    "vscode-extension",
+    "walkthrough",
+    "code-review",
+    "onboarding",
+    "documentation",
+    "tutorial",
+    "code-exploration",
+    "guided-tour"
+  ],
+  "license": "MIT"
 }
