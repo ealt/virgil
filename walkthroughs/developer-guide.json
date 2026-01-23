@@ -17,32 +17,32 @@
     {
       "id": 2,
       "title": "Extension Activation",
-      "body": "Virgil activates when it detects any `*.walkthrough.json` file in your workspace root.\n\nThe activation event is defined in `package.json`. The extension uses `workspaceContains:*.walkthrough.json` which means it only activates when the workspace contains matching files.\n\n**Key points:**\n\n- Activation is lazy (only when needed)\n- Multiple walkthrough files can coexist\n- The extension watches for file changes automatically",
+      "body": "Virgil activates when it detects any `*.walkthrough.json` file in your workspace root.\n\nThe activation event is defined in `package.json`. The extension uses `workspaceContains:*.walkthrough.json` which means it only activates when the workspace contains matching files at the root.\n\n**Key points:**\n\n- Activation is lazy (only when needed)\n- Once activated, the extension discovers walkthroughs from two locations:\n  - `.walkthrough.json` at workspace root\n  - Any `.json` files in `walkthroughs/` directory\n- Multiple walkthrough files can coexist\n- The extension watches for file changes automatically in both locations",
       "location": "/package.json:13-15"
     },
     {
       "id": 3,
       "title": "Extension Entry Point",
-      "body": "The `activate()` function in `extension.ts` is called when the extension activates.\n\n**What happens on activation:**\n\n1. Creates a `HighlightManager` instance\n2. Finds walkthrough files in the workspace root\n3. Initializes the `WalkthroughProvider`\n4. Registers the tree view in the sidebar\n5. Registers all commands\n6. Sets up file watching\n7. Auto-shows the first step if a walkthrough exists\n\n**Early return:** If no workspace folder is open, the extension returns early.",
+      "body": "The `activate()` function in `extension.ts` is called when the extension activates.\n\n**What happens on activation:**\n\n1. Creates a `HighlightManager` instance\n2. Finds walkthrough files in two locations:\n   - `.walkthrough.json` at workspace root\n   - Any `.json` files in `walkthroughs/` directory\n3. Initializes the `WalkthroughProvider`\n4. Registers the tree view in the sidebar\n5. Registers all commands (including walkthrough selection and Markdown conversion)\n6. Sets up file watching for both locations\n7. Auto-shows the first step if a walkthrough exists\n\n**Early return:** If no workspace folder is open, the extension returns early.",
       "location": "/src/extension.ts:13-41"
     },
     {
       "id": 4,
       "title": "TypeScript Interfaces - Data Model",
-      "body": "The `types.ts` file defines the shape of walkthrough JSON files.\n\n**Key interfaces:**\n\n- `Walkthrough` - Root object with title, description, repository, metadata, steps\n- `WalkthroughStep` - Individual step with id, title, body, location, comments\n- `Comment` - User comments with id, author, body\n- `Repository` - Git repository info (remote URL, commit SHA)\n\n**Utility functions:**\n\n- `parseLocation()` - Parses location strings like `path:10-45,100-120`\n- `normalizeRemoteUrl()` - Normalizes git URLs for comparison (SSH ↔ HTTPS)\n\nThese types ensure type safety throughout the extension.",
+      "body": "The `types.ts` file defines the shape of walkthrough JSON files.\n\n**Key interfaces:**\n\n- `Walkthrough` - Root object with title, description, repository, metadata, steps\n- `WalkthroughStep` - Individual step with id, title, body, location, comments\n- `Comment` - User comments with id, author, body\n- `Repository` - Git repository info (remote URL, commit SHA)\n\n**Utility functions:**\n\n- `parseLocation()` - Parses location strings like `path:10-45,100-120`\n- `normalizeRemoteUrl()` - Normalizes Git URLs for comparison (SSH ↔ HTTPS)\n\nThese types ensure type safety throughout the extension.",
       "location": "/src/types.ts:1-96"
     },
     {
       "id": 5,
       "title": "Command Registration",
-      "body": "The extension registers several commands for navigation and control.\n\n**Navigation commands:**\n\n- `virgil.start` - Jump to first step\n- `virgil.next` - Go to next step\n- `virgil.prev` - Go to previous step\n- `virgil.goToStep` - Jump to specific step index\n\n**Control commands:**\n\n- `virgil.refresh` - Reload walkthrough from file\n- `virgil.selectWalkthrough` - Switch between multiple walkthrough files\n- `virgil.submitComment` - Add a comment to current step\n- `virgil.openLocation` - Open file at specific location\n- `virgil.checkoutCommit` - Checkout the commit specified in walkthrough\n\nAll commands delegate to `WalkthroughProvider` for state management, then call `showCurrentStep()` to update the UI.",
+      "body": "The extension registers several commands for navigation and control.\n\n**Navigation commands:**\n\n- `virgil.start` - Jump to first step\n- `virgil.next` - Go to next step\n- `virgil.prev` - Go to previous step\n- `virgil.goToStep` - Jump to specific step index\n\n**Control commands:**\n\n- `virgil.refresh` - Reload walkthrough from file\n- `virgil.selectWalkthrough` - Switch between multiple walkthrough files or select Markdown files for conversion\n- `virgil.convertMarkdown` - Convert a Markdown walkthrough to JSON (saves to `walkthroughs/` directory)\n- `virgil.submitComment` - Add a comment to current step\n- `virgil.openLocation` - Open file at specific location\n- `virgil.checkoutCommit` - Checkout the commit specified in walkthrough\n\nAll commands delegate to `WalkthroughProvider` for state management, then call `showCurrentStep()` to update the UI.",
       "location": "/src/extension.ts:43-119"
     },
     {
       "id": 6,
       "title": "File Watching - Auto-refresh",
-      "body": "The extension uses VS Code's `FileSystemWatcher` to monitor `*.walkthrough.json` files.\n\n**Event handling:**\n\n- **onDidCreate**: Shows notification, refreshes provider, sets context\n- **onDidChange**: Refreshes provider to reload walkthrough\n- **onDidDelete**: Clears highlights, updates context, refreshes provider\n\n**Benefits:**\n\n- No need to manually refresh when editing walkthrough files\n- Automatic detection of new walkthroughs\n- Clean state management when files are deleted\n\nThe watcher uses `RelativePattern` to only watch the workspace root, not subdirectories.",
-      "location": "/src/extension.ts:271-293"
+      "body": "The extension uses VS Code's `FileSystemWatcher` to monitor walkthrough files in two locations:\n\n- `.walkthrough.json` at workspace root\n- `walkthroughs/*.json` files\n\n**Event handling:**\n\n- **onDidCreate**: Shows notification, refreshes provider, sets context\n- **onDidChange**: Refreshes provider to reload walkthrough\n- **onDidDelete**: Clears highlights, updates context, refreshes provider\n\n**Benefits:**\n\n- No need to manually refresh when editing walkthrough files\n- Automatic detection of new walkthroughs in both locations\n- Clean state management when files are deleted\n\nThe watcher uses `RelativePattern` to watch both the workspace root and the `walkthroughs/` directory.",
+      "location": "/src/extension.ts:494-525"
     },
     {
       "id": 7,
@@ -53,7 +53,7 @@
     {
       "id": 8,
       "title": "WalkthroughProvider - State Management",
-      "body": "The `WalkthroughProvider` class implements VS Code's `TreeDataProvider` interface.\n\n**Responsibilities:**\n\n- Loads and parses walkthrough JSON files\n- Maintains current step index\n- Builds tree items for the sidebar\n- Handles git operations (remote matching, commit checking)\n- Manages comments (add, save to file)\n- Filters walkthroughs by repository remote\n\n**Key methods:**\n\n- `loadWalkthrough()` - Loads JSON file and parses it\n- `getAvailableWalkthroughs()` - Finds all matching walkthrough files\n- `goToStep()`, `nextStep()`, `prevStep()` - Navigation\n- `addComment()` - Adds comment and saves to file\n- `hasCommitMismatch()` - Checks if current commit matches walkthrough\n\n**Repository matching:** Uses `normalizeRemoteUrl()` to handle SSH/HTTPS variations.",
+      "body": "The `WalkthroughProvider` class implements VS Code's `TreeDataProvider` interface.\n\n**Responsibilities:**\n\n- Discovers walkthrough files from root (`.walkthrough.json`) and `walkthroughs/` directory (any `.json` files)\n- Loads and parses walkthrough JSON files\n- Maintains current step index\n- Builds tree items for the sidebar\n- Handles Git operations (commit checking, checkout)\n- Manages comments (add, save to file)\n\n**Key methods:**\n\n- `getAvailableWalkthroughs()` - Finds all walkthrough files (root `.walkthrough.json` and `walkthroughs/*.json`)\n- `loadWalkthrough()` - Loads JSON file and parses it\n- `setWalkthroughFile()` - Sets the current walkthrough file (accepts relative paths)\n- `goToStep()`, `nextStep()`, `prevStep()` - Navigation\n- `addComment()` - Adds comment and saves to file\n- `hasCommitMismatch()` - Checks if current commit matches walkthrough",
       "location": "/src/WalkthroughProvider.ts:17-220"
     },
     {
@@ -83,7 +83,7 @@
     {
       "id": 13,
       "title": "DiffContentProvider - Git File Content",
-      "body": "The `DiffContentProvider` implements VS Code's `TextDocumentContentProvider` to serve file content from specific git commits.\n\n**URI scheme:** `virgil-git:///<commit>/<file-path>`\n\n**Key methods:**\n\n- `createUri(commit, filePath)` - Creates a URI for a file at a commit\n- `parseUri(uri)` - Extracts commit and path from a URI\n- `provideTextDocumentContent(uri)` - Returns file content via `git show`\n- `fileExistsAtCommit(commit, filePath)` - Checks if file exists at commit\n\n**Usage:**\n\n```typescript\n// Create URI for file at specific commit\nconst uri = DiffContentProvider.createUri('abc123', 'src/auth.ts');\n\n// Open the file\nconst doc = await vscode.workspace.openTextDocument(uri);\n```\n\n**Error handling:**\n\n- Invalid commit references\n- Files that don't exist at the specified commit\n- Git command failures",
+      "body": "The `DiffContentProvider` implements VS Code's `TextDocumentContentProvider` to serve file content from specific Git commits.\n\n**URI scheme:** `virgil-git:///<commit>/<file-path>`\n\n**Key methods:**\n\n- `createUri(commit, filePath)` - Creates a URI for a file at a commit\n- `parseUri(uri)` - Extracts commit and path from a URI\n- `provideTextDocumentContent(uri)` - Returns file content via `git show`\n- `fileExistsAtCommit(commit, filePath)` - Checks if file exists at commit\n\n**Usage:**\n\n```typescript\n// Create URI for file at specific commit\nconst uri = DiffContentProvider.createUri('abc123', 'src/auth.ts');\n\n// Open the file\nconst doc = await vscode.workspace.openTextDocument(uri);\n```\n\n**Error handling:**\n\n- Invalid commit references\n- Files that don't exist at the specified commit\n- Git command failures",
       "location": "/src/DiffContentProvider.ts:1-100"
     },
     {
@@ -107,7 +107,7 @@
     {
       "id": 17,
       "title": "Repository Remote Matching",
-      "body": "Walkthroughs can be scoped to specific repositories using `repository.remote`.\n\n**How it works:**\n\n1. Walkthrough specifies `repository.remote`\n2. Extension gets workspace git remote\n3. `normalizeRemoteUrl()` normalizes both URLs:\n   - Removes `.git` suffix\n   - Converts SSH to HTTPS format\n   - Case-insensitive comparison\n   - Removes authentication info\n4. Only matching walkthroughs appear in `getAvailableWalkthroughs()`\n\n**Benefits:**\n\n- Walkthrough files can be stored in shared locations\n- Only show for relevant repositories\n- Prevents confusion from wrong walkthroughs\n\n**Example:** `git@github.com:org/repo.git` matches `https://github.com/org/repo`",
+      "body": "Walkthroughs can be scoped to specific repositories using `repository.remote`.\n\n**How it works:**\n\n1. Walkthrough specifies `repository.remote`\n2. Extension gets workspace Git remote\n3. `normalizeRemoteUrl()` normalizes both URLs:\n   - Removes `.git` suffix\n   - Converts SSH to HTTPS format\n   - Case-insensitive comparison\n   - Removes authentication info\n4. Only matching walkthroughs appear in `getAvailableWalkthroughs()`\n\n**Benefits:**\n\n- Walkthrough files can be stored in shared locations\n- Only show for relevant repositories\n- Prevents confusion from wrong walkthroughs\n\n**Example:** `git@github.com:org/repo.git` matches `https://github.com/org/repo`",
       "location": "/src/types.ts:28-55"
     },
     {
@@ -119,7 +119,7 @@
     {
       "id": 19,
       "title": "Project Structure Overview",
-      "body": "Understanding the project structure helps when contributing.\n\n**Key directories:**\n\n- `src/` - TypeScript source files\n- `out/` - Compiled JavaScript (generated)\n- `docs/` - Documentation (SCHEMA.md, DEVELOPMENT.md)\n- `media/` - Assets (currently just panel.css, though styles are inline)\n\n**Key files:**\n\n- `package.json` - Extension manifest, commands, views, keybindings\n- `tsconfig.json` - TypeScript configuration\n- `extension.ts` - Entry point and coordination\n- `types.ts` - Data model and utilities\n- `WalkthroughProvider.ts` - State and tree view\n- `StepDetailPanel.ts` - Webview UI\n- `HighlightManager.ts` - Code decorations\n\n**Build output:** TypeScript compiles to `out/` directory, which is what VS Code loads.",
+      "body": "Understanding the project structure helps when contributing.\n\n**Key directories:**\n\n- `src/` - TypeScript source files\n- `out/` - Compiled JavaScript (generated)\n- `docs/` - Documentation (schema.md, development.md)\n- `media/` - Assets (currently just panel.css, though styles are inline)\n\n**Key files:**\n\n- `package.json` - Extension manifest, commands, views, keybindings\n- `tsconfig.json` - TypeScript configuration\n- `extension.ts` - Entry point and coordination\n- `types.ts` - Data model and utilities\n- `WalkthroughProvider.ts` - State and tree view\n- `StepDetailPanel.ts` - Webview UI\n- `HighlightManager.ts` - Code decorations\n\n**Build output:** TypeScript compiles to `out/` directory, which is what VS Code loads.",
       "location": "/package.json:1-50"
     },
     {
@@ -131,12 +131,12 @@
     {
       "id": 21,
       "title": "Development Workflow",
-      "body": "Here's the recommended workflow for contributing:\n\n**Setup:**\n\n1. Clone repository and run `npm install`\n2. Run `npm run watch` for auto-compilation\n3. Press `F5` to launch Extension Development Host\n\n**Making changes:**\n\n1. Edit TypeScript files in `src/`\n2. Watch mode automatically recompiles\n3. Reload Extension Development Host window (`Cmd+R` / `Ctrl+R`)\n4. Test changes with a walkthrough file\n\n**Packaging:**\n\n- Run `npx vsce package --allow-missing-repository`\n- Install `.vsix` file to test installation\n\n**Documentation:**\n\n- Update `docs/SCHEMA.md` for schema changes\n- Update `docs/DEVELOPMENT.md` for architecture changes\n- Update `README.md` for user-facing changes\n\n**See `docs/DEVELOPMENT.md` for more details.**"
+      "body": "Here's the recommended workflow for contributing:\n\n**Setup:**\n\n1. Clone repository and run `npm install`\n2. Run `npm run watch` for auto-compilation\n3. Press `F5` to launch Extension Development Host\n\n**Making changes:**\n\n1. Edit TypeScript files in `src/`\n2. Watch mode automatically recompiles\n3. Reload Extension Development Host window (`Cmd+R` / `Ctrl+R`)\n4. Test changes with a walkthrough file\n\n**Packaging:**\n\n- Run `npx vsce package --allow-missing-repository`\n- Install `.vsix` file to test installation\n\n**Documentation:**\n\n- Update `docs/schema.md` for schema changes\n- Update `docs/development.md` for architecture changes\n- Update `README.md` for user-facing changes\n\n**See `docs/development.md` for more details.**"
     },
     {
       "id": 22,
       "title": "Summary and Next Steps",
-      "body": "**Key takeaways:**\n\n- Extension activates on `*.walkthrough.json` detection\n- `WalkthroughProvider` manages state and builds sidebar\n- `StepDetailPanel` shows rich step info in themed webview\n- `HighlightManager` applies line decorations to editors\n- All components coordinate through `extension.ts`\n- Comments are persisted to JSON files\n- Repository matching enables portable walkthroughs\n- Commit mismatch warnings help ensure correct code state\n\n**Next steps for contributors:**\n\n1. Read `docs/DEVELOPMENT.md` for detailed setup instructions\n2. Explore the codebase using this walkthrough\n3. Try making a small change (e.g., add a new command)\n4. Test thoroughly in Extension Development Host\n5. Submit a pull request\n\n**Resources:**\n\n- [VS Code Extension API](https://code.visualstudio.com/api)\n- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)\n- `docs/SCHEMA.md` - Walkthrough JSON format\n- `docs/DEVELOPMENT.md` - Development guide\n\nHappy contributing! 🚀"
+      "body": "**Key takeaways:**\n\n- Extension activates on `*.walkthrough.json` detection\n- `WalkthroughProvider` manages state and builds sidebar\n- `StepDetailPanel` shows rich step info in themed webview\n- `HighlightManager` applies line decorations to editors\n- All components coordinate through `extension.ts`\n- Comments are persisted to JSON files\n- Repository matching enables portable walkthroughs\n- Commit mismatch warnings help ensure correct code state\n\n**Next steps for contributors:**\n\n1. Read `docs/development.md` for detailed setup instructions\n2. Explore the codebase using this walkthrough\n3. Try making a small change (e.g., add a new command)\n4. Test thoroughly in Extension Development Host\n5. Submit a pull request\n\n**Resources:**\n\n- [VS Code Extension API](https://code.visualstudio.com/api)\n- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)\n- `docs/schema.md` - Walkthrough JSON format\n- `docs/development.md` - Development guide\n\nHappy contributing! 🚀"
     }
   ]
 }

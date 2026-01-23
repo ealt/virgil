@@ -65,8 +65,8 @@ virgil/
 ├── media/
 │   └── panel.css           # Styles for webview (currently unused, styles inline)
 ├── docs/
-│   ├── SCHEMA.md           # Walkthrough JSON schema documentation
-│   └── DEVELOPMENT.md      # This file
+│   ├── schema.md           # Walkthrough JSON schema documentation
+│   └── development.md      # This file
 └── out/                    # Compiled JavaScript (generated)
 ```
 
@@ -96,7 +96,7 @@ Implements `TreeDataProvider` to:
 - Discover walkthroughs from root (`.walkthrough.json`) and `walkthroughs/` directory (any `.json` files)
 - Manage current step state
 - Build the sidebar tree view
-- Handle git operations (commit checking, checkout)
+- Handle Git operations (commit checking, checkout)
 - Manage comments (add, save to file)
 
 #### `StepDetailPanel.ts`
@@ -237,7 +237,7 @@ For automated testing, consider adding:
 
 - File operations wrapped in try/catch
 - JSON parsing errors show user-friendly messages
-- Git operations handle non-git workspaces gracefully
+- Git operations handle non-Git workspaces gracefully
 
 ### State Management
 
@@ -264,7 +264,7 @@ For automated testing, consider adding:
 
 1. **New Commands**: Add to `package.json` `contributes.commands`, register in `extension.ts`
 2. **New UI**: Consider tree view items or webview enhancements
-3. **Schema Changes**: Update `types.ts` and `docs/SCHEMA.md`
+3. **Schema Changes**: Update `types.ts` and `docs/schema.md`
 4. **New Files**: Follow existing patterns, add to appropriate component
 
 ### Pull Request Process
@@ -283,13 +283,13 @@ For automated testing, consider adding:
 - Support for multiple walkthroughs simultaneously
 - Export/import walkthroughs
 - Walkthrough templates
-- Better markdown rendering options
+- Better Markdown rendering options
 
 ## Dependencies
 
 ### Runtime Dependencies
 
-- `highlight.js` - Syntax highlighting in markdown code blocks
+- `highlight.js` - Syntax highlighting in Markdown code blocks
 - `marked` - Markdown parsing and rendering
 - `marked-highlight` - Integration of highlight.js with marked
 

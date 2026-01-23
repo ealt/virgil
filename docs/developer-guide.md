@@ -81,7 +81,7 @@ The `types.ts` file defines the shape of walkthrough JSON files.
 **Utility functions:**
 
 - `parseLocation()` - Parses location strings like `path:10-45,100-120`
-- `normalizeRemoteUrl()` - Normalizes git URLs for comparison (SSH ↔ HTTPS)
+- `normalizeRemoteUrl()` - Normalizes Git URLs for comparison (SSH ↔ HTTPS)
 
 These types ensure type safety throughout the extension.
 
@@ -169,7 +169,7 @@ The `WalkthroughProvider` class implements VS Code's `TreeDataProvider` interfac
 - Loads and parses walkthrough JSON files
 - Maintains current step index
 - Builds tree items for the sidebar
-- Handles git operations (commit checking, checkout)
+- Handles Git operations (commit checking, checkout)
 - Manages comments (add, save to file)
 
 **Key methods:**
@@ -284,7 +284,7 @@ The `HighlightManager` creates and manages text decorations that highlight code 
 
 [View code (1-100)](/src/DiffContentProvider.ts)
 
-The `DiffContentProvider` implements VS Code's `TextDocumentContentProvider` to serve file content from specific git commits.
+The `DiffContentProvider` implements VS Code's `TextDocumentContentProvider` to serve file content from specific Git commits.
 
 **URI scheme:** `virgil-git:///<commit>/<file-path>`
 
@@ -404,7 +404,7 @@ Walkthroughs can be scoped to specific repositories using `repository.remote`.
 **How it works:**
 
 1. Walkthrough specifies `repository.remote`
-2. Extension gets workspace git remote
+2. Extension gets workspace Git remote
 3. `normalizeRemoteUrl()` normalizes both URLs:
    - Removes `.git` suffix
    - Converts SSH to HTTPS format
@@ -457,7 +457,7 @@ Understanding the project structure helps when contributing.
 
 - `src/` - TypeScript source files
 - `out/` - Compiled JavaScript (generated)
-- `docs/` - Documentation (SCHEMA.md, DEVELOPMENT.md)
+- `docs/` - Documentation (schema.md, development.md)
 - `media/` - Assets (currently just panel.css, though styles are inline)
 
 **Key files:**
@@ -528,11 +528,11 @@ Here's the recommended workflow for contributing:
 
 **Documentation:**
 
-- Update `docs/SCHEMA.md` for schema changes
-- Update `docs/DEVELOPMENT.md` for architecture changes
+- Update `docs/schema.md` for schema changes
+- Update `docs/development.md` for architecture changes
 - Update `README.md` for user-facing changes
 
-**See `docs/DEVELOPMENT.md` for more details.**
+**See `docs/development.md` for more details.**
 
 ## Summary and Next Steps
 
@@ -549,7 +549,7 @@ Here's the recommended workflow for contributing:
 
 **Next steps for contributors:**
 
-1. Read `docs/DEVELOPMENT.md` for detailed setup instructions
+1. Read `docs/development.md` for detailed setup instructions
 2. Explore the codebase using this walkthrough
 3. Try making a small change (e.g., add a new command)
 4. Test thoroughly in Extension Development Host
@@ -559,7 +559,7 @@ Here's the recommended workflow for contributing:
 
 - [VS Code Extension API](https://code.visualstudio.com/api)
 - [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-- `docs/SCHEMA.md` - Walkthrough JSON format
-- `docs/DEVELOPMENT.md` - Development guide
+- `docs/schema.md` - Walkthrough JSON format
+- `docs/development.md` - Development guide
 
 Happy contributing! 🚀

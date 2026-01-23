@@ -23,8 +23,8 @@ Virgil discovers walkthrough files in two locations:
   "title": "string (required)",
   "description": "string (optional)",
   "repository": {
-    "remote": "git remote URL (optional)",
-    "commit": "git commit SHA (optional)"
+    "remote": "Git remote URL (optional)",
+    "commit": "Git commit SHA (optional)"
   },
   "metadata": { "key": "value" },
   "steps": [
@@ -67,7 +67,7 @@ Virgil discovers walkthrough files in two locations:
 | `baseBranch` | string | No | Base branch name for diff mode (e.g., "main") |
 | `pr` | number | No | PR number - uses PR's base branch for diff mode |
 
-When `repository.remote` is specified, the extension will only show the walkthrough if the current workspace's git remote matches. This allows walkthrough files to be portable (e.g., stored in a shared location) while only appearing for the relevant repository.
+When `repository.remote` is specified, the extension will only show the walkthrough if the current workspace's Git remote matches. This allows walkthrough files to be portable (e.g., stored in a shared location) while only appearing for the relevant repository.
 
 URL matching is normalized to handle variations:
 
@@ -347,10 +347,10 @@ This creates a step with both `location` and `base_location`, enabling the 3-way
 
 Use the `virgil.convertMarkdown` command:
 
-1. Open a markdown file (or have it active in the editor)
+1. Open a Markdown file (or have it active in the editor)
 2. Run the command: `Virgil: Convert Markdown to Walkthrough`
-3. The JSON file will be automatically created in the `walkthroughs/` directory with the same basename as the markdown file
-4. Repository info is inferred from git if not specified in frontmatter
+3. The JSON file will be automatically created in the `walkthroughs/` directory with the same basename as the Markdown file
+4. Repository info is inferred from Git if not specified in frontmatter
 
 **Output location**: Converted JSON files are always saved to `walkthroughs/<basename>.json`. The `walkthroughs/` directory will be created automatically if it doesn't exist.
 

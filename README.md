@@ -131,13 +131,13 @@ Step body text.
 
 Convert it with:
 
-1. Open or create a markdown file
+1. Open or create a Markdown file
 2. Run the command: `Virgil: Convert Markdown to Walkthrough`
-3. The JSON file will be automatically created in the `walkthroughs/` directory with the same basename as the markdown file
+3. The JSON file will be automatically created in the `walkthroughs/` directory with the same basename as the Markdown file
 
 **Example:** See [docs/developer-guide.md](docs/developer-guide.md) for a complete walkthrough in Markdown.
 
-For detailed markdown format docs, see the [Markdown Format section](docs/SCHEMA.md#markdown-format). Use a leading `/` in link URLs so they resolve from the repo root.
+For detailed Markdown format docs, see the [Markdown Format section](docs/schema.md#markdown-format). Use a leading `/` in link URLs so they resolve from the repo root.
 
 ### Advanced: JSON Walkthroughs
 
@@ -212,7 +212,7 @@ You can scope walkthroughs to specific repositories:
 }
 ```
 
-When `repository.remote` is specified, the walkthrough only appears for workspaces with matching git remotes. This allows storing walkthroughs in shared locations while only showing them for relevant repositories.
+When `repository.remote` is specified, the walkthrough only appears for workspaces with matching Git remotes. This allows storing walkthroughs in shared locations while only showing them for relevant repositories.
 
 ### Diff Walkthroughs
 
@@ -280,7 +280,7 @@ Key changes to the JWT validation logic.
 
 ### Complete Example
 
-See [docs/SCHEMA.md](docs/SCHEMA.md) for the complete schema documentation with detailed examples.
+See [docs/schema.md](docs/schema.md) for the complete schema documentation with detailed examples.
 
 ### Writing Walkthroughs in Markdown
 
@@ -312,27 +312,27 @@ Step body text.
 - YAML frontmatter for metadata and repository info
 - Steps from `##` headings
 - Location links: `[text (10-20)](/file.ts)` immediately after step title
-- Repository info automatically inferred from git if not in frontmatter
+- Repository info automatically inferred from Git if not in frontmatter
 
 **Converting to JSON:**
 
-1. Open or create a markdown file
+1. Open or create a Markdown file
 2. Run the command: `Virgil: Convert Markdown to Walkthrough`
-3. The JSON file will be automatically created in the `walkthroughs/` directory with the same basename as the markdown file
+3. The JSON file will be automatically created in the `walkthroughs/` directory with the same basename as the Markdown file
 
 You can also use the "Select Walkthrough" command to browse and select Markdown files, which will be converted automatically.
 
 **Example:** See [docs/developer-guide.md](docs/developer-guide.md) for a complete example.
 
-For detailed documentation on the markdown format, see the [Markdown Format section](docs/SCHEMA.md#markdown-format) in the schema documentation. Use a leading `/` in link URLs so they resolve from the repo root.
+For detailed documentation on the Markdown format, see the [Markdown Format section](docs/schema.md#markdown-format) in the schema documentation. Use a leading `/` in link URLs so they resolve from the repo root.
 
 ## Walkthrough Format
 
-For complete documentation of the walkthrough JSON format, including all fields, examples, and TypeScript interfaces, see [docs/SCHEMA.md](docs/SCHEMA.md).
+For complete documentation of the walkthrough JSON format, including all fields, examples, and TypeScript interfaces, see [docs/schema.md](docs/schema.md).
 
 ## Contributing
 
-Interested in contributing to Virgil? See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for development setup, architecture overview, and contributing guidelines.
+Interested in contributing to Virgil? See [docs/development.md](docs/development.md) for development setup, architecture overview, and contributing guidelines.
 
 ## License
 
