@@ -1,5 +1,9 @@
 # Virgil
 
+[![PR Checks](https://github.com/ealt/virgil/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/ealt/virgil/actions/workflows/pr-checks.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue)](https://marketplace.visualstudio.com/items?itemName=ealt.virgil)
+
 Named after Dante's guide through the Inferno, Virgil transforms written walkthroughs into interactive journeys. Authors create the guidance—whether for code reviews, codebase onboarding, feature documentation, or any repository content—and Virgil brings it to life as a polished, step-by-step experience within your editor. It's the tooling that turns knowledge into a guided path.
 
 ## Features
@@ -13,6 +17,19 @@ Named after Dante's guide through the Inferno, Virgil transforms written walkthr
 - **Repository Scoping**: Walkthroughs can be scoped to specific repositories
 
 ## Installation
+
+### From VS Code Marketplace
+
+1. Open VS Code or Cursor
+2. Go to the Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+3. Search for "Virgil"
+4. Click **Install**
+
+Or install via command line:
+
+```bash
+code --install-extension ealt.virgil
+```
 
 ### From Source
 
