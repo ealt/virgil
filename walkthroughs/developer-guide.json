@@ -3,7 +3,7 @@
   "description": "A comprehensive guide to understanding and contributing to the Virgil extension",
   "repository": {
     "remote": "<git@github.com>:ealt/virgil.git",
-    "commit": "650427ba9686081d02291711998d80a8ae3b6c9f"
+    "commit": "d4b85b5b1f5ab646b671bfff01e7d1c46ccf57db"
   },
   "metadata": {
     "type": "developer-onboarding"
@@ -77,7 +77,7 @@
     {
       "id": 12,
       "title": "HighlightManager - Code Decorations",
-      "body": "The `HighlightManager` creates and manages text decorations that highlight code ranges.\n\n**Color variants:**\n\n| Context | Color | CSS Background |\n|---------|-------|----------------|\n| Point-in-time (default) | Blue | `rgba(86, 156, 214, 0.1)` |\n| Head file (diff mode) | Green | `rgba(72, 180, 97, 0.15)` |\n| Base file (diff mode) | Red | `rgba(220, 80, 80, 0.15)` |\n\n**Decoration style:**\n\n- Background color based on context\n- Left border accent matching the color\n- `isWholeLine: true` highlights entire lines\n- Appears in overview ruler (minimap) for navigation\n\n**State management:**\n\n- Tracks decorations per file with color in a `Map<string, { color, ranges }>`\n- `highlightRange(editor, start, end, color)` adds decorations with specified color\n- `clearFile()` removes decorations from a specific file\n- `clearAll()` removes all decorations\n- `refreshEditor()` reapplies decorations when editor is reopened\n\n**Usage:** Called by `showCurrentStep()` to highlight step locations with appropriate colors.",
+      "body": "The `HighlightManager` creates and manages text decorations that highlight code ranges.\n\n**Color variants:**\n\n| Context                 | Color | CSS Background              |\n|-------------------------|-------|-----------------------------|\n| Point-in-time (default) | Blue  | `rgba(86, 156, 214, 0.1)` |\n| Head file (diff mode)   | Green | `rgba(72, 180, 97, 0.15)` |\n| Base file (diff mode)   | Red   | `rgba(220, 80, 80, 0.15)` |\n\n**Decoration style:**\n\n- Background color based on context\n- Left border accent matching the color\n- `isWholeLine: true` highlights entire lines\n- Appears in overview ruler (minimap) for navigation\n\n**State management:**\n\n- Tracks decorations per file with color in a `Map<string, { color, ranges }>`\n- `highlightRange(editor, start, end, color)` adds decorations with specified color\n- `clearFile()` removes decorations from a specific file\n- `clearAll()` removes all decorations\n- `refreshEditor()` reapplies decorations when editor is reopened\n\n**Usage:** Called by `showCurrentStep()` to highlight step locations with appropriate colors.",
       "location": "/src/HighlightManager.ts:1-71"
     },
     {

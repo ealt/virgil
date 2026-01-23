@@ -4,7 +4,7 @@
 
 type: developer-onboarding
 remote: <git@github.com>:ealt/virgil.git
-commit: 650427ba9686081d02291711998d80a8ae3b6c9f
+commit: d4b85b5b1f5ab646b671bfff01e7d1c46ccf57db
 ---
 
 A comprehensive guide to understanding and contributing to the Virgil extension
@@ -249,11 +249,11 @@ The `HighlightManager` creates and manages text decorations that highlight code 
 
 **Color variants:**
 
-| Context | Color | CSS Background |
-|---------|-------|----------------|
-| Point-in-time (default) | Blue | `rgba(86, 156, 214, 0.1)` |
-| Head file (diff mode) | Green | `rgba(72, 180, 97, 0.15)` |
-| Base file (diff mode) | Red | `rgba(220, 80, 80, 0.15)` |
+| Context                 | Color | CSS Background              |
+|-------------------------|-------|-----------------------------|
+| Point-in-time (default) | Blue  | `rgba(86, 156, 214, 0.1)` |
+| Head file (diff mode)   | Green | `rgba(72, 180, 97, 0.15)` |
+| Base file (diff mode)   | Red   | `rgba(220, 80, 80, 0.15)` |
 
 **Decoration style:**
 

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { Walkthrough, WalkthroughStep, Comment, parseLocation, normalizeRemoteUrl, getStepType } from './types';
+import { Walkthrough, WalkthroughStep, Comment, parseLocation, getStepType } from './types';
 
 export class WalkthroughTreeItem extends vscode.TreeItem {
   constructor(
@@ -140,39 +140,33 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   }
 
   getAvailableWalkthroughs(): string[] {
+    const walkthroughFiles: string[] = [];
+
     try {
-      const files = fs.readdirSync(this.workspaceRoot);
-      const walkthroughFiles = files.filter(f => f.endsWith('.walkthrough.json'));
-
-      // Filter to only show walkthroughs that match this repo (or have no repo specified)
-      return walkthroughFiles.filter(filename => {
-        try {
-          const filePath = path.join(this.workspaceRoot, filename);
-          const content = fs.readFileSync(filePath, 'utf-8');
-          const walkthrough = JSON.parse(content) as Walkthrough;
-
-          // No repository specified - show for any repo
-          if (!walkthrough.repository?.remote) {
-            return true;
-          }
-
-          // No workspace remote - can't match, but show anyway for non-git workspaces
-          if (!this.workspaceRemote) {
-            return true;
-          }
-
-          // Compare normalized URLs
-          const walkthroughRemote = normalizeRemoteUrl(walkthrough.repository.remote);
-          const workspaceRemote = normalizeRemoteUrl(this.workspaceRemote);
-          return walkthroughRemote === workspaceRemote;
-        } catch {
-          // If we can't parse the file, include it and let loadWalkthrough handle the error
-          return true;
-        }
-      });
+      // Check for .walkthrough.json at root
+      const rootWalkthroughPath = path.join(this.workspaceRoot, '.walkthrough.json');
+      if (fs.existsSync(rootWalkthroughPath)) {
+        walkthroughFiles.push('.walkthrough.json');
+      }
     } catch {
-      return [];
+      // Ignore errors
     }
+
+    try {
+      // Check for all .json files in walkthroughs/ directory
+      const walkthroughsDir = path.join(this.workspaceRoot, 'walkthroughs');
+      if (fs.existsSync(walkthroughsDir) && fs.statSync(walkthroughsDir).isDirectory()) {
+        const files = fs.readdirSync(walkthroughsDir);
+        const jsonFiles = files.filter(f => f.endsWith('.json'));
+        for (const jsonFile of jsonFiles) {
+          walkthroughFiles.push(path.join('walkthroughs', jsonFile));
+        }
+      }
+    } catch {
+      // Ignore errors
+    }
+
+    return walkthroughFiles;
   }
 
   getCurrentFile(): string | undefined {
@@ -329,12 +323,18 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     if (!this.walkthrough) {
       const available = this.getAvailableWalkthroughs();
       if (available.length === 0) {
-        return Promise.resolve([
-          new WalkthroughTreeItem(
-            'No *.walkthrough.json files found',
-            vscode.TreeItemCollapsibleState.None
-          )
-        ]);
+        const selectItem = new WalkthroughTreeItem(
+          '$(folder-opened) Select a walkthrough file...',
+          vscode.TreeItemCollapsibleState.None
+        );
+        selectItem.command = {
+          command: 'virgil.selectWalkthrough',
+          title: 'Select Walkthrough'
+        };
+        selectItem.iconPath = new vscode.ThemeIcon('folder-opened');
+        selectItem.tooltip = 'Select a walkthrough file (JSON or Markdown)';
+        selectItem.description = 'No walkthrough files found';
+        return Promise.resolve([selectItem]);
       }
       const selectItem = new WalkthroughTreeItem(
         'Select a walkthrough...',
@@ -345,6 +345,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
         title: 'Select Walkthrough'
       };
       selectItem.iconPath = new vscode.ThemeIcon('folder-opened');
+      selectItem.tooltip = 'Select a walkthrough file (JSON or Markdown)';
       return Promise.resolve([selectItem]);
     }
 
@@ -362,22 +363,28 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
 
     const items: WalkthroughTreeItem[] = [];
 
-    // File selector (if multiple walkthroughs available)
+    // File selector (always show to allow selecting/adding walkthroughs)
     const available = this.getAvailableWalkthroughs();
+    const fileItem = new WalkthroughTreeItem(
+      this.currentFile || 'Select walkthrough',
+      vscode.TreeItemCollapsibleState.None
+    );
     if (available.length > 1) {
-      const fileItem = new WalkthroughTreeItem(
-        this.currentFile || 'Select walkthrough',
-        vscode.TreeItemCollapsibleState.None
-      );
       fileItem.description = `(${available.length} available)`;
-      fileItem.iconPath = new vscode.ThemeIcon('files');
-      fileItem.command = {
-        command: 'virgil.selectWalkthrough',
-        title: 'Select Walkthrough'
-      };
-      fileItem.tooltip = 'Click to switch walkthrough';
-      items.push(fileItem);
+    } else if (available.length === 1) {
+      fileItem.description = '(1 available)';
+    } else {
+      fileItem.description = '(0 available)';
     }
+    fileItem.iconPath = new vscode.ThemeIcon('files');
+    fileItem.command = {
+      command: 'virgil.selectWalkthrough',
+      title: 'Select Walkthrough'
+    };
+    fileItem.tooltip = available.length > 1 
+      ? 'Click to switch walkthrough or select a file'
+      : 'Click to select a walkthrough file (JSON or Markdown)';
+    items.push(fileItem);
 
     // Title as header (with warning if commit mismatch)
     const hasMismatch = this.hasCommitMismatch();

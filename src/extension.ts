@@ -11,7 +11,7 @@ import { DiffResolver } from './DiffResolver';
 
 let walkthroughProvider: WalkthroughProvider | undefined;
 let highlightManager: HighlightManager | undefined;
-let fileWatcher: vscode.FileSystemWatcher | undefined;
+let fileWatchers: vscode.FileSystemWatcher[] = [];
 let diffContentProvider: DiffContentProvider | undefined;
 let diffResolver: DiffResolver | undefined;
 let currentViewMode: ViewMode = 'diff';
@@ -22,6 +22,48 @@ export function activate(context: vscode.ExtensionContext) {
   highlightManager = new HighlightManager();
 
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+  // Shared helper function to convert markdown to JSON in walkthroughs/ directory
+  async function convertMarkdownToWalkthrough(markdownFilePath: string, workspaceRoot: string): Promise<string | null> {
+    try {
+      // Read markdown file
+      const markdownContent = fs.readFileSync(markdownFilePath, 'utf-8');
+
+      // Parse markdown
+      const result = parseMarkdownWalkthrough(markdownContent, workspaceRoot);
+
+      // Show warnings if any
+      if (result.warnings.length > 0) {
+        const warningMessage = `Conversion completed with ${result.warnings.length} warning(s):\n${result.warnings.join('\n')}`;
+        const choice = await vscode.window.showWarningMessage(warningMessage, 'Continue', 'Cancel');
+        if (choice !== 'Continue') {
+          return null; // User cancelled
+        }
+      }
+
+      // Ensure walkthroughs directory exists
+      const walkthroughsDir = path.join(workspaceRoot, 'walkthroughs');
+      if (!fs.existsSync(walkthroughsDir)) {
+        fs.mkdirSync(walkthroughsDir, { recursive: true });
+      }
+
+      // Determine output file path in walkthroughs/ directory
+      const markdownBasename = path.basename(markdownFilePath, path.extname(markdownFilePath));
+      const outputPath = path.join(walkthroughsDir, `${markdownBasename}.json`);
+
+      // Write JSON file
+      const jsonContent = JSON.stringify(result.walkthrough, null, 2);
+      fs.writeFileSync(outputPath, jsonContent, 'utf-8');
+
+      // Return relative path from workspace root
+      return path.relative(workspaceRoot, outputPath);
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to convert markdown: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return null;
+    }
+  }
 
   // Register convertMarkdown command early so it's available even without workspace
   context.subscriptions.push(
@@ -71,51 +113,11 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      try {
-        // Read markdown file
-        const markdownContent = fs.readFileSync(markdownFile, 'utf-8');
-
-        // Parse markdown
-        const result = parseMarkdownWalkthrough(markdownContent, currentWorkspaceRoot);
-
-        // Show warnings if any
-        if (result.warnings.length > 0) {
-          const warningMessage = `Conversion completed with ${result.warnings.length} warning(s):\n${result.warnings.join('\n')}`;
-          await vscode.window.showWarningMessage(warningMessage, 'Continue', 'Cancel');
-        }
-
-        // Determine output file path
-        const markdownBasename = path.basename(markdownFile, path.extname(markdownFile));
-        const defaultOutputPath = path.join(currentWorkspaceRoot, `${markdownBasename}.walkthrough.json`);
-
-        // Prompt for output location
-        const outputUri = await vscode.window.showSaveDialog({
-          defaultUri: vscode.Uri.file(defaultOutputPath),
-          filters: {
-            'Walkthrough JSON': ['walkthrough.json']
-          },
-          saveLabel: 'Save Walkthrough'
-        });
-
-        if (!outputUri) {
-          return; // User cancelled
-        }
-
-        // Write JSON file
-        const jsonContent = JSON.stringify(result.walkthrough, null, 2);
-        fs.writeFileSync(outputUri.fsPath, jsonContent, 'utf-8');
-
-        vscode.window.showInformationMessage(`Walkthrough converted successfully: ${path.basename(outputUri.fsPath)}`);
-
-        // Refresh walkthrough provider if it exists and the output file is in the workspace root
-        const outputPath = outputUri.fsPath;
-        if (outputPath.startsWith(currentWorkspaceRoot) && outputPath.endsWith('.walkthrough.json')) {
-          walkthroughProvider?.refresh();
-        }
-      } catch (error) {
-        vscode.window.showErrorMessage(
-          `Failed to convert markdown: ${error instanceof Error ? error.message : String(error)}`
-        );
+      const relativePath = await convertMarkdownToWalkthrough(markdownFile, currentWorkspaceRoot);
+      if (relativePath) {
+        vscode.window.showInformationMessage(`Walkthrough converted successfully: ${relativePath}`);
+        // Refresh walkthrough provider
+        walkthroughProvider?.refresh();
       }
     })
   );
@@ -133,11 +135,29 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.registerTextDocumentContentProvider('virgil-git', diffContentProvider)
   );
 
-  // Find walkthrough file (*.walkthrough.json)
+  // Find walkthrough file (.walkthrough.json at root or any .json in walkthroughs/)
   const findWalkthroughFile = (): string | undefined => {
-    const files = fs.readdirSync(workspaceRoot);
-    const walkthroughFile = files.find(f => f.endsWith('.walkthrough.json'));
-    return walkthroughFile ? path.join(workspaceRoot, walkthroughFile) : undefined;
+    // Check for .walkthrough.json at root
+    const rootWalkthroughPath = path.join(workspaceRoot, '.walkthrough.json');
+    if (fs.existsSync(rootWalkthroughPath)) {
+      return rootWalkthroughPath;
+    }
+
+    // Check for any .json file in walkthroughs/ directory
+    const walkthroughsDir = path.join(workspaceRoot, 'walkthroughs');
+    if (fs.existsSync(walkthroughsDir) && fs.statSync(walkthroughsDir).isDirectory()) {
+      try {
+        const files = fs.readdirSync(walkthroughsDir);
+        const jsonFile = files.find(f => f.endsWith('.json'));
+        if (jsonFile) {
+          return path.join(walkthroughsDir, jsonFile);
+        }
+      } catch {
+        // Ignore errors
+      }
+    }
+
+    return undefined;
   };
 
   // Initialize provider
@@ -205,36 +225,96 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('virgil.selectWalkthrough', async () => {
-      if (!walkthroughProvider) {
+      if (!walkthroughProvider || !workspaceRoot) {
         return;
       }
 
       const available = walkthroughProvider.getAvailableWalkthroughs();
-      if (available.length === 0) {
-        vscode.window.showInformationMessage('No walkthrough files found');
-        return;
-      }
-
       const currentFile = walkthroughProvider.getCurrentFile();
+      
       const items = available.map(file => ({
         label: file,
         description: file === currentFile ? '(current)' : undefined
       }));
 
+      // Add "Select file..." option
+      items.push({
+        label: '$(folder-opened) Select file...',
+        description: 'Browse for a JSON or Markdown file'
+      });
+
       const selected = await vscode.window.showQuickPick(items, {
         placeHolder: 'Select a walkthrough'
       });
 
-      if (selected) {
-        walkthroughProvider.setWalkthroughFile(selected.label);
-        highlightManager?.clearAll();
-        currentViewMode = 'diff'; // Reset view mode
-        // Show first step of newly selected walkthrough
-        walkthroughProvider.goToStep(0);
-        showCurrentStep();
-        checkCommitMismatch();
-        checkGitUserName();
+      if (!selected) {
+        return;
       }
+
+      // Handle "Select file..." option
+      if (selected.label === '$(folder-opened) Select file...') {
+        const fileUri = await vscode.window.showOpenDialog({
+          canSelectFiles: true,
+          canSelectFolders: false,
+          canSelectMany: false,
+          openLabel: 'Select Walkthrough File (JSON or Markdown)',
+          filters: {
+            'All Supported': ['json', 'md', 'markdown'],
+            'JSON': ['json'],
+            'Markdown': ['md', 'markdown'],
+            'All Files': ['*']
+          },
+          defaultUri: vscode.Uri.file(workspaceRoot)
+        });
+
+        if (!fileUri || fileUri.length === 0) {
+          return; // User cancelled
+        }
+
+        const selectedFilePath = fileUri[0].fsPath;
+        const ext = path.extname(selectedFilePath).toLowerCase();
+
+        // If markdown file, convert it first
+        if (ext === '.md' || ext === '.markdown') {
+          const relativePath = await convertMarkdownToWalkthrough(selectedFilePath, workspaceRoot);
+          if (!relativePath) {
+            return; // Conversion failed or was cancelled
+          }
+          // Use the converted file
+          walkthroughProvider.setWalkthroughFile(relativePath);
+        } else if (ext === '.json') {
+          // For JSON files, validate it's a walkthrough and use it
+          try {
+            const content = fs.readFileSync(selectedFilePath, 'utf-8');
+            const walkthrough = JSON.parse(content);
+            // Basic validation - check if it has required fields
+            if (!walkthrough.title || !Array.isArray(walkthrough.steps)) {
+              vscode.window.showErrorMessage('Selected file does not appear to be a valid walkthrough JSON file.');
+              return;
+            }
+            // Use the file directly (relative path from workspace root)
+            const relativePath = path.relative(workspaceRoot, selectedFilePath);
+            walkthroughProvider.setWalkthroughFile(relativePath);
+          } catch (error) {
+            vscode.window.showErrorMessage(`Failed to read or parse JSON file: ${error instanceof Error ? error.message : String(error)}`);
+            return;
+          }
+        } else {
+          vscode.window.showErrorMessage('Selected file must be a JSON or Markdown file.');
+          return;
+        }
+      } else {
+        // Regular selection from available walkthroughs
+        walkthroughProvider.setWalkthroughFile(selected.label);
+      }
+
+      highlightManager?.clearAll();
+      currentViewMode = 'diff'; // Reset view mode
+      // Show first step of newly selected walkthrough
+      walkthroughProvider.goToStep(0);
+      showCurrentStep();
+      checkCommitMismatch();
+      checkGitUserName();
     })
   );
 
@@ -412,29 +492,38 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Watch for walkthrough file changes
-  fileWatcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(workspaceRoot, '*.walkthrough.json')
-  );
+  // Watch for walkthrough file changes (both .walkthrough.json at root and walkthroughs/*.json)
+  const watcherPatterns = [
+    new vscode.RelativePattern(workspaceRoot, '.walkthrough.json'),
+    new vscode.RelativePattern(workspaceRoot, 'walkthroughs/*.json')
+  ];
 
-  fileWatcher.onDidChange(() => {
-    walkthroughProvider?.refresh();
-    vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
+  // Create watchers for both patterns
+  fileWatchers = watcherPatterns.map(pattern => {
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    
+    watcher.onDidChange(() => {
+      walkthroughProvider?.refresh();
+      vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
+    });
+
+    watcher.onDidCreate(() => {
+      walkthroughProvider?.refresh();
+      vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
+      vscode.window.showInformationMessage('Walkthrough detected! Click on steps in the Virgil sidebar to begin.');
+    });
+
+    watcher.onDidDelete(() => {
+      walkthroughProvider?.refresh();
+      highlightManager?.clearAll();
+      const hasWalkthrough = !!findWalkthroughFile();
+      vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', hasWalkthrough);
+    });
+
+    return watcher;
   });
 
-  fileWatcher.onDidCreate(() => {
-    walkthroughProvider?.refresh();
-    vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
-    vscode.window.showInformationMessage('Walkthrough detected! Click on steps in the Virgil sidebar to begin.');
-  });
-
-  fileWatcher.onDidDelete(() => {
-    walkthroughProvider?.refresh();
-    highlightManager?.clearAll();
-    vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', false);
-  });
-
-  context.subscriptions.push(fileWatcher);
+  fileWatchers.forEach(watcher => context.subscriptions.push(watcher));
 
   // Handle tree view selection
   treeView.onDidChangeSelection(async (e) => {
@@ -633,6 +722,6 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   highlightManager?.clearAll();
   StepDetailPanel.currentPanel?.dispose();
-  fileWatcher?.dispose();
+  fileWatchers.forEach(watcher => watcher.dispose());
   diffContentProvider?.dispose();
 }
