@@ -12,10 +12,29 @@ This guide is for developers who want to contribute to the Virgil extension.
 
 ### Initial Setup
 
+#### For Contributors (Fork-Based Workflow)
+
+1. **Fork the repository** on GitHub (click the "Fork" button)
+
+2. **Clone your fork**:
+
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/virgil.git
+   cd virgil
+   ```
+
+3. **Add upstream remote** (to sync with the main repository):
+
+   ```bash
+   git remote add upstream https://github.com/ealt/virgil.git
+   ```
+
+#### For Maintainers (Direct Access)
+
 1. Clone the repository:
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/ealt/virgil.git
    cd virgil
    ```
 
@@ -269,11 +288,50 @@ For automated testing, consider adding:
 
 ### Pull Request Process
 
-1. Create a feature branch
+#### For Contributors (Fork-Based)
+
+1. **Sync your fork** with upstream (before starting):
+
+   ```bash
+   git checkout main
+   git fetch upstream
+   git merge upstream/main
+   git push origin main
+   ```
+
+2. **Create a feature branch** in your fork:
+
+   ```bash
+   git checkout -b feature/my-feature
+   ```
+
+3. **Make changes** with clear commits (Husky will run pre-commit hooks)
+
+4. **Test thoroughly** in Extension Development Host
+
+5. **Update documentation** if needed
+
+6. **Push to your fork**:
+
+   ```bash
+   git push origin feature/my-feature
+   ```
+
+7. **Create Pull Request** from your fork to the main repository
+   - Use the PR template
+   - Describe your changes clearly
+   - Reference any related issues
+
+8. **Address review feedback** by pushing more commits to your branch
+
+#### For Maintainers
+
+1. Create a feature branch: `git checkout -b feature/my-feature`
 2. Make changes with clear commits
 3. Test thoroughly in Extension Development Host
 4. Update documentation if needed
-5. Submit PR with description of changes
+5. Push branch and create PR: `git push origin feature/my-feature`
+6. Submit PR with description of changes
 
 ### Areas for Improvement
 
