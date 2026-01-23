@@ -34,13 +34,16 @@ Let's start by understanding how the extension activates.
 
 Virgil activates when it detects any `*.walkthrough.json` file in your workspace root.
 
-The activation event is defined in `package.json`. The extension uses `workspaceContains:*.walkthrough.json` which means it only activates when the workspace contains matching files.
+The activation event is defined in `package.json`. The extension uses `workspaceContains:*.walkthrough.json` which means it only activates when the workspace contains matching files at the root.
 
 **Key points:**
 
 - Activation is lazy (only when needed)
+- Once activated, the extension discovers walkthroughs from two locations:
+  - `.walkthrough.json` at workspace root
+  - Any `.json` files in `walkthroughs/` directory
 - Multiple walkthrough files can coexist
-- The extension watches for file changes automatically
+- The extension watches for file changes automatically in both locations
 
 ## Extension Entry Point
 
@@ -51,11 +54,13 @@ The `activate()` function in `extension.ts` is called when the extension activat
 **What happens on activation:**
 
 1. Creates a `HighlightManager` instance
-2. Finds walkthrough files in the workspace root
+2. Finds walkthrough files in two locations:
+   - `.walkthrough.json` at workspace root
+   - Any `.json` files in `walkthroughs/` directory
 3. Initializes the `WalkthroughProvider`
 4. Registers the tree view in the sidebar
-5. Registers all commands
-6. Sets up file watching
+5. Registers all commands (including walkthrough selection and Markdown conversion)
+6. Sets up file watching for both locations
 7. Auto-shows the first step if a walkthrough exists
 
 **Early return:** If no workspace folder is open, the extension returns early.
@@ -96,7 +101,8 @@ The extension registers several commands for navigation and control.
 **Control commands:**
 
 - `virgil.refresh` - Reload walkthrough from file
-- `virgil.selectWalkthrough` - Switch between multiple walkthrough files
+- `virgil.selectWalkthrough` - Switch between multiple walkthrough files or select Markdown files for conversion
+- `virgil.convertMarkdown` - Convert a Markdown walkthrough to JSON (saves to `walkthroughs/` directory)
 - `virgil.submitComment` - Add a comment to current step
 - `virgil.openLocation` - Open file at specific location
 - `virgil.checkoutCommit` - Checkout the commit specified in walkthrough
@@ -105,9 +111,12 @@ All commands delegate to `WalkthroughProvider` for state management, then call `
 
 ## File Watching - Auto-refresh
 
-[View code (271-293)](/src/extension.ts)
+[View code (494-525)](/src/extension.ts)
 
-The extension uses VS Code's `FileSystemWatcher` to monitor `*.walkthrough.json` files.
+The extension uses VS Code's `FileSystemWatcher` to monitor walkthrough files in two locations:
+
+- `.walkthrough.json` at workspace root
+- `walkthroughs/*.json` files
 
 **Event handling:**
 
@@ -118,10 +127,10 @@ The extension uses VS Code's `FileSystemWatcher` to monitor `*.walkthrough.json`
 **Benefits:**
 
 - No need to manually refresh when editing walkthrough files
-- Automatic detection of new walkthroughs
+- Automatic detection of new walkthroughs in both locations
 - Clean state management when files are deleted
 
-The watcher uses `RelativePattern` to only watch the workspace root, not subdirectories.
+The watcher uses `RelativePattern` to watch both the workspace root and the `walkthroughs/` directory.
 
 ## Show Current Step - Core Navigation
 
@@ -156,22 +165,21 @@ The `WalkthroughProvider` class implements VS Code's `TreeDataProvider` interfac
 
 **Responsibilities:**
 
+- Discovers walkthrough files from root (`.walkthrough.json`) and `walkthroughs/` directory (any `.json` files)
 - Loads and parses walkthrough JSON files
 - Maintains current step index
 - Builds tree items for the sidebar
-- Handles git operations (remote matching, commit checking)
+- Handles git operations (commit checking, checkout)
 - Manages comments (add, save to file)
-- Filters walkthroughs by repository remote
 
 **Key methods:**
 
+- `getAvailableWalkthroughs()` - Finds all walkthrough files (root `.walkthrough.json` and `walkthroughs/*.json`)
 - `loadWalkthrough()` - Loads JSON file and parses it
-- `getAvailableWalkthroughs()` - Finds all matching walkthrough files
+- `setWalkthroughFile()` - Sets the current walkthrough file (accepts relative paths)
 - `goToStep()`, `nextStep()`, `prevStep()` - Navigation
 - `addComment()` - Adds comment and saves to file
 - `hasCommitMismatch()` - Checks if current commit matches walkthrough
-
-**Repository matching:** Uses `normalizeRemoteUrl()` to handle SSH/HTTPS variations.
 
 ## Tree View - Building the Sidebar
 

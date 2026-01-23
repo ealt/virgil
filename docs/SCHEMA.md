@@ -1,14 +1,20 @@
 # Walkthrough JSON Schema
 
-This document defines the schema for `.walkthrough.json` files used by the Virgil extension.
+This document defines the schema for walkthrough JSON files used by the Virgil extension.
 
-## File Naming
+## File Naming and Locations
 
-Files must end with `.walkthrough.json`. Examples:
+Virgil discovers walkthrough files in two locations:
 
-- `architecture.walkthrough.json`
-- `pr-123.walkthrough.json`
-- `onboarding.walkthrough.json`
+1. **Root location**: `.walkthrough.json` at the workspace root
+   - Example: `.walkthrough.json`
+   - This is the traditional location for a single walkthrough
+
+2. **Walkthroughs directory**: Any `.json` file in the `walkthroughs/` directory at the workspace root
+   - Examples: `walkthroughs/architecture.json`, `walkthroughs/pr-123.json`, `walkthroughs/onboarding.json`
+   - This allows organizing multiple walkthroughs in a dedicated directory
+
+**Note**: Files in the `walkthroughs/` directory do not need the `.walkthrough.json` suffix - any `.json` file is recognized. The extension automatically watches both locations for changes.
 
 ## Schema
 
@@ -240,7 +246,8 @@ For PR reviews or comparing changes, use `base_location` with a base reference:
 - Use `metadata` for any custom fields (PR numbers, recommendations, tags, etc.)
 - The `body` field supports Markdown for rich formatting
 - Comments are persisted to the JSON file when added through the extension UI
-- Multiple walkthrough files can coexist in a workspace; use `repository.remote` to scope them to specific repositories
+- Multiple walkthrough files can coexist in a workspace (in `walkthroughs/` directory or as `.walkthrough.json` at root)
+- You can select walkthroughs via the "Select Walkthrough" command, which also allows selecting Markdown files for conversion
 
 ## Markdown Format
 
@@ -342,8 +349,10 @@ Use the `virgil.convertMarkdown` command:
 
 1. Open a markdown file (or have it active in the editor)
 2. Run the command: `Virgil: Convert Markdown to Walkthrough`
-3. Select or confirm the output location
-4. The JSON file will be created with repository info inferred from git
+3. The JSON file will be automatically created in the `walkthroughs/` directory with the same basename as the markdown file
+4. Repository info is inferred from git if not specified in frontmatter
+
+**Output location**: Converted JSON files are always saved to `walkthroughs/<basename>.json`. The `walkthroughs/` directory will be created automatically if it doesn't exist.
 
 **Repository info**: If not specified in frontmatter, the converter will automatically infer:
 

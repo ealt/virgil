@@ -42,7 +42,7 @@ This guide is for developers who want to contribute to the Virgil extension.
 2. **Testing**:
    - Open the `virgil` folder in VS Code/Cursor
    - Press `F5` to launch a new Extension Development Host window
-   - In the new window, open a workspace with a `.walkthrough.json` file to test
+   - In the new window, open a workspace with a walkthrough file (`.walkthrough.json` at root or any `.json` in `walkthroughs/` directory) to test
 
 3. **Packaging**: Create a `.vsix` file for distribution:
 
@@ -72,7 +72,7 @@ virgil/
 
 ## Architecture Overview
 
-Virgil is a VS Code extension that provides interactive code walkthroughs. The extension activates when it detects `.walkthrough.json` files in the workspace and provides a tree view, webview panel, and code highlighting.
+Virgil is a VS Code extension that provides interactive code walkthroughs. The extension activates when it detects `.walkthrough.json` files in the workspace root, and discovers walkthroughs from both the root (`.walkthrough.json`) and the `walkthroughs/` directory (any `.json` files). It provides a tree view, webview panel, and code highlighting.
 
 ### Key Components
 
@@ -80,22 +80,24 @@ Virgil is a VS Code extension that provides interactive code walkthroughs. The e
 
 The main entry point that:
 
-- Activates when `*.walkthrough.json` files are detected
+- Activates when `*.walkthrough.json` files are detected at workspace root
+- Discovers walkthroughs from both root (`.walkthrough.json`) and `walkthroughs/` directory (any `.json` files)
 - Initializes core components (HighlightManager, WalkthroughProvider)
-- Registers commands (start, next, prev, refresh, etc.)
-- Sets up file watching for walkthrough files
+- Registers commands (start, next, prev, refresh, select, etc.)
+- Sets up file watching for walkthrough files in both locations
 - Coordinates navigation and UI updates
+- Handles Markdown to JSON conversion via file picker
 
 #### `WalkthroughProvider.ts`
 
 Implements `TreeDataProvider` to:
 
 - Load and parse walkthrough JSON files
+- Discover walkthroughs from root (`.walkthrough.json`) and `walkthroughs/` directory (any `.json` files)
 - Manage current step state
 - Build the sidebar tree view
 - Handle git operations (commit checking, checkout)
 - Manage comments (add, save to file)
-- Filter walkthroughs by repository remote
 
 #### `StepDetailPanel.ts`
 
@@ -128,11 +130,14 @@ Defines TypeScript interfaces:
 
 ### Activation Flow
 
-1. Extension activates on `workspaceContains:*.walkthrough.json`
-2. `extension.ts` finds walkthrough files in workspace root
+1. Extension activates on `workspaceContains:*.walkthrough.json` (detects root `.walkthrough.json` files)
+2. `extension.ts` finds walkthrough files in two locations:
+   - `.walkthrough.json` at workspace root
+   - Any `.json` files in `walkthroughs/` directory
 3. `WalkthroughProvider` loads the first available walkthrough
 4. Tree view is registered and displayed in sidebar
 5. If walkthrough exists, first step is automatically shown
+6. Users can select different walkthroughs via "Select Walkthrough" command, which also allows selecting Markdown files for conversion
 
 ### Navigation Flow
 
@@ -147,7 +152,9 @@ Defines TypeScript interfaces:
 
 ### File Watching
 
-- `FileSystemWatcher` monitors `*.walkthrough.json` files
+- `FileSystemWatcher` monitors both:
+  - `.walkthrough.json` at workspace root
+  - `walkthroughs/*.json` files
 - On create: Shows notification, refreshes provider
 - On change: Refreshes provider
 - On delete: Clears highlights, updates context
@@ -161,12 +168,14 @@ Defines TypeScript interfaces:
 5. Walkthrough JSON is saved to disk
 6. Panel is refreshed to show new comment
 
-### Repository Matching
+### Walkthrough Discovery
 
-- Walkthroughs can specify `repository.remote`
-- `normalizeRemoteUrl()` handles SSH/HTTPS variations, `.git` suffix, case
-- Only matching walkthroughs appear in `getAvailableWalkthroughs()`
-- Allows portable walkthrough files that only show for relevant repos
+- Walkthroughs are discovered from two locations:
+  - `.walkthrough.json` at workspace root
+  - Any `.json` files in `walkthroughs/` directory
+- `getAvailableWalkthroughs()` returns all discovered walkthroughs
+- Users can select walkthroughs via the "Select Walkthrough" command
+- The selection command also allows picking Markdown files, which are converted to JSON and saved to `walkthroughs/` directory
 
 ### Commit Mismatch Detection
 
@@ -207,8 +216,8 @@ Currently, testing is manual:
 
 1. Run `npm run watch` in terminal
 2. Press `F5` in VS Code to launch Extension Development Host
-3. In the new window, open a workspace with a `.walkthrough.json` file
-4. Test features: navigation, highlighting, comments, etc.
+3. In the new window, open a workspace with a walkthrough file (`.walkthrough.json` at root or any `.json` in `walkthroughs/` directory)
+4. Test features: navigation, highlighting, comments, walkthrough selection, Markdown conversion, etc.
 
 For automated testing, consider adding:
 

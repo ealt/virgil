@@ -53,9 +53,9 @@ This runs `npm install`, compiles, packages the VSIX, and installs it into Curso
 
 1. **Write a Markdown walkthrough**: Create a `.md` file using the [Markdown walkthrough format](#creating-walkthroughs)
 
-2. **Convert to JSON**: Run `Virgil: Convert Markdown to Walkthrough` to generate the `.walkthrough.json`
+2. **Convert to JSON**: Run `Virgil: Convert Markdown to Walkthrough` to generate a JSON file in the `walkthroughs/` directory
 
-3. **Open your workspace**: The Virgil extension will automatically detect the walkthrough file and activate
+3. **Open your workspace**: The Virgil extension will automatically detect walkthrough files (`.walkthrough.json` at root or any `.json` in `walkthroughs/` directory) and activate
 
 4. **Navigate**:
    - Click steps in the Virgil sidebar (book icon in the activity bar)
@@ -133,8 +133,7 @@ Convert it with:
 
 1. Open or create a markdown file
 2. Run the command: `Virgil: Convert Markdown to Walkthrough`
-3. Select output location
-4. The JSON file will be created
+3. The JSON file will be automatically created in the `walkthroughs/` directory with the same basename as the markdown file
 
 **Example:** See [docs/developer-guide.md](docs/developer-guide.md) for a complete walkthrough in Markdown.
 
@@ -142,7 +141,12 @@ For detailed markdown format docs, see the [Markdown Format section](docs/SCHEMA
 
 ### Advanced: JSON Walkthroughs
 
-If you prefer to author JSON directly, create a file ending in `.walkthrough.json` in your workspace root.
+If you prefer to author JSON directly, you can create walkthrough files in two locations:
+
+1. **Root location**: `.walkthrough.json` at the workspace root
+2. **Walkthroughs directory**: Any `.json` file in the `walkthroughs/` directory
+
+Files in the `walkthroughs/` directory do not need the `.walkthrough.json` suffix - any `.json` file is recognized.
 
 ```json
 {
@@ -314,8 +318,9 @@ Step body text.
 
 1. Open or create a markdown file
 2. Run the command: `Virgil: Convert Markdown to Walkthrough`
-3. Select output location
-4. The JSON file will be created
+3. The JSON file will be automatically created in the `walkthroughs/` directory with the same basename as the markdown file
+
+You can also use the "Select Walkthrough" command to browse and select Markdown files, which will be converted automatically.
 
 **Example:** See [docs/developer-guide.md](docs/developer-guide.md) for a complete example.
 
