@@ -231,7 +231,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       const available = walkthroughProvider.getAvailableWalkthroughs();
       const currentFile = walkthroughProvider.getCurrentFile();
-      
+
       const items = available.map(file => ({
         label: file,
         description: file === currentFile ? '(current)' : undefined
@@ -501,7 +501,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Create watchers for both patterns
   fileWatchers = watcherPatterns.map(pattern => {
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
-    
+
     watcher.onDidChange(() => {
       walkthroughProvider?.refresh();
       vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
