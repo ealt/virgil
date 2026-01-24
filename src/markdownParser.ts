@@ -240,18 +240,25 @@ export function parseMarkdownWalkthrough(markdown: string, workspaceRoot?: strin
 
   const description = descriptionLines.join('\n').trim() || undefined;
 
-  // Extract steps
+  // Extract steps with hierarchy support
+  // ## = level 2 (top-level step), ### = level 3 (sub-step), etc.
   const steps: WalkthroughStep[] = [];
   let stepId = 1;
 
+  // Parent stack: tracks potential parents at each depth
+  // Each entry is { level: headerLevel, stepId: number }
+  const parentStack: { level: number; stepId: number | null }[] = [{ level: 1, stepId: null }];
+
   while (i < lines.length) {
-    // Find next ## heading
-    if (!lines[i].trim().startsWith('## ')) {
+    // Find next heading (## through ######)
+    const headerMatch = lines[i].trim().match(/^(#{2,6})\s+(.+)$/);
+    if (!headerMatch) {
       i++;
       continue;
     }
 
-    const stepTitle = lines[i].trim().substring(3).trim(); // Remove "## "
+    const headerLevel = headerMatch[1].length; // 2 for ##, 3 for ###, etc.
+    const stepTitle = headerMatch[2].trim();
     i++; // Move past heading
 
     // Skip empty lines after heading
@@ -310,9 +317,9 @@ export function parseMarkdownWalkthrough(markdown: string, workspaceRoot?: strin
       i++;
     }
 
-    // Extract step body (everything until next ## heading or end)
+    // Extract step body (everything until next heading ## through ###### or end)
     const bodyLines: string[] = [];
-    while (i < lines.length && !lines[i].trim().startsWith('## ')) {
+    while (i < lines.length && !lines[i].trim().match(/^#{2,6}\s+/)) {
       bodyLines.push(lines[i]);
       i++;
     }
@@ -335,13 +342,28 @@ export function parseMarkdownWalkthrough(markdown: string, workspaceRoot?: strin
       }
     }
 
+    // Determine parent based on header level
+    // Pop stack until we find a parent at a lower level
+    while (parentStack.length > 0 && parentStack[parentStack.length - 1].level >= headerLevel) {
+      parentStack.pop();
+    }
+
+    // Get parent ID from stack top (null if root level)
+    const parentId = parentStack.length > 0 ? parentStack[parentStack.length - 1].stepId : null;
+
+    const currentStepId = stepId++;
+
     steps.push({
-      id: stepId++,
+      id: currentStepId,
       title: stepTitle,
       body,
       location: location || undefined,
       base_location: base_location || undefined,
+      parentId: parentId ?? undefined,
     });
+
+    // Push current step to stack as potential parent for deeper headers
+    parentStack.push({ level: headerLevel, stepId: currentStepId });
   }
 
   if (steps.length === 0) {

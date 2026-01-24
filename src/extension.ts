@@ -580,12 +580,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     const walkthrough = walkthroughProvider.getWalkthrough();
     const currentIndex = walkthroughProvider.getCurrentStepIndex();
+    const totalSteps = walkthroughProvider.getTotalSteps();
+    const step = walkthroughProvider.getCurrentStep();
 
-    if (!walkthrough || currentIndex < 0 || currentIndex >= walkthrough.steps.length) {
+    if (!walkthrough || currentIndex < 0 || !step) {
       return;
     }
-
-    const step = walkthrough.steps[currentIndex];
     const stepType = getStepType(step);
 
     // Clear previous highlights
@@ -600,19 +600,12 @@ export function activate(context: vscode.ExtensionContext) {
       // Diff mode: 3-way toggle
       if (!baseResult.commit) {
         // Show error in panel - no base reference configured
-        StepDetailPanel.show(
-          context.extensionUri,
-          walkthrough,
-          step,
-          currentIndex,
-          walkthrough.steps.length,
-          {
-            stepType,
-            viewMode: currentViewMode,
-            error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
-            markdownViewMode: currentMarkdownViewMode,
-          }
-        );
+        StepDetailPanel.show(context.extensionUri, walkthrough, step, currentIndex, totalSteps, {
+          stepType,
+          viewMode: currentViewMode,
+          error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
+          markdownViewMode: currentMarkdownViewMode,
+        });
         return;
       }
 
@@ -633,19 +626,12 @@ export function activate(context: vscode.ExtensionContext) {
     } else if (stepType === 'base-only') {
       // Base-only mode
       if (!baseResult.commit) {
-        StepDetailPanel.show(
-          context.extensionUri,
-          walkthrough,
-          step,
-          currentIndex,
-          walkthrough.steps.length,
-          {
-            stepType,
-            viewMode: currentViewMode,
-            error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
-            markdownViewMode: currentMarkdownViewMode,
-          }
-        );
+        StepDetailPanel.show(context.extensionUri, walkthrough, step, currentIndex, totalSteps, {
+          stepType,
+          viewMode: currentViewMode,
+          error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
+          markdownViewMode: currentMarkdownViewMode,
+        });
         return;
       }
       await showFile(step.base_location!, baseResult.commit, 'red');
@@ -653,20 +639,13 @@ export function activate(context: vscode.ExtensionContext) {
     // informational steps have no file to show
 
     // Show step detail panel
-    StepDetailPanel.show(
-      context.extensionUri,
-      walkthrough,
-      step,
-      currentIndex,
-      walkthrough.steps.length,
-      {
-        stepType,
-        viewMode: currentViewMode,
-        baseCommit: baseResult.commit || undefined,
-        headCommit: headCommit || undefined,
-        markdownViewMode: currentMarkdownViewMode,
-      }
-    );
+    StepDetailPanel.show(context.extensionUri, walkthrough, step, currentIndex, totalSteps, {
+      stepType,
+      viewMode: currentViewMode,
+      baseCommit: baseResult.commit || undefined,
+      headCommit: headCommit || undefined,
+      markdownViewMode: currentMarkdownViewMode,
+    });
   }
 
   async function showFile(location: string, commit: string | null, color: HighlightColor) {

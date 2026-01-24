@@ -9,6 +9,7 @@ Named after Dante's guide through the Inferno, Virgil transforms written walkthr
 ## Features
 
 - **Interactive Code Walkthroughs**: Navigate through code with step-by-step explanations
+- **Hierarchical Steps**: Organize steps into nested sub-steps with collapsible tree view
 - **Code Highlighting**: Automatically highlights relevant code sections as you progress
 - **Diff Mode**: Compare changes between commits with 3-way toggle (Diff/Head/Base)
 - **Markdown Rendering**: Toggle between raw source (with highlighting) and rendered preview for markdown files
@@ -156,6 +157,10 @@ Description text
 [View code (10-20)](/src/file.ts)
 
 Step body text.
+
+### Sub-step Title
+
+Sub-steps use ### headers (nested under ##).
 ```
 
 Convert it with:
@@ -206,7 +211,25 @@ Files in the `walkthroughs/` directory do not need the `.walkthrough.json` suffi
 - **title** (required): Step name
 - **body** (optional): Explanation text (supports Markdown)
 - **location** (optional): File location in format `path:startLine-endLine`
+- **parentId** (optional): Parent step's id for hierarchical display
 - **comments** (optional): Array of user comments
+
+### Hierarchical Steps
+
+Steps can be organized into a tree structure using `parentId`:
+
+```json
+{
+  "steps": [
+    { "id": 1, "title": "Architecture" },
+    { "id": 2, "title": "Frontend", "parentId": 1 },
+    { "id": 3, "title": "Backend", "parentId": 1 },
+    { "id": 4, "title": "Conclusion" }
+  ]
+}
+```
+
+This displays as an indented tree in the sidebar. In Markdown, use header levels: `##` for top-level, `###` for children, `####` for grandchildren, etc.
 
 ### Location Format
 
@@ -341,7 +364,7 @@ Step body text.
 
 - Title from first `#` heading
 - YAML frontmatter for metadata and repository info
-- Steps from `##` headings
+- Steps from `##` headings, sub-steps from `###`, `####`, etc. (creates hierarchical tree)
 - Location links: `[text (10-20)](/file.ts)` immediately after step title
 - Repository info automatically inferred from Git if not in frontmatter
 

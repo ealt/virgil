@@ -2,13 +2,22 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { Walkthrough, WalkthroughStep, Comment, parseLocation, getStepType } from './types';
+import {
+  Walkthrough,
+  WalkthroughStep,
+  Comment,
+  getStepType,
+  StepTreeNode,
+  buildStepTree,
+  flattenStepTree,
+} from './types';
 
 export class WalkthroughTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-    public readonly stepIndex?: number
+    public readonly stepIndex?: number,
+    public readonly node?: StepTreeNode
   ) {
     super(label, collapsibleState);
   }
@@ -26,6 +35,8 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   private currentFile: string | undefined;
   private workspaceRemote: string | undefined;
   private workspaceCommit: string | undefined;
+  private stepTree: StepTreeNode[] = [];
+  private flatSteps: WalkthroughStep[] = [];
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
@@ -191,6 +202,8 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     if (!walkthroughFile) {
       this.walkthrough = undefined;
       this.currentFile = undefined;
+      this.stepTree = [];
+      this.flatSteps = [];
       return;
     }
 
@@ -199,6 +212,8 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     if (!fs.existsSync(walkthroughPath)) {
       this.walkthrough = undefined;
       this.currentFile = undefined;
+      this.stepTree = [];
+      this.flatSteps = [];
       return;
     }
 
@@ -206,10 +221,17 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       const content = fs.readFileSync(walkthroughPath, 'utf-8');
       this.walkthrough = JSON.parse(content) as Walkthrough;
       this.currentFile = walkthroughFile;
+
+      // Build tree structure from flat steps
+      this.stepTree = buildStepTree(this.walkthrough.steps);
+      // Flatten tree in depth-first order for navigation
+      this.flatSteps = flattenStepTree(this.stepTree);
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to parse ${walkthroughFile}`);
       this.walkthrough = undefined;
       this.currentFile = undefined;
+      this.stepTree = [];
+      this.flatSteps = [];
     }
   }
 
@@ -222,14 +244,14 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   }
 
   goToStep(index: number): void {
-    if (this.walkthrough && index >= 0 && index < this.walkthrough.steps.length) {
+    if (this.walkthrough && index >= 0 && index < this.flatSteps.length) {
       this.currentStepIndex = index;
       this._onDidChangeTreeData.fire();
     }
   }
 
   nextStep(): void {
-    if (this.walkthrough && this.currentStepIndex < this.walkthrough.steps.length - 1) {
+    if (this.walkthrough && this.currentStepIndex < this.flatSteps.length - 1) {
       this.currentStepIndex++;
       this._onDidChangeTreeData.fire();
     }
@@ -240,6 +262,19 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       this.currentStepIndex--;
       this._onDidChangeTreeData.fire();
     }
+  }
+
+  // Get total number of steps (for navigation)
+  getTotalSteps(): number {
+    return this.flatSteps.length;
+  }
+
+  // Get step at current index
+  getCurrentStep(): WalkthroughStep | undefined {
+    if (this.currentStepIndex >= 0 && this.currentStepIndex < this.flatSteps.length) {
+      return this.flatSteps[this.currentStepIndex];
+    }
+    return undefined;
   }
 
   hasGitUserName(): boolean {
@@ -353,7 +388,73 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       return Promise.resolve(this.getRootItems());
     }
 
+    // Return children from the tree node
+    if (element.node?.children?.length) {
+      return Promise.resolve(element.node.children.map((child) => this.createStepTreeItem(child)));
+    }
+
     return Promise.resolve([]);
+  }
+
+  private createStepTreeItem(node: StepTreeNode): WalkthroughTreeItem {
+    const step = node.step;
+    // Find the index of this step in the flat array for navigation
+    const stepIndex = this.flatSteps.findIndex((s) => s.id === step.id);
+    const isCurrent = stepIndex === this.currentStepIndex;
+    const stepType = getStepType(step);
+
+    // Check if repository has a base reference configured
+    const hasBaseRef = !!(
+      this.walkthrough?.repository?.baseCommit ||
+      this.walkthrough?.repository?.baseBranch ||
+      this.walkthrough?.repository?.pr
+    );
+
+    // Determine collapsible state based on children
+    const hasChildren = node.children.length > 0;
+    const collapsibleState = hasChildren
+      ? vscode.TreeItemCollapsibleState.Expanded
+      : vscode.TreeItemCollapsibleState.None;
+
+    const stepItem = new WalkthroughTreeItem(
+      `${step.id}. ${step.title}`,
+      collapsibleState,
+      stepIndex,
+      node
+    );
+
+    if (isCurrent) {
+      stepItem.iconPath = new vscode.ThemeIcon(
+        'arrow-right',
+        new vscode.ThemeColor('charts.green')
+      );
+      stepItem.description = '(current)';
+    } else {
+      // Set icon based on step type
+      switch (stepType) {
+        case 'diff':
+          stepItem.iconPath = new vscode.ThemeIcon('git-compare');
+          if (!hasBaseRef) {
+            stepItem.description = '⚠️ no base ref';
+          }
+          break;
+        case 'base-only':
+          stepItem.iconPath = new vscode.ThemeIcon('history', new vscode.ThemeColor('charts.red'));
+          if (!hasBaseRef) {
+            stepItem.description = '⚠️ no base ref';
+          }
+          break;
+        case 'point-in-time':
+          stepItem.iconPath = new vscode.ThemeIcon('file-code');
+          break;
+        case 'informational':
+        default:
+          stepItem.iconPath = new vscode.ThemeIcon('note');
+          break;
+      }
+    }
+
+    return stepItem;
   }
 
   private getRootItems(): WalkthroughTreeItem[] {
@@ -409,60 +510,10 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     }
     items.push(titleItem);
 
-    // Check if repository has a base reference configured
-    const hasBaseRef = !!(
-      this.walkthrough.repository?.baseCommit ||
-      this.walkthrough.repository?.baseBranch ||
-      this.walkthrough.repository?.pr
-    );
-
-    // Steps
-    this.walkthrough.steps.forEach((step, index) => {
-      const isCurrent = index === this.currentStepIndex;
-      const stepType = getStepType(step);
-
-      const stepItem = new WalkthroughTreeItem(
-        `${step.id}. ${step.title}`,
-        vscode.TreeItemCollapsibleState.None,
-        index
-      );
-
-      if (isCurrent) {
-        stepItem.iconPath = new vscode.ThemeIcon(
-          'arrow-right',
-          new vscode.ThemeColor('charts.green')
-        );
-        stepItem.description = '(current)';
-      } else {
-        // Set icon based on step type
-        switch (stepType) {
-          case 'diff':
-            stepItem.iconPath = new vscode.ThemeIcon('git-compare');
-            if (!hasBaseRef) {
-              stepItem.description = '⚠️ no base ref';
-            }
-            break;
-          case 'base-only':
-            stepItem.iconPath = new vscode.ThemeIcon(
-              'history',
-              new vscode.ThemeColor('charts.red')
-            );
-            if (!hasBaseRef) {
-              stepItem.description = '⚠️ no base ref';
-            }
-            break;
-          case 'point-in-time':
-            stepItem.iconPath = new vscode.ThemeIcon('file-code');
-            break;
-          case 'informational':
-          default:
-            stepItem.iconPath = new vscode.ThemeIcon('note');
-            break;
-        }
-      }
-
-      items.push(stepItem);
-    });
+    // Steps - use tree structure for hierarchical display
+    for (const node of this.stepTree) {
+      items.push(this.createStepTreeItem(node));
+    }
 
     return items;
   }

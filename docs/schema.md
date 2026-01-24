@@ -49,23 +49,23 @@ Virgil discovers walkthrough files in two locations:
 
 ### Root
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `title` | string | Yes | Walkthrough name |
-| `description` | string | No | Brief summary |
-| `repository` | object | No | Git repository info (see below) |
-| `metadata` | object | No | Freeform key-value pairs |
-| `steps` | array | Yes | List of steps |
+| Field         | Type   | Required | Description                     |
+| ------------- | ------ | -------- | ------------------------------- |
+| `title`       | string | Yes      | Walkthrough name                |
+| `description` | string | No       | Brief summary                   |
+| `repository`  | object | No       | Git repository info (see below) |
+| `metadata`    | object | No       | Freeform key-value pairs        |
+| `steps`       | array  | Yes      | List of steps                   |
 
 ### Repository
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `remote` | string | No | Git remote URL (e.g., `https://github.com/org/repo`) |
-| `commit` | string | No | Git commit SHA for the head/current state |
-| `baseCommit` | string | No | Base commit SHA for diff mode |
-| `baseBranch` | string | No | Base branch name for diff mode (e.g., "main") |
-| `pr` | number | No | PR number - uses PR's base branch for diff mode |
+| Field        | Type   | Required | Description                                          |
+| ------------ | ------ | -------- | ---------------------------------------------------- |
+| `remote`     | string | No       | Git remote URL (e.g., `https://github.com/org/repo`) |
+| `commit`     | string | No       | Git commit SHA for the head/current state            |
+| `baseCommit` | string | No       | Base commit SHA for diff mode                        |
+| `baseBranch` | string | No       | Base branch name for diff mode (e.g., "main")        |
+| `pr`         | number | No       | PR number - uses PR's base branch for diff mode      |
 
 When `repository.remote` is specified, the extension will only show the walkthrough if the current workspace's Git remote matches. This allows walkthrough files to be portable (e.g., stored in a shared location) while only appearing for the relevant repository.
 
@@ -89,23 +89,61 @@ For diff walkthroughs (comparing changes between two commits), specify ONE of:
 
 ### Step
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | number | Yes | Step identifier (typically sequential: 1, 2, 3, ...) |
-| `title` | string | Yes | Step name |
-| `body` | string | No | Explanation text (supports Markdown) |
-| `location` | string | No | File location for head/current file (see format below) |
-| `base_location` | string | No | File location for base file (requires base reference in repository) |
-| `comments` | array | No | User comments on this step (see Comment below) |
+| Field           | Type   | Required | Description                                                         |
+| --------------- | ------ | -------- | ------------------------------------------------------------------- |
+| `id`            | number | Yes      | Step identifier (typically sequential: 1, 2, 3, ...)                |
+| `title`         | string | Yes      | Step name                                                           |
+| `body`          | string | No       | Explanation text (supports Markdown)                                |
+| `location`      | string | No       | File location for head/current file (see format below)              |
+| `base_location` | string | No       | File location for base file (requires base reference in repository) |
+| `parentId`      | number | No       | Parent step's id for hierarchical display (see below)               |
+| `comments`      | array  | No       | User comments on this step (see Comment below)                      |
+
+#### Hierarchical Steps
+
+Steps can be organized hierarchically using the `parentId` field. When a step has a `parentId`, it appears as a child of the referenced step in the sidebar tree view.
+
+- Steps without `parentId` appear at the top level
+- Steps with `parentId` appear indented under their parent
+- Parent steps are automatically expanded to show children
+- Navigation (prev/next) traverses all steps in **depth-first order**
+
+**Example tree structure:**
+
+```
+1. Introduction
+2. Architecture
+   3. Component A
+   4. Component B
+      5. Sub-component
+6. Conclusion
+```
+
+In JSON:
+
+```json
+{
+  "steps": [
+    { "id": 1, "title": "Introduction" },
+    { "id": 2, "title": "Architecture" },
+    { "id": 3, "title": "Component A", "parentId": 2 },
+    { "id": 4, "title": "Component B", "parentId": 2 },
+    { "id": 5, "title": "Sub-component", "parentId": 4 },
+    { "id": 6, "title": "Conclusion" }
+  ]
+}
+```
+
+Navigation order: 1 → 2 → 3 → 4 → 5 → 6 (depth-first)
 
 #### Step Display Modes
 
-| `location` | `base_location` | Mode | Display |
-|------------|-----------------|------|---------|
-| Yes | No | Point-in-time | Blue highlight (standard walkthrough) |
-| No | Yes | Base-only | Red highlight, shows base file |
-| Yes | Yes | Diff mode | 3-way toggle: diff view / head (green) / base (red) |
-| No | No | Informational | No code view (overview/summary steps) |
+| `location` | `base_location` | Mode          | Display                                             |
+| ---------- | --------------- | ------------- | --------------------------------------------------- |
+| Yes        | No              | Point-in-time | Blue highlight (standard walkthrough)               |
+| No         | Yes             | Base-only     | Red highlight, shows base file                      |
+| Yes        | Yes             | Diff mode     | 3-way toggle: diff view / head (green) / base (red) |
+| No         | No              | Informational | No code view (overview/summary steps)               |
 
 The `body` field supports **Markdown formatting**, including:
 
@@ -119,11 +157,11 @@ The `body` field supports **Markdown formatting**, including:
 
 ### Comment
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | string | Yes | Unique identifier (auto-generated when added via UI) |
-| `author` | string | Yes | Comment author (from git config `user.name`) |
-| `body` | string | Yes | Comment text (supports Markdown) |
+| Field    | Type   | Required | Description                                          |
+| -------- | ------ | -------- | ---------------------------------------------------- |
+| `id`     | string | Yes      | Unique identifier (auto-generated when added via UI) |
+| `author` | string | Yes      | Comment author (from git config `user.name`)         |
+| `body`   | string | Yes      | Comment text (supports Markdown)                     |
 
 Comments can be added to steps through the extension's UI. The comment `body` field also supports Markdown formatting, same as step `body`.
 
@@ -149,7 +187,7 @@ When a step has a `location`, the extension will:
 
 ## Example
 
-```json
+````json
 {
   "title": "Authentication Refactor",
   "description": "Review of JWT implementation",
@@ -194,7 +232,7 @@ When a step has a `location`, the extension will:
     }
   ]
 }
-```
+````
 
 ## Diff Walkthrough Example
 
@@ -259,10 +297,12 @@ You can write walkthroughs in Markdown format and convert them to JSON using the
 # Walkthrough Title
 
 ---
+
 metadata_key: metadata_value
 remote: git@github.com:org/repo.git
 commit: abc123...
 baseBranch: main
+
 ---
 
 Description text (optional, everything between frontmatter and first ## heading)
@@ -298,7 +338,55 @@ Step body text.
    - `baseCommit`: Base commit SHA for diff mode (optional)
    - `pr`: PR number for diff mode (optional)
 3. **Description**: Text between frontmatter and first `##` heading
-4. **Steps**: Each `##` heading starts a new step
+4. **Steps**: Each `##` through `######` heading starts a new step
+
+### Header Hierarchy (Sub-steps)
+
+Use different header levels to create hierarchical step structures:
+
+| Header   | Level | Relationship                 |
+| -------- | ----- | ---------------------------- |
+| `##`     | 2     | Top-level step               |
+| `###`    | 3     | Child of most recent `##`    |
+| `####`   | 4     | Child of most recent `###`   |
+| `#####`  | 5     | Child of most recent `####`  |
+| `######` | 6     | Child of most recent `#####` |
+
+**Example:**
+
+```markdown
+## Architecture Overview
+
+Introduction to the system.
+
+### Frontend Components
+
+How the frontend is organized.
+
+#### React Components
+
+Component structure details.
+
+### Backend Services
+
+Server-side architecture.
+
+## Conclusion
+
+Summary of the architecture.
+```
+
+This produces:
+
+```
+1. Architecture Overview
+   2. Frontend Components
+      3. React Components
+   4. Backend Services
+5. Conclusion
+```
+
+Each step gets a sequential `id` (1, 2, 3...) and child steps have `parentId` referencing their parent.
 
 ### Location Links
 
@@ -369,13 +457,13 @@ For reference, here are the TypeScript interfaces used by the extension:
 
 ```typescript
 interface Repository {
-  remote?: string;       // Git remote URL
-  commit?: string;       // Head commit SHA
+  remote?: string; // Git remote URL
+  commit?: string; // Head commit SHA
 
   // Diff mode base references (pick ONE)
-  baseCommit?: string;   // Explicit base commit SHA
-  baseBranch?: string;   // Base branch name (resolved at runtime)
-  pr?: number;           // PR number (uses PR's base branch)
+  baseCommit?: string; // Explicit base commit SHA
+  baseBranch?: string; // Base branch name (resolved at runtime)
+  pr?: number; // PR number (uses PR's base branch)
 }
 
 interface Comment {
@@ -396,8 +484,9 @@ interface WalkthroughStep {
   id: number;
   title: string;
   body?: string;
-  location?: string;       // Head/current file location
-  base_location?: string;  // Base file location (requires base reference)
+  location?: string; // Head/current file location
+  base_location?: string; // Base file location (requires base reference)
+  parentId?: number; // Parent step's id for hierarchical display
   comments?: Comment[];
 }
 ```

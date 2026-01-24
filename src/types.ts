@@ -11,6 +11,58 @@ export interface WalkthroughStep {
   location?: string; // format: "path:start-end,start-end" for head/current file
   base_location?: string; // format: "path:start-end,start-end" for base file (requires base ref)
   comments?: Comment[];
+  parentId?: number; // References parent step's id, undefined = top-level
+}
+
+// Tree node for hierarchical step display
+export interface StepTreeNode {
+  step: WalkthroughStep;
+  children: StepTreeNode[];
+}
+
+// Build tree structure from flat steps with parentId
+export function buildStepTree(steps: WalkthroughStep[]): StepTreeNode[] {
+  // Create a map of step id to tree node
+  const nodeMap = new Map<number, StepTreeNode>();
+  const roots: StepTreeNode[] = [];
+
+  // First pass: create all nodes
+  for (const step of steps) {
+    nodeMap.set(step.id, { step, children: [] });
+  }
+
+  // Second pass: build tree structure
+  for (const step of steps) {
+    const node = nodeMap.get(step.id)!;
+    if (step.parentId !== undefined) {
+      const parent = nodeMap.get(step.parentId);
+      if (parent) {
+        parent.children.push(node);
+      } else {
+        // Parent not found, treat as root
+        roots.push(node);
+      }
+    } else {
+      roots.push(node);
+    }
+  }
+
+  return roots;
+}
+
+// Flatten tree back to array in depth-first order (for navigation)
+export function flattenStepTree(nodes: StepTreeNode[]): WalkthroughStep[] {
+  const result: WalkthroughStep[] = [];
+
+  function traverse(nodeList: StepTreeNode[]) {
+    for (const node of nodeList) {
+      result.push(node.step);
+      traverse(node.children);
+    }
+  }
+
+  traverse(nodes);
+  return result;
 }
 
 export interface Repository {
