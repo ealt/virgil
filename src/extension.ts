@@ -8,6 +8,7 @@ import { HighlightManager, HighlightColor } from './HighlightManager';
 import { parseMarkdownWalkthrough } from './markdownParser';
 import { DiffContentProvider } from './DiffContentProvider';
 import { DiffResolver } from './DiffResolver';
+import { MarkdownHighlightProvider } from './MarkdownHighlightProvider';
 
 let walkthroughProvider: WalkthroughProvider | undefined;
 let highlightManager: HighlightManager | undefined;
@@ -15,7 +16,7 @@ let fileWatchers: vscode.FileSystemWatcher[] = [];
 let diffContentProvider: DiffContentProvider | undefined;
 let diffResolver: DiffResolver | undefined;
 let currentViewMode: ViewMode = 'diff';
-let currentMarkdownViewMode: MarkdownViewMode = 'raw';
+let currentMarkdownViewMode: MarkdownViewMode = 'rendered';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Virgil extension is now active');
@@ -137,6 +138,18 @@ export function activate(context: vscode.ExtensionContext) {
   // Register content provider for git files
   context.subscriptions.push(
     vscode.workspace.registerTextDocumentContentProvider('virgil-git', diffContentProvider)
+  );
+
+  // Register content provider for markdown preview with highlighting
+  const markdownHighlightProvider = new MarkdownHighlightProvider(
+    workspaceRoot,
+    diffContentProvider
+  );
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(
+      'virgil-md-preview',
+      markdownHighlightProvider
+    )
   );
 
   // Find walkthrough file (.walkthrough.json at root or any .json in walkthroughs/)
@@ -668,9 +681,15 @@ export function activate(context: vscode.ExtensionContext) {
         uri = vscode.Uri.file(fullPath);
       }
 
-      // For markdown files in 'rendered' mode, use VS Code's built-in preview
+      // For markdown files in 'rendered' mode, use VS Code's built-in preview with highlighting
       if (isMarkdownFile(parsed.path) && currentMarkdownViewMode === 'rendered') {
-        await vscode.commands.executeCommand('markdown.showPreview', uri);
+        const highlightedUri = MarkdownHighlightProvider.createUri(
+          parsed.path,
+          parsed.ranges,
+          color,
+          commit ?? undefined
+        );
+        await vscode.commands.executeCommand('markdown.showPreview', highlightedUri);
         return;
       }
 

@@ -158,7 +158,7 @@ export class StepDetailPanel {
     const isLast = currentIndex === totalSteps - 1;
     const stepType = diffOptions?.stepType || 'point-in-time';
     const viewMode = diffOptions?.viewMode || 'diff';
-    const markdownViewMode = diffOptions?.markdownViewMode || 'raw';
+    const markdownViewMode = diffOptions?.markdownViewMode || 'rendered';
 
     // Parse locations if present
     const parsedLocation = step.location ? parseLocation(step.location) : null;
@@ -211,8 +211,8 @@ export class StepDetailPanel {
             ? `
         <div class="view-toggle markdown-toggle">
           <span class="toggle-label">Markdown:</span>
-          <button class="toggle-btn ${markdownViewMode === 'raw' ? 'active' : ''}" onclick="setMarkdownViewMode('raw')">Raw</button>
           <button class="toggle-btn ${markdownViewMode === 'rendered' ? 'active' : ''}" onclick="setMarkdownViewMode('rendered')">Rendered</button>
+          <button class="toggle-btn ${markdownViewMode === 'raw' ? 'active' : ''}" onclick="setMarkdownViewMode('raw')">Raw</button>
         </div>
         `
             : ''
@@ -252,8 +252,8 @@ export class StepDetailPanel {
             ? `
         <div class="view-toggle markdown-toggle">
           <span class="toggle-label">Markdown:</span>
-          <button class="toggle-btn ${markdownViewMode === 'raw' ? 'active' : ''}" onclick="setMarkdownViewMode('raw')">Raw</button>
           <button class="toggle-btn ${markdownViewMode === 'rendered' ? 'active' : ''}" onclick="setMarkdownViewMode('rendered')">Rendered</button>
+          <button class="toggle-btn ${markdownViewMode === 'raw' ? 'active' : ''}" onclick="setMarkdownViewMode('raw')">Raw</button>
         </div>
         `
             : ''
@@ -275,8 +275,8 @@ export class StepDetailPanel {
             ? `
         <div class="view-toggle markdown-toggle">
           <span class="toggle-label">Markdown:</span>
-          <button class="toggle-btn ${markdownViewMode === 'raw' ? 'active' : ''}" onclick="setMarkdownViewMode('raw')">Raw</button>
           <button class="toggle-btn ${markdownViewMode === 'rendered' ? 'active' : ''}" onclick="setMarkdownViewMode('rendered')">Rendered</button>
+          <button class="toggle-btn ${markdownViewMode === 'raw' ? 'active' : ''}" onclick="setMarkdownViewMode('raw')">Raw</button>
         </div>
         `
             : ''
