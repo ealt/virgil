@@ -542,7 +542,7 @@ Understanding the project structure helps when contributing.
 
 The project's main documentation lives in the README.md file. This section showcases the core features of Virgil.
 
-**Tip:** When viewing this step, try toggling between **Raw** and **Rendered** modes using the Markdown toggle in the detail panel. This demonstrates how Virgil can display markdown files either as raw source (with line highlighting) or as rendered markdown.
+**Tip:** When viewing this step, try toggling between **Rendered** and **Raw** modes using the Markdown toggle in the detail panel. Rendered mode (the default) shows the markdown preview with highlighted sections, while Raw mode shows the source with line highlighting.
 
 **Documentation structure:**
 

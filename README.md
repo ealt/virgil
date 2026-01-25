@@ -126,10 +126,10 @@ If a walkthrough specifies a `repository.commit`, the extension will warn you if
 
 ### Viewing Markdown Files
 
-When a walkthrough step references a markdown file (`.md` or `.markdown`), a **Markdown: Raw / Rendered** toggle appears in the detail panel:
+When a walkthrough step references a markdown file (`.md` or `.markdown`), a **Markdown: Rendered / Raw** toggle appears in the detail panel:
 
+- **Rendered** (default): Shows VS Code's markdown preview with highlighted sections - the specified line ranges are visually highlighted with a colored background and border
 - **Raw**: Shows the markdown source in the text editor with line highlighting - useful for seeing exactly which lines are referenced
-- **Rendered**: Shows VS Code's built-in markdown preview - useful for reading the rendered content
 
 This is helpful for walkthroughs that reference documentation files like README.md or other markdown content.
 
