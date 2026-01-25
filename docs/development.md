@@ -305,7 +305,7 @@ For automated testing, consider adding:
    git checkout -b feature/my-feature
    ```
 
-3. **Make changes** with clear commits (Husky will run pre-commit hooks)
+3. **Make changes** with clear commits (pre-commit hooks will run automatically after `npm install`)
 
 4. **Test thoroughly** in Extension Development Host
 

@@ -58,7 +58,7 @@ npm run compile
 ### Making Changes
 
 1. Make your changes to the code
-2. **Pre-commit hooks** will automatically run (via Husky):
+2. **Pre-commit hooks** will automatically run (installed via `npm install`):
    - ESLint will check and auto-fix code style issues
    - Prettier will format your code
 3. Commit your changes:

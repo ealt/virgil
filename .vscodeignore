@@ -17,7 +17,6 @@ node_modules/eslint/**
 node_modules/eslint-*/**
 node_modules/typescript/**
 node_modules/prettier/**
-node_modules/husky/**
 node_modules/lint-staged/**
 node_modules/@eslint/**
 node_modules/@nodelib/**
