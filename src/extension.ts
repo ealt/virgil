@@ -18,10 +18,32 @@ let diffResolver: DiffResolver | undefined;
 let currentViewMode: ViewMode = 'diff';
 let currentMarkdownViewMode: MarkdownViewMode = 'rendered';
 
+function getDefaultViewMode(): ViewMode {
+  const config = vscode.workspace.getConfiguration('virgil.view');
+  return (config.get<ViewMode>('defaultDiffViewMode', 'diff') as ViewMode) || 'diff';
+}
+
+function getDefaultMarkdownViewMode(): MarkdownViewMode {
+  const config = vscode.workspace.getConfiguration('virgil.view');
+  return (
+    (config.get<MarkdownViewMode>('defaultMarkdownViewMode', 'rendered') as MarkdownViewMode) ||
+    'rendered'
+  );
+}
+
+function shouldAutoShowFirstStep(): boolean {
+  const config = vscode.workspace.getConfiguration('virgil.view');
+  return config.get<boolean>('autoShowFirstStep', true);
+}
+
 export function activate(context: vscode.ExtensionContext) {
   console.log('Virgil extension is now active');
 
   highlightManager = new HighlightManager();
+
+  // Initialize view modes from configuration
+  currentViewMode = getDefaultViewMode();
+  currentMarkdownViewMode = getDefaultMarkdownViewMode();
 
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
@@ -195,7 +217,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('virgil.start', () => {
       if (walkthroughProvider) {
         walkthroughProvider.goToStep(0);
-        currentViewMode = 'diff'; // Reset to default view mode
+        currentViewMode = getDefaultViewMode(); // Reset to default view mode
         showCurrentStep();
       }
     })
@@ -205,7 +227,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('virgil.next', () => {
       if (walkthroughProvider) {
         walkthroughProvider.nextStep();
-        currentViewMode = 'diff'; // Reset to default view mode on step change
+        currentViewMode = getDefaultViewMode(); // Reset to default view mode on step change
         showCurrentStep();
       }
     })
@@ -215,7 +237,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('virgil.prev', () => {
       if (walkthroughProvider) {
         walkthroughProvider.prevStep();
-        currentViewMode = 'diff'; // Reset to default view mode on step change
+        currentViewMode = getDefaultViewMode(); // Reset to default view mode on step change
         showCurrentStep();
       }
     })
@@ -225,7 +247,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('virgil.goToStep', (stepIndex: number) => {
       if (walkthroughProvider) {
         walkthroughProvider.goToStep(stepIndex);
-        currentViewMode = 'diff'; // Reset to default view mode
+        currentViewMode = getDefaultViewMode(); // Reset to default view mode
         showCurrentStep();
       }
     })
@@ -330,7 +352,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       highlightManager?.clearAll();
-      currentViewMode = 'diff'; // Reset view mode
+      currentViewMode = getDefaultViewMode(); // Reset view mode
       // Show first step of newly selected walkthrough
       walkthroughProvider.goToStep(0);
       showCurrentStep();
@@ -543,14 +565,32 @@ export function activate(context: vscode.ExtensionContext) {
     watcher.onDidChange(() => {
       walkthroughProvider?.refresh();
       vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
+      // Auto-show first step if setting is enabled and walkthrough exists
+      if (shouldAutoShowFirstStep() && walkthroughProvider) {
+        const walkthrough = walkthroughProvider.getWalkthrough();
+        if (walkthrough && walkthrough.steps.length > 0) {
+          walkthroughProvider.goToStep(0);
+          showCurrentStep();
+        }
+      }
     });
 
     watcher.onDidCreate(() => {
       walkthroughProvider?.refresh();
       vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
-      vscode.window.showInformationMessage(
-        'Walkthrough detected! Click on steps in the Virgil sidebar to begin.'
-      );
+      if (shouldAutoShowFirstStep() && walkthroughProvider) {
+        const walkthrough = walkthroughProvider.getWalkthrough();
+        if (walkthrough && walkthrough.steps.length > 0) {
+          walkthroughProvider.goToStep(0);
+          showCurrentStep();
+          checkCommitMismatch();
+          checkGitUserName();
+        }
+      } else {
+        vscode.window.showInformationMessage(
+          'Walkthrough detected! Click on steps in the Virgil sidebar to begin.'
+        );
+      }
     });
 
     watcher.onDidDelete(() => {
@@ -570,13 +610,13 @@ export function activate(context: vscode.ExtensionContext) {
     const selected = e.selection[0];
     if (selected && selected.stepIndex !== undefined) {
       walkthroughProvider?.goToStep(selected.stepIndex);
-      currentViewMode = 'diff'; // Reset view mode on step selection
+      currentViewMode = getDefaultViewMode(); // Reset view mode on step selection
       await showCurrentStep();
     }
   });
 
-  // Auto-show first step if walkthrough exists
-  if (findWalkthroughFile() && walkthroughProvider) {
+  // Auto-show first step if walkthrough exists and setting is enabled
+  if (shouldAutoShowFirstStep() && findWalkthroughFile() && walkthroughProvider) {
     const walkthrough = walkthroughProvider.getWalkthrough();
     if (walkthrough && walkthrough.steps.length > 0) {
       walkthroughProvider.goToStep(0);
@@ -638,15 +678,15 @@ export function activate(context: vscode.ExtensionContext) {
           await showDiff(step.location!, step.base_location!, baseResult.commit, headCommit);
           break;
         case 'head':
-          await showFile(step.location!, headCommit, 'green');
+          await showFile(step.location!, headCommit, 'diffHead');
           break;
         case 'base':
-          await showFile(step.base_location!, baseResult.commit, 'red');
+          await showFile(step.base_location!, baseResult.commit, 'diffBase');
           break;
       }
     } else if (stepType === 'point-in-time') {
       // Point-in-time mode (unchanged behavior)
-      await showFile(step.location!, headCommit, 'blue');
+      await showFile(step.location!, headCommit, 'standard');
     } else if (stepType === 'base-only') {
       // Base-only mode
       if (!baseResult.commit) {
@@ -666,7 +706,7 @@ export function activate(context: vscode.ExtensionContext) {
         );
         return;
       }
-      await showFile(step.base_location!, baseResult.commit, 'red');
+      await showFile(step.base_location!, baseResult.commit, 'diffBase');
     }
     // informational steps have no file to show
 

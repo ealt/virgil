@@ -116,7 +116,81 @@
         "mac": "cmd+shift+[",
         "when": "virgilWalkthroughActive"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Virgil",
+      "properties": {
+        "virgil.highlights.standard.backgroundColor": {
+          "type": "string",
+          "default": "#569CDE1A",
+          "description": "Hex color for standard (non-diff) highlight background. Supports 6-digit (#RRGGBB) or 8-digit (#RRGGBBAA) format."
+        },
+        "virgil.highlights.standard.borderColor": {
+          "type": "string",
+          "default": "#569CDE99",
+          "description": "Hex color for standard highlight border. Supports 6-digit (#RRGGBB) or 8-digit (#RRGGBBAA) format."
+        },
+        "virgil.highlights.standard.overviewRulerColor": {
+          "type": "string",
+          "default": "#569CDECC",
+          "description": "Hex color for standard overview ruler. Supports 6-digit (#RRGGBB) or 8-digit (#RRGGBBAA) format."
+        },
+        "virgil.highlights.diffHead.backgroundColor": {
+          "type": "string",
+          "default": "#48B46126",
+          "description": "Hex color for diff head (new/current) highlight background. Supports 6-digit (#RRGGBB) or 8-digit (#RRGGBBAA) format."
+        },
+        "virgil.highlights.diffHead.borderColor": {
+          "type": "string",
+          "default": "#48B46199",
+          "description": "Hex color for diff head highlight border. Supports 6-digit (#RRGGBB) or 8-digit (#RRGGBBAA) format."
+        },
+        "virgil.highlights.diffHead.overviewRulerColor": {
+          "type": "string",
+          "default": "#48B461CC",
+          "description": "Hex color for diff head overview ruler. Supports 6-digit (#RRGGBB) or 8-digit (#RRGGBBAA) format."
+        },
+        "virgil.highlights.diffBase.backgroundColor": {
+          "type": "string",
+          "default": "#DC505026",
+          "description": "Hex color for diff base (old) highlight background. Supports 6-digit (#RRGGBB) or 8-digit (#RRGGBBAA) format."
+        },
+        "virgil.highlights.diffBase.borderColor": {
+          "type": "string",
+          "default": "#DC505099",
+          "description": "Hex color for diff base highlight border. Supports 6-digit (#RRGGBB) or 8-digit (#RRGGBBAA) format."
+        },
+        "virgil.highlights.diffBase.overviewRulerColor": {
+          "type": "string",
+          "default": "#DC5050CC",
+          "description": "Hex color for diff base overview ruler. Supports 6-digit (#RRGGBB) or 8-digit (#RRGGBBAA) format."
+        },
+        "virgil.view.defaultDiffViewMode": {
+          "type": "string",
+          "enum": [
+            "diff",
+            "head",
+            "base"
+          ],
+          "default": "diff",
+          "description": "Default view mode for diff steps. 'diff' shows side-by-side comparison, 'head' shows new code only, 'base' shows old code only."
+        },
+        "virgil.view.defaultMarkdownViewMode": {
+          "type": "string",
+          "enum": [
+            "rendered",
+            "raw"
+          ],
+          "default": "rendered",
+          "description": "Default view mode for markdown files. 'rendered' shows formatted markdown with highlighting, 'raw' shows source markdown."
+        },
+        "virgil.view.autoShowFirstStep": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically show the first step when a walkthrough is loaded."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

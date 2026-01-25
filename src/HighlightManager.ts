@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-export type HighlightColor = 'blue' | 'green' | 'red';
+export type HighlightColor = 'standard' | 'diffHead' | 'diffBase';
 
 interface ColorConfig {
   backgroundColor: string;
@@ -8,33 +8,104 @@ interface ColorConfig {
   overviewRulerColor: string;
 }
 
-const COLOR_CONFIGS: Record<HighlightColor, ColorConfig> = {
-  blue: {
-    backgroundColor: 'rgba(86, 156, 214, 0.1)',
-    borderColor: 'rgba(86, 156, 214, 0.6)',
-    overviewRulerColor: 'rgba(86, 156, 214, 0.8)',
-  },
-  green: {
-    backgroundColor: 'rgba(72, 180, 97, 0.15)',
-    borderColor: 'rgba(72, 180, 97, 0.6)',
-    overviewRulerColor: 'rgba(72, 180, 97, 0.8)',
-  },
-  red: {
-    backgroundColor: 'rgba(220, 80, 80, 0.15)',
-    borderColor: 'rgba(220, 80, 80, 0.6)',
-    overviewRulerColor: 'rgba(220, 80, 80, 0.8)',
-  },
-};
+/**
+ * Converts a hex color to rgba format.
+ * Supports both 6-digit (#RRGGBB) and 8-digit (#RRGGBBAA) formats.
+ * If alpha is provided separately, it overrides any alpha in the hex string.
+ */
+function hexToRgba(hex: string, alpha?: number): string {
+  // Remove # if present
+  const cleanHex = hex.replace(/^#/, '');
+
+  // Handle 8-digit hex (with alpha)
+  if (cleanHex.length === 8) {
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    const a = alpha !== undefined ? alpha : parseInt(cleanHex.substring(6, 8), 16) / 255;
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
+
+  // Handle 6-digit hex (no alpha)
+  if (cleanHex.length === 6) {
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    const a = alpha !== undefined ? alpha : 1;
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
+
+  // Invalid format, return default
+  return 'rgba(0, 0, 0, 0)';
+}
+
+/**
+ * Reads color configuration from VS Code settings
+ */
+function getColorConfig(colorType: HighlightColor): ColorConfig {
+  const config = vscode.workspace.getConfiguration('virgil');
+
+  // Default values (matching original colors converted to hex)
+  const defaults: Record<HighlightColor, ColorConfig> = {
+    standard: {
+      backgroundColor: 'rgba(86, 156, 214, 0.1)',
+      borderColor: 'rgba(86, 156, 214, 0.6)',
+      overviewRulerColor: 'rgba(86, 156, 214, 0.8)',
+    },
+    diffHead: {
+      backgroundColor: 'rgba(72, 180, 97, 0.15)',
+      borderColor: 'rgba(72, 180, 97, 0.6)',
+      overviewRulerColor: 'rgba(72, 180, 97, 0.8)',
+    },
+    diffBase: {
+      backgroundColor: 'rgba(220, 80, 80, 0.15)',
+      borderColor: 'rgba(220, 80, 80, 0.6)',
+      overviewRulerColor: 'rgba(220, 80, 80, 0.8)',
+    },
+  };
+
+  const defaultConfig = defaults[colorType];
+
+  // Read individual properties from config
+  const bgHex = config.get<string>(`highlights.${colorType}.backgroundColor`);
+  const borderHex = config.get<string>(`highlights.${colorType}.borderColor`);
+  const rulerHex = config.get<string>(`highlights.${colorType}.overviewRulerColor`);
+
+  return {
+    backgroundColor: bgHex ? hexToRgba(bgHex) : defaultConfig.backgroundColor,
+    borderColor: borderHex ? hexToRgba(borderHex) : defaultConfig.borderColor,
+    overviewRulerColor: rulerHex ? hexToRgba(rulerHex) : defaultConfig.overviewRulerColor,
+  };
+}
 
 export class HighlightManager {
   private decorationTypes: Map<HighlightColor, vscode.TextEditorDecorationType> = new Map();
   private activeDecorations: Map<string, { color: HighlightColor; ranges: vscode.Range[] }> =
     new Map();
+  private configChangeListener: vscode.Disposable | undefined;
 
   constructor() {
-    // Create decoration types for each color
-    for (const color of Object.keys(COLOR_CONFIGS) as HighlightColor[]) {
-      const config = COLOR_CONFIGS[color];
+    this.createDecorationTypes();
+
+    // Listen for configuration changes
+    this.configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('virgil.highlights')) {
+        this.recreateDecorationTypes();
+      }
+    });
+  }
+
+  private createDecorationTypes(): void {
+    // Dispose existing decoration types
+    for (const decorationType of this.decorationTypes.values()) {
+      decorationType.dispose();
+    }
+    this.decorationTypes.clear();
+
+    // Create decoration types for each color from configuration
+    const colorTypes: HighlightColor[] = ['standard', 'diffHead', 'diffBase'];
+    for (const color of colorTypes) {
+      const config = getColorConfig(color);
       this.decorationTypes.set(
         color,
         vscode.window.createTextEditorDecorationType({
@@ -50,11 +121,34 @@ export class HighlightManager {
     }
   }
 
+  private recreateDecorationTypes(): void {
+    // Store current active decorations
+    const currentDecorations = new Map(this.activeDecorations);
+
+    // Recreate decoration types with new colors
+    this.createDecorationTypes();
+
+    // Reapply decorations to all visible editors
+    for (const editor of vscode.window.visibleTextEditors) {
+      const filePath = editor.document.uri.toString();
+      const decorationData = currentDecorations.get(filePath);
+      if (decorationData) {
+        const decorationType = this.decorationTypes.get(decorationData.color);
+        if (decorationType) {
+          editor.setDecorations(decorationType, decorationData.ranges);
+        }
+      }
+    }
+
+    // Update active decorations map
+    this.activeDecorations = currentDecorations;
+  }
+
   public highlightRange(
     editor: vscode.TextEditor,
     startLine: number,
     endLine: number,
-    color: HighlightColor = 'blue'
+    color: HighlightColor = 'standard'
   ): void {
     const filePath = editor.document.uri.toString();
 
@@ -141,5 +235,6 @@ export class HighlightManager {
       decorationType.dispose();
     }
     this.decorationTypes.clear();
+    this.configChangeListener?.dispose();
   }
 }

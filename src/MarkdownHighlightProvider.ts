@@ -8,10 +8,12 @@ import { DiffContentProvider } from './DiffContentProvider';
  * Highlight styles for markdown preview (matching HighlightManager colors)
  */
 const HIGHLIGHT_STYLES: Record<HighlightColor, string> = {
-  blue: 'background-color: rgba(86, 156, 214, 0.15); border-left: 3px solid rgba(86, 156, 214, 0.6); padding: 4px 8px; margin: 0 -8px;',
-  green:
+  standard:
+    'background-color: rgba(86, 156, 214, 0.15); border-left: 3px solid rgba(86, 156, 214, 0.6); padding: 4px 8px; margin: 0 -8px;',
+  diffHead:
     'background-color: rgba(72, 180, 97, 0.2); border-left: 3px solid rgba(72, 180, 97, 0.8); padding: 4px 8px; margin: 0 -8px;',
-  red: 'background-color: rgba(220, 80, 80, 0.2); border-left: 3px solid rgba(220, 80, 80, 0.8); padding: 4px 8px; margin: 0 -8px;',
+  diffBase:
+    'background-color: rgba(220, 80, 80, 0.2); border-left: 3px solid rgba(220, 80, 80, 0.8); padding: 4px 8px; margin: 0 -8px;',
 };
 
 interface ParsedMarkdownUri {
@@ -98,7 +100,9 @@ export class MarkdownHighlightProvider implements vscode.TextDocumentContentProv
     // Parse color
     const colorStr = query.get('color');
     const color: HighlightColor =
-      colorStr === 'blue' || colorStr === 'green' || colorStr === 'red' ? colorStr : 'blue';
+      colorStr === 'standard' || colorStr === 'diffHead' || colorStr === 'diffBase'
+        ? colorStr
+        : 'standard';
 
     // Parse optional commit
     const commit = query.get('commit') || undefined;

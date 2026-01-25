@@ -133,6 +133,100 @@ When a walkthrough step references a markdown file (`.md` or `.markdown`), a **M
 
 This is helpful for walkthroughs that reference documentation files like README.md or other markdown content.
 
+## Configuration
+
+Virgil supports customization through VS Code settings. Open Settings (`Cmd+,` / `Ctrl+,`) and search for "Virgil" to configure:
+
+### Highlight Colors
+
+Customize the colors used for code highlighting. Colors use semantic names based on their purpose:
+
+- **`standard`**: Used for point-in-time/non-diff steps (default: blue)
+- **`diffHead`**: Used for head/new code in diff mode (default: green)
+- **`diffBase`**: Used for base/old code in diff mode (default: red)
+
+Each color type has three properties you can customize:
+
+- `backgroundColor`: Background color for highlighted lines
+- `borderColor`: Left border color
+- `overviewRulerColor`: Color in the overview ruler
+
+**Example settings.json:**
+
+```json
+{
+  "virgil.highlights.standard.backgroundColor": "#569CDE1A",
+  "virgil.highlights.standard.borderColor": "#569CDE99",
+  "virgil.highlights.standard.overviewRulerColor": "#569CDECC",
+  "virgil.highlights.diffHead.backgroundColor": "#48B46126",
+  "virgil.highlights.diffHead.borderColor": "#48B46199",
+  "virgil.highlights.diffHead.overviewRulerColor": "#48B461CC",
+  "virgil.highlights.diffBase.backgroundColor": "#DC505026",
+  "virgil.highlights.diffBase.borderColor": "#DC505099",
+  "virgil.highlights.diffBase.overviewRulerColor": "#DC5050CC"
+}
+```
+
+Colors support both 6-digit (`#RRGGBB`) and 8-digit (`#RRGGBBAA`) hex formats. The 8-digit format includes alpha channel for transparency.
+
+### View Behavior
+
+- **`virgil.view.defaultDiffViewMode`**: Default view mode for diff steps
+  - `"diff"` (default): Side-by-side comparison
+  - `"head"`: Show new code only
+  - `"base"`: Show old code only
+
+- **`virgil.view.defaultMarkdownViewMode`**: Default view mode for markdown files
+  - `"rendered"` (default): Formatted markdown with highlighting
+  - `"raw"`: Source markdown in text editor
+
+- **`virgil.view.autoShowFirstStep`**: Automatically show the first step when a walkthrough loads (default: `true`)
+
+### Customizing Keyboard Shortcuts
+
+Keyboard shortcuts can be customized through VS Code's keybindings. The default shortcuts are:
+
+- **Next Step**: `Cmd+Shift+]` (Mac) / `Ctrl+Shift+]` (Windows/Linux)
+- **Previous Step**: `Cmd+Shift+[` (Mac) / `Ctrl+Shift+[` (Windows/Linux)
+
+**To customize keybindings:**
+
+1. Open Keyboard Shortcuts:
+   - **Mac**: `Cmd+K Cmd+S`
+   - **Windows/Linux**: `Ctrl+K Ctrl+S`
+   - Or go to: **File → Preferences → Keyboard Shortcuts** (VS Code) or **Cursor → Settings → Keyboard Shortcuts** (Cursor)
+
+2. Search for "Virgil" in the search box
+
+3. Find the command you want to customize (e.g., "Virgil: Next Step" or "Virgil: Previous Step")
+
+4. Click on the command, then press your desired key combination
+
+5. If the key combination is already in use, VS Code will warn you and you can choose to replace it or use a different combination
+
+#### Alternative: Edit keybindings.json directly
+
+You can also edit your `keybindings.json` file directly:
+
+1. Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
+2. Run "Preferences: Open Keyboard Shortcuts (JSON)"
+3. Add entries like:
+
+```json
+{
+  "command": "virgil.next",
+  "key": "ctrl+right",
+  "when": "virgilWalkthroughActive"
+},
+{
+  "command": "virgil.prev",
+  "key": "ctrl+left",
+  "when": "virgilWalkthroughActive"
+}
+```
+
+The `when` clause ensures shortcuts only work when a walkthrough is active.
+
 ## Creating Walkthroughs
 
 The easiest way to create a walkthrough is to write it in **Markdown** and convert it using the extension. This keeps authoring simple and readable, and the conversion handles the JSON structure for you.
@@ -316,8 +410,8 @@ For PR reviews or comparing changes between commits, use diff mode by specifying
 **Step types:**
 
 - Steps with both `location` and `base_location` show a 3-way toggle (Diff/Head/Base)
-- Steps with only `location` show in blue (unchanged behavior)
-- Steps with only `base_location` show in red (base file view)
+- Steps with only `location` show with standard highlights (configurable, default: blue)
+- Steps with only `base_location` show with diff base highlights (configurable, default: red)
 
 **Markdown format:**
 

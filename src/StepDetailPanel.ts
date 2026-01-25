@@ -153,6 +153,14 @@ export class StepDetailPanel {
     this.panel.reveal(vscode.ViewColumn.Two, true);
   }
 
+  private getDefaultMarkdownViewMode(): MarkdownViewMode {
+    const config = vscode.workspace.getConfiguration('virgil.view');
+    return (
+      (config.get<MarkdownViewMode>('defaultMarkdownViewMode', 'rendered') as MarkdownViewMode) ||
+      'rendered'
+    );
+  }
+
   private getHtml(
     walkthrough: Walkthrough,
     step: WalkthroughStep,
@@ -165,7 +173,7 @@ export class StepDetailPanel {
     const isLast = currentIndex === totalSteps - 1;
     const stepType = diffOptions?.stepType || 'point-in-time';
     const viewMode = diffOptions?.viewMode || 'diff';
-    const markdownViewMode = diffOptions?.markdownViewMode || 'rendered';
+    const markdownViewMode = diffOptions?.markdownViewMode || this.getDefaultMarkdownViewMode();
 
     // Parse locations if present
     const parsedLocation = step.location ? parseLocation(step.location) : null;

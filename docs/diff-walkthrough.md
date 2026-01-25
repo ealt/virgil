@@ -11,15 +11,15 @@ This walkthrough demonstrates how diff-based walkthroughs work by walking throug
 Diff-based walkthroughs allow you to show code changes between two points in time. When viewing a diff step, you'll see a 3-way toggle:
 
 - **Diff**: Shows VS Code's built-in diff editor comparing base and head
-- **Head**: Shows the current (new) code with green highlights
-- **Base**: Shows the old code with red highlights
+- **Head**: Shows the current (new) code with diff head highlights (configurable, default: green)
+- **Base**: Shows the old code with diff base highlights (configurable, default: red)
 
 This is useful for code reviews, explaining refactors, or documenting how a feature evolved.
 
 **Key concepts:**
 
 - `baseCommit` in the frontmatter specifies the "before" state
-- Steps with only `location` show head code (blue highlights)
+- Steps with only `location` show head code with standard highlights (configurable, default: blue)
 - Steps with both `location` and `base_location` enable the 3-way toggle
 - Steps with neither show as informational (no code view)
 
@@ -94,16 +94,17 @@ The highlight manager was refactored to support multiple colors for different co
 
 **After (head):**
 
-- `HighlightColor` type: `'blue' | 'green' | 'red'`
-- `COLOR_CONFIGS` object with background, border, and ruler colors for each
+- `HighlightColor` type: `'standard' | 'diffHead' | 'diffBase'` (semantic names)
+- Colors read from VS Code configuration with hex-to-rgba conversion
 - Decoration types created for each color in constructor
 - `Map<string, { color, ranges }>` tracks both color and ranges per file
+- Configuration change listener recreates decorations when colors change
 
 **Color semantics:**
 
-- Blue: Point-in-time steps (traditional walkthrough)
-- Green: Head file in diff mode (new code)
-- Red: Base file in diff mode (old code)
+- `standard`: Point-in-time steps (traditional walkthrough, configurable, default: blue)
+- `diffHead`: Head file in diff mode (new code, configurable, default: green)
+- `diffBase`: Base file in diff mode (old code, configurable, default: red)
 
 ### Toggle Between Diff, Head, and Base Views
 
@@ -116,7 +117,7 @@ The step detail panel now shows a 3-way toggle for diff steps.
 
 **UI changes:**
 
-- Toggle buttons styled with the color of their view (green for Head, red for Base)
+- Toggle buttons styled with the color of their view (diffHead for Head, diffBase for Base)
 - Location info shows file paths with colored indicators
 - Both head and base locations displayed when in diff mode
 
@@ -135,8 +136,8 @@ The main extension file orchestrates all the diff components.
 2. Resolves base commit using `DiffResolver`
 3. Handles each step type differently:
    - **diff**: Shows 3-way toggle, opens diff/head/base based on `currentViewMode`
-   - **point-in-time**: Opens file with blue highlights (unchanged behavior)
-   - **base-only**: Opens base file with red highlights
+   - **point-in-time**: Opens file with standard highlights (configurable, default: blue)
+   - **base-only**: Opens base file with diff base highlights (configurable, default: red)
    - **informational**: Shows panel only, no file opened
 
 **New helper functions:**

@@ -284,11 +284,11 @@ The `HighlightManager` creates and manages text decorations that highlight code 
 
 **Color variants:**
 
-| Context                 | Color | CSS Background            |
-| ----------------------- | ----- | ------------------------- |
-| Point-in-time (default) | Blue  | `rgba(86, 156, 214, 0.1)` |
-| Head file (diff mode)   | Green | `rgba(72, 180, 97, 0.15)` |
-| Base file (diff mode)   | Red   | `rgba(220, 80, 80, 0.15)` |
+| Context                 | Color                                     | CSS Background            |
+| ----------------------- | ----------------------------------------- | ------------------------- |
+| Point-in-time (default) | `standard` (configurable, default: blue)  | `rgba(86, 156, 214, 0.1)` |
+| Head file (diff mode)   | `diffHead` (configurable, default: green) | `rgba(72, 180, 97, 0.15)` |
+| Base file (diff mode)   | `diffBase` (configurable, default: red)   | `rgba(220, 80, 80, 0.15)` |
 
 **Decoration style:**
 

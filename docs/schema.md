@@ -138,12 +138,12 @@ Navigation order: 1 → 2 → 3 → 4 → 5 → 6 (depth-first)
 
 #### Step Display Modes
 
-| `location` | `base_location` | Mode          | Display                                             |
-| ---------- | --------------- | ------------- | --------------------------------------------------- |
-| Yes        | No              | Point-in-time | Blue highlight (standard walkthrough)               |
-| No         | Yes             | Base-only     | Red highlight, shows base file                      |
-| Yes        | Yes             | Diff mode     | 3-way toggle: diff view / head (green) / base (red) |
-| No         | No              | Informational | No code view (overview/summary steps)               |
+| `location` | `base_location` | Mode          | Display                                                                                           |
+| ---------- | --------------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| Yes        | No              | Point-in-time | Standard highlight (configurable, default: blue)                                                  |
+| No         | Yes             | Base-only     | Diff base highlight (configurable, default: red)                                                  |
+| Yes        | Yes             | Diff mode     | 3-way toggle: diff view / head (configurable, default: green) / base (configurable, default: red) |
+| No         | No              | Informational | No code view (overview/summary steps)                                                             |
 
 The `body` field supports **Markdown formatting**, including:
 
