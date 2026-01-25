@@ -10,6 +10,8 @@ import {
   StepTreeNode,
   buildStepTree,
   flattenStepTree,
+  StepNavigationContext,
+  buildNavigationMap,
 } from './types';
 
 export class WalkthroughTreeItem extends vscode.TreeItem {
@@ -37,6 +39,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   private workspaceCommit: string | undefined;
   private stepTree: StepTreeNode[] = [];
   private flatSteps: WalkthroughStep[] = [];
+  private navigationMap: Map<number, StepNavigationContext> = new Map();
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
@@ -204,6 +207,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       this.currentFile = undefined;
       this.stepTree = [];
       this.flatSteps = [];
+      this.navigationMap = new Map();
       return;
     }
 
@@ -214,6 +218,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       this.currentFile = undefined;
       this.stepTree = [];
       this.flatSteps = [];
+      this.navigationMap = new Map();
       return;
     }
 
@@ -226,12 +231,15 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       this.stepTree = buildStepTree(this.walkthrough.steps);
       // Flatten tree in depth-first order for navigation
       this.flatSteps = flattenStepTree(this.stepTree);
+      // Build navigation map for hierarchical navigation
+      this.navigationMap = buildNavigationMap(this.stepTree, this.flatSteps);
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to parse ${walkthroughFile}`);
       this.walkthrough = undefined;
       this.currentFile = undefined;
       this.stepTree = [];
       this.flatSteps = [];
+      this.navigationMap = new Map();
     }
   }
 
@@ -302,6 +310,53 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       // Note: Duplicate anchors use first match (same as markdown behavior)
     });
     return map;
+  }
+
+  // Hierarchical navigation methods
+
+  canGoToParent(): boolean {
+    const nav = this.navigationMap.get(this.currentStepIndex);
+    return nav?.parentIndex !== null && nav?.parentIndex !== undefined;
+  }
+
+  canGoToNextSibling(): boolean {
+    const nav = this.navigationMap.get(this.currentStepIndex);
+    return nav?.nextSiblingIndex !== null && nav?.nextSiblingIndex !== undefined;
+  }
+
+  canGoToPrevSibling(): boolean {
+    const nav = this.navigationMap.get(this.currentStepIndex);
+    return nav?.prevSiblingIndex !== null && nav?.prevSiblingIndex !== undefined;
+  }
+
+  goToParent(): boolean {
+    const nav = this.navigationMap.get(this.currentStepIndex);
+    if (nav?.parentIndex !== null && nav?.parentIndex !== undefined) {
+      this.currentStepIndex = nav.parentIndex;
+      this._onDidChangeTreeData.fire();
+      return true;
+    }
+    return false;
+  }
+
+  goToNextSibling(): boolean {
+    const nav = this.navigationMap.get(this.currentStepIndex);
+    if (nav?.nextSiblingIndex !== null && nav?.nextSiblingIndex !== undefined) {
+      this.currentStepIndex = nav.nextSiblingIndex;
+      this._onDidChangeTreeData.fire();
+      return true;
+    }
+    return false;
+  }
+
+  goToPrevSibling(): boolean {
+    const nav = this.navigationMap.get(this.currentStepIndex);
+    if (nav?.prevSiblingIndex !== null && nav?.prevSiblingIndex !== undefined) {
+      this.currentStepIndex = nav.prevSiblingIndex;
+      this._onDidChangeTreeData.fire();
+      return true;
+    }
+    return false;
   }
 
   hasGitUserName(): boolean {

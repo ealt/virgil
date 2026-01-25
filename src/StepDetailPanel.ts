@@ -60,6 +60,12 @@ export interface DiffModeOptions {
   markdownViewMode?: MarkdownViewMode;
 }
 
+export interface HierarchicalNavOptions {
+  canGoToParent: boolean;
+  canGoToPrevSibling: boolean;
+  canGoToNextSibling: boolean;
+}
+
 export class StepDetailPanel {
   public static currentPanel: StepDetailPanel | undefined;
   private readonly panel: vscode.WebviewPanel;
@@ -73,10 +79,19 @@ export class StepDetailPanel {
     currentIndex: number,
     totalSteps: number,
     diffOptions?: DiffModeOptions,
-    stepAnchorMap?: Map<string, number>
+    stepAnchorMap?: Map<string, number>,
+    navOptions?: HierarchicalNavOptions
   ): void {
     const panel = StepDetailPanel.getOrCreate(extensionUri);
-    panel.render(walkthrough, step, currentIndex, totalSteps, diffOptions, stepAnchorMap);
+    panel.render(
+      walkthrough,
+      step,
+      currentIndex,
+      totalSteps,
+      diffOptions,
+      stepAnchorMap,
+      navOptions
+    );
   }
 
   private static getOrCreate(extensionUri: vscode.Uri): StepDetailPanel {
@@ -111,6 +126,15 @@ export class StepDetailPanel {
           case 'prev':
             vscode.commands.executeCommand('virgil.prev');
             break;
+          case 'parent':
+            vscode.commands.executeCommand('virgil.goToParent');
+            break;
+          case 'prevSibling':
+            vscode.commands.executeCommand('virgil.prevSibling');
+            break;
+          case 'nextSibling':
+            vscode.commands.executeCommand('virgil.nextSibling');
+            break;
           case 'openLocation':
             vscode.commands.executeCommand('virgil.openLocation', message.location);
             break;
@@ -139,7 +163,8 @@ export class StepDetailPanel {
     currentIndex: number,
     totalSteps: number,
     diffOptions?: DiffModeOptions,
-    stepAnchorMap?: Map<string, number>
+    stepAnchorMap?: Map<string, number>,
+    navOptions?: HierarchicalNavOptions
   ): void {
     this.panel.title = `${step.id}. ${step.title}`;
     this.panel.webview.html = this.getHtml(
@@ -148,7 +173,8 @@ export class StepDetailPanel {
       currentIndex,
       totalSteps,
       diffOptions,
-      stepAnchorMap
+      stepAnchorMap,
+      navOptions
     );
     this.panel.reveal(vscode.ViewColumn.Two, true);
   }
@@ -167,7 +193,8 @@ export class StepDetailPanel {
     currentIndex: number,
     totalSteps: number,
     diffOptions?: DiffModeOptions,
-    stepAnchorMap?: Map<string, number>
+    stepAnchorMap?: Map<string, number>,
+    navOptions?: HierarchicalNavOptions
   ): string {
     const isFirst = currentIndex === 0;
     const isLast = currentIndex === totalSteps - 1;
@@ -485,11 +512,24 @@ export class StepDetailPanel {
     }
 
     .navigation {
-      display: flex;
-      gap: 8px;
       margin-top: 24px;
       padding-top: 16px;
       border-top: 1px solid var(--vscode-panel-border);
+    }
+    .nav-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .nav-row:last-child {
+      margin-bottom: 0;
+    }
+    .nav-row.hierarchical {
+      justify-content: center;
+    }
+    .nav-row.hierarchical button {
+      flex: none;
+      min-width: 90px;
     }
     button {
       flex: 1;
@@ -726,12 +766,32 @@ export class StepDetailPanel {
   </div>
 
   <div class="navigation">
-    <button class="secondary" onclick="navigate('prev')" ${isFirst ? 'disabled' : ''}>
-      ← Previous
-    </button>
-    <button onclick="navigate('next')" ${isLast ? 'disabled' : ''}>
-      Next →
-    </button>
+    ${
+      navOptions &&
+      (navOptions.canGoToParent || navOptions.canGoToPrevSibling || navOptions.canGoToNextSibling)
+        ? `
+    <div class="nav-row hierarchical">
+      <button class="secondary" onclick="navigate('parent')" ${!navOptions.canGoToParent ? 'disabled' : ''}>
+        ↑ Parent
+      </button>
+      <button class="secondary" onclick="navigate('prevSibling')" ${!navOptions.canGoToPrevSibling ? 'disabled' : ''}>
+        ← Sibling
+      </button>
+      <button class="secondary" onclick="navigate('nextSibling')" ${!navOptions.canGoToNextSibling ? 'disabled' : ''}>
+        Sibling →
+      </button>
+    </div>
+    `
+        : ''
+    }
+    <div class="nav-row">
+      <button class="secondary" onclick="navigate('prev')" ${isFirst ? 'disabled' : ''}>
+        ← Previous
+      </button>
+      <button onclick="navigate('next')" ${isLast ? 'disabled' : ''}>
+        Next →
+      </button>
+    </div>
   </div>
 
   <script>

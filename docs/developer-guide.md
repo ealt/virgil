@@ -109,6 +109,9 @@ The extension registers several commands for navigation and control.
 - `virgil.next` - Go to next step
 - `virgil.prev` - Go to previous step
 - `virgil.goToStep` - Jump to specific step index
+- `virgil.goToParent` - Navigate to parent step in hierarchy
+- `virgil.nextSibling` - Navigate to next sibling step (same level)
+- `virgil.prevSibling` - Navigate to previous sibling step (same level)
 
 **Control commands:**
 

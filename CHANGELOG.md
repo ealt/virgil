@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Repository scoping and commit awareness
 - Multiple navigation methods (sidebar, keyboard shortcuts, detail panel)
 - Markdown file rendering toggle (Raw/Rendered) for steps referencing `.md` files
+- Hierarchical navigation commands: Go to Parent (`Cmd+Shift+\`), Next Sibling (`Cmd+Option+]`), Previous Sibling (`Cmd+Option+[`)
 
 ### Changed
 

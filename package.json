@@ -60,6 +60,21 @@
         "command": "virgil.convertMarkdown",
         "title": "Convert Markdown to Walkthrough",
         "category": "Virgil"
+      },
+      {
+        "command": "virgil.goToParent",
+        "title": "Go to Parent Step",
+        "category": "Virgil"
+      },
+      {
+        "command": "virgil.nextSibling",
+        "title": "Next Sibling Step",
+        "category": "Virgil"
+      },
+      {
+        "command": "virgil.prevSibling",
+        "title": "Previous Sibling Step",
+        "category": "Virgil"
       }
     ],
     "viewsContainers": {
@@ -114,6 +129,24 @@
         "command": "virgil.prev",
         "key": "ctrl+shift+[",
         "mac": "cmd+shift+[",
+        "when": "virgilWalkthroughActive"
+      },
+      {
+        "command": "virgil.goToParent",
+        "key": "ctrl+shift+\\",
+        "mac": "cmd+shift+\\",
+        "when": "virgilWalkthroughActive"
+      },
+      {
+        "command": "virgil.nextSibling",
+        "key": "ctrl+alt+]",
+        "mac": "cmd+alt+]",
+        "when": "virgilWalkthroughActive"
+      },
+      {
+        "command": "virgil.prevSibling",
+        "key": "ctrl+alt+[",
+        "mac": "cmd+alt+[",
         "when": "virgilWalkthroughActive"
       }
     ],

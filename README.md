@@ -94,10 +94,13 @@ This runs `npm install`, compiles, packages the VSIX, and installs it into Curso
 
 ### Keyboard Shortcuts
 
-| Command       | Mac           | Windows/Linux  |
-| ------------- | ------------- | -------------- |
-| Next Step     | `Cmd+Shift+]` | `Ctrl+Shift+]` |
-| Previous Step | `Cmd+Shift+[` | `Ctrl+Shift+[` |
+| Command          | Mac            | Windows/Linux  |
+| ---------------- | -------------- | -------------- |
+| Next Step        | `Cmd+Shift+]`  | `Ctrl+Shift+]` |
+| Previous Step    | `Cmd+Shift+[`  | `Ctrl+Shift+[` |
+| Go to Parent     | `Cmd+Shift+\`  | `Ctrl+Shift+\` |
+| Next Sibling     | `Cmd+Option+]` | `Ctrl+Alt+]`   |
+| Previous Sibling | `Cmd+Option+[` | `Ctrl+Alt+[`   |
 
 Keyboard shortcuts are only active when a walkthrough is loaded.
 
@@ -108,6 +111,9 @@ Access via Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
 - `Virgil: Start Walkthrough` - Jump to the first step
 - `Virgil: Next Step` - Go to next step
 - `Virgil: Previous Step` - Go to previous step
+- `Virgil: Go to Parent Step` - Navigate to the parent step in hierarchical walkthroughs
+- `Virgil: Next Sibling Step` - Navigate to the next sibling step (same level)
+- `Virgil: Previous Sibling Step` - Navigate to the previous sibling step (same level)
 - `Virgil: Refresh Walkthrough` - Reload the JSON file
 - `Virgil: Select Walkthrough` - Switch between multiple walkthrough files
 - `Virgil: Convert Markdown to Walkthrough` - Convert a Markdown walkthrough to JSON
@@ -188,6 +194,9 @@ Keyboard shortcuts can be customized through VS Code's keybindings. The default 
 
 - **Next Step**: `Cmd+Shift+]` (Mac) / `Ctrl+Shift+]` (Windows/Linux)
 - **Previous Step**: `Cmd+Shift+[` (Mac) / `Ctrl+Shift+[` (Windows/Linux)
+- **Go to Parent**: `Cmd+Shift+\` (Mac) / `Ctrl+Shift+\` (Windows/Linux)
+- **Next Sibling**: `Cmd+Option+]` (Mac) / `Ctrl+Alt+]` (Windows/Linux)
+- **Previous Sibling**: `Cmd+Option+[` (Mac) / `Ctrl+Alt+[` (Windows/Linux)
 
 **To customize keybindings:**
 
@@ -213,16 +222,33 @@ You can also edit your `keybindings.json` file directly:
 3. Add entries like:
 
 ```json
-{
-  "command": "virgil.next",
-  "key": "ctrl+right",
-  "when": "virgilWalkthroughActive"
-},
-{
-  "command": "virgil.prev",
-  "key": "ctrl+left",
-  "when": "virgilWalkthroughActive"
-}
+[
+  {
+    "command": "virgil.next",
+    "key": "ctrl+right",
+    "when": "virgilWalkthroughActive"
+  },
+  {
+    "command": "virgil.prev",
+    "key": "ctrl+left",
+    "when": "virgilWalkthroughActive"
+  },
+  {
+    "command": "virgil.goToParent",
+    "key": "ctrl+up",
+    "when": "virgilWalkthroughActive"
+  },
+  {
+    "command": "virgil.nextSibling",
+    "key": "ctrl+alt+right",
+    "when": "virgilWalkthroughActive"
+  },
+  {
+    "command": "virgil.prevSibling",
+    "key": "ctrl+alt+left",
+    "when": "virgilWalkthroughActive"
+  }
+]
 ```
 
 The `when` clause ensures shortcuts only work when a walkthrough is active.

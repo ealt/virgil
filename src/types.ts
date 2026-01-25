@@ -65,6 +65,52 @@ export function flattenStepTree(nodes: StepTreeNode[]): WalkthroughStep[] {
   return result;
 }
 
+// Navigation context for hierarchical step navigation
+export interface StepNavigationContext {
+  parentIndex: number | null;
+  nextSiblingIndex: number | null;
+  prevSiblingIndex: number | null;
+}
+
+// Build navigation map for O(1) hierarchical navigation lookup
+export function buildNavigationMap(
+  tree: StepTreeNode[],
+  flatSteps: WalkthroughStep[]
+): Map<number, StepNavigationContext> {
+  const map = new Map<number, StepNavigationContext>();
+
+  // Create a lookup from step id to flat index
+  const idToIndex = new Map<number, number>();
+  flatSteps.forEach((step, index) => {
+    idToIndex.set(step.id, index);
+  });
+
+  function traverse(nodes: StepTreeNode[], parentIndex: number | null) {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const currentIndex = idToIndex.get(node.step.id);
+      if (currentIndex === undefined) continue;
+
+      const prevSibling = i > 0 ? nodes[i - 1] : null;
+      const nextSibling = i < nodes.length - 1 ? nodes[i + 1] : null;
+
+      map.set(currentIndex, {
+        parentIndex,
+        prevSiblingIndex: prevSibling ? (idToIndex.get(prevSibling.step.id) ?? null) : null,
+        nextSiblingIndex: nextSibling ? (idToIndex.get(nextSibling.step.id) ?? null) : null,
+      });
+
+      // Recurse into children with current node as parent
+      if (node.children.length > 0) {
+        traverse(node.children, currentIndex);
+      }
+    }
+  }
+
+  traverse(tree, null);
+  return map;
+}
+
 export interface Repository {
   remote?: string; // git remote URL
   commit?: string; // git commit SHA (head state)

@@ -244,6 +244,45 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.goToParent', () => {
+      if (walkthroughProvider) {
+        if (walkthroughProvider.goToParent()) {
+          currentViewMode = getDefaultViewMode();
+          showCurrentStep();
+        } else {
+          vscode.window.showInformationMessage('No parent step available');
+        }
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.nextSibling', () => {
+      if (walkthroughProvider) {
+        if (walkthroughProvider.goToNextSibling()) {
+          currentViewMode = getDefaultViewMode();
+          showCurrentStep();
+        } else {
+          vscode.window.showInformationMessage('No next sibling step available');
+        }
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.prevSibling', () => {
+      if (walkthroughProvider) {
+        if (walkthroughProvider.goToPrevSibling()) {
+          currentViewMode = getDefaultViewMode();
+          showCurrentStep();
+        } else {
+          vscode.window.showInformationMessage('No previous sibling step available');
+        }
+      }
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('virgil.goToStep', (stepIndex: number) => {
       if (walkthroughProvider) {
         walkthroughProvider.goToStep(stepIndex);
@@ -651,6 +690,13 @@ export function activate(context: vscode.ExtensionContext) {
     // Build step anchor map for step links
     const stepAnchorMap = walkthroughProvider.getStepAnchorMap();
 
+    // Build hierarchical navigation options
+    const navOptions = {
+      canGoToParent: walkthroughProvider.canGoToParent(),
+      canGoToPrevSibling: walkthroughProvider.canGoToPrevSibling(),
+      canGoToNextSibling: walkthroughProvider.canGoToNextSibling(),
+    };
+
     // Handle based on step type
     if (stepType === 'diff') {
       // Diff mode: 3-way toggle
@@ -668,7 +714,8 @@ export function activate(context: vscode.ExtensionContext) {
             error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
             markdownViewMode: currentMarkdownViewMode,
           },
-          stepAnchorMap
+          stepAnchorMap,
+          navOptions
         );
         return;
       }
@@ -702,7 +749,8 @@ export function activate(context: vscode.ExtensionContext) {
             error: 'No base reference specified. Add baseCommit, baseBranch, or pr to repository.',
             markdownViewMode: currentMarkdownViewMode,
           },
-          stepAnchorMap
+          stepAnchorMap,
+          navOptions
         );
         return;
       }
@@ -724,7 +772,8 @@ export function activate(context: vscode.ExtensionContext) {
         headCommit: headCommit || undefined,
         markdownViewMode: currentMarkdownViewMode,
       },
-      stepAnchorMap
+      stepAnchorMap,
+      navOptions
     );
   }
 
