@@ -72,10 +72,11 @@ export class StepDetailPanel {
     step: WalkthroughStep,
     currentIndex: number,
     totalSteps: number,
-    diffOptions?: DiffModeOptions
+    diffOptions?: DiffModeOptions,
+    stepAnchorMap?: Map<string, number>
   ): void {
     const panel = StepDetailPanel.getOrCreate(extensionUri);
-    panel.render(walkthrough, step, currentIndex, totalSteps, diffOptions);
+    panel.render(walkthrough, step, currentIndex, totalSteps, diffOptions, stepAnchorMap);
   }
 
   private static getOrCreate(extensionUri: vscode.Uri): StepDetailPanel {
@@ -122,6 +123,9 @@ export class StepDetailPanel {
           case 'setMarkdownViewMode':
             vscode.commands.executeCommand('virgil.setMarkdownViewMode', message.mode);
             break;
+          case 'goToStep':
+            vscode.commands.executeCommand('virgil.goToStep', message.stepIndex);
+            break;
         }
       },
       null,
@@ -134,7 +138,8 @@ export class StepDetailPanel {
     step: WalkthroughStep,
     currentIndex: number,
     totalSteps: number,
-    diffOptions?: DiffModeOptions
+    diffOptions?: DiffModeOptions,
+    stepAnchorMap?: Map<string, number>
   ): void {
     this.panel.title = `${step.id}. ${step.title}`;
     this.panel.webview.html = this.getHtml(
@@ -142,7 +147,8 @@ export class StepDetailPanel {
       step,
       currentIndex,
       totalSteps,
-      diffOptions
+      diffOptions,
+      stepAnchorMap
     );
     this.panel.reveal(vscode.ViewColumn.Two, true);
   }
@@ -152,7 +158,8 @@ export class StepDetailPanel {
     step: WalkthroughStep,
     currentIndex: number,
     totalSteps: number,
-    diffOptions?: DiffModeOptions
+    diffOptions?: DiffModeOptions,
+    stepAnchorMap?: Map<string, number>
   ): string {
     const isFirst = currentIndex === 0;
     const isLast = currentIndex === totalSteps - 1;
@@ -623,6 +630,20 @@ export class StepDetailPanel {
     .markdown-content a:hover {
       color: var(--vscode-textLink-activeForeground);
     }
+    .step-link {
+      color: var(--vscode-textLink-foreground);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .step-link:hover {
+      color: var(--vscode-textLink-activeForeground);
+    }
+    .step-link-invalid {
+      color: var(--vscode-errorForeground);
+      text-decoration: line-through;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
     .markdown-content strong {
       font-weight: 600;
     }
@@ -668,7 +689,7 @@ export class StepDetailPanel {
 
   ${locationHtml}
 
-  ${step.body ? `<div class="body markdown-content">${this.renderMarkdown(step.body)}</div>` : ''}
+  ${step.body ? `<div class="body markdown-content">${this.renderMarkdown(step.body, stepAnchorMap)}</div>` : ''}
 
   <div class="comments-section">
     <div class="comments-header">
@@ -681,7 +702,7 @@ export class StepDetailPanel {
               (comment) => `
         <div class="comment">
           <div class="comment-author">${this.escapeHtml(comment.author)}</div>
-          <div class="comment-body markdown-content">${this.renderMarkdown(comment.body)}</div>
+          <div class="comment-body markdown-content">${this.renderMarkdown(comment.body, stepAnchorMap)}</div>
         </div>
       `
             )
@@ -739,6 +760,18 @@ export class StepDetailPanel {
         submitComment();
       }
     });
+
+    // Handle step link clicks
+    document.addEventListener('click', function(e) {
+      const stepLink = e.target.closest('.step-link');
+      if (stepLink) {
+        e.preventDefault();
+        const stepIndex = parseInt(stepLink.dataset.stepIndex, 10);
+        if (!isNaN(stepIndex)) {
+          vscode.postMessage({ command: 'goToStep', stepIndex: stepIndex });
+        }
+      }
+    });
   </script>
 </body>
 </html>`;
@@ -755,10 +788,28 @@ export class StepDetailPanel {
     return text.replace(/[&<>"']/g, (char) => map[char]);
   }
 
-  private renderMarkdown(text: string): string {
+  private renderMarkdown(text: string, stepAnchorMap?: Map<string, number>): string {
     // Use a custom renderer to disable HTML tags
     const renderer = new markedInstance.Renderer();
     renderer.html = () => ''; // Strip raw HTML
+
+    // Handle #anchor links for step navigation
+    const originalLink = renderer.link.bind(renderer);
+    renderer.link = (href: string, title: string | null | undefined, linkText: string): string => {
+      if (href?.startsWith('#') && stepAnchorMap) {
+        const anchor = href.substring(1); // Remove leading #
+
+        if (stepAnchorMap.has(anchor)) {
+          const stepIndex = stepAnchorMap.get(anchor)!;
+          const escapedText = this.escapeHtml(linkText);
+          const tooltipTitle = title ? this.escapeHtml(title) : 'Go to step';
+          return `<a href="#" class="step-link" data-step-index="${stepIndex}" title="${tooltipTitle}">${escapedText}</a>`;
+        }
+        // Anchor doesn't match any step - render as invalid
+        return `<span class="step-link-invalid" title="Step '${anchor}' not found">${this.escapeHtml(linkText)}</span>`;
+      }
+      return originalLink(href, title, linkText);
+    };
 
     return markedInstance.parse(text, { renderer }) as string;
   }

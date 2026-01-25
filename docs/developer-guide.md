@@ -27,11 +27,11 @@ This walkthrough will help you understand how the Virgil extension works and how
 - Familiarity with VS Code extensions
 - Understanding of VS Code API basics
 
-Let's start by understanding how the extension activates.
+Let's start by understanding how the extension activates, or skip ahead to [UI Components](#ui-components) if you're already familiar with the basics.
 
 ## Extension Architecture
 
-This section covers the core architecture of the Virgil extension, including how it activates, its entry point, and the data model.
+This section covers the core architecture of the Virgil extension, including how it activates, its entry point, and the data model. For navigation details, see [Commands and Navigation](#commands-and-navigation).
 
 ### Extension Activation
 
@@ -634,6 +634,13 @@ Here's the recommended workflow for contributing:
 **See `docs/development.md` for more details.**
 
 ## Summary and Next Steps
+
+**Quick links to key sections:**
+
+- [Extension Activation](#extension-activation) - How the extension starts
+- [TypeScript Interfaces - Data Model](#typescript-interfaces---data-model) - Core data structures
+- [WalkthroughProvider - State Management](#walkthroughprovider---state-management) - State management
+- [StepDetailPanel - Webview UI](#stepdetailpanel---webview-ui) - UI implementation
 
 **Key takeaways:**
 

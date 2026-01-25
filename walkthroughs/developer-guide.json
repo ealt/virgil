@@ -12,12 +12,12 @@
     {
       "id": 1,
       "title": "Welcome to Virgil Development",
-      "body": "This walkthrough will help you understand how the Virgil extension works and how to contribute to it.\n\n**What you'll learn:**\n\n- How the extension activates and detects walkthroughs\n- The architecture and key components\n- How navigation and highlighting work\n- How to extend the extension\n\n**Prerequisites:**\n\n- Basic TypeScript knowledge\n- Familiarity with VS Code extensions\n- Understanding of VS Code API basics\n\nLet's start by understanding how the extension activates."
+      "body": "This walkthrough will help you understand how the Virgil extension works and how to contribute to it.\n\n**What you'll learn:**\n\n- How the extension activates and detects walkthroughs\n- The architecture and key components\n- How navigation and highlighting work\n- How to extend the extension\n\n**Prerequisites:**\n\n- Basic TypeScript knowledge\n- Familiarity with VS Code extensions\n- Understanding of VS Code API basics\n\nLet's start by understanding how the extension activates, or skip ahead to [UI Components](#ui-components) if you're already familiar with the basics."
     },
     {
       "id": 2,
       "title": "Extension Architecture",
-      "body": "This section covers the core architecture of the Virgil extension, including how it activates, its entry point, and the data model."
+      "body": "This section covers the core architecture of the Virgil extension, including how it activates, its entry point, and the data model. For navigation details, see [Commands and Navigation](#commands-and-navigation)."
     },
     {
       "id": 3,
@@ -179,7 +179,7 @@
     {
       "id": 27,
       "title": "Project Documentation - README",
-      "body": "The project's main documentation lives in the README.md file. This section showcases the core features of Virgil.\n\n**Tip:** When viewing this step, try toggling between **Raw** and **Rendered** modes using the Markdown toggle in the detail panel. This demonstrates how Virgil can display markdown files either as raw source (with line highlighting) or as rendered markdown.\n\n**Documentation structure:**\n\n- `README.md` - User-facing documentation, installation, usage\n- `docs/schema.md` - Complete walkthrough JSON schema\n- `docs/development.md` - Development setup and guidelines\n- `docs/developer-guide.md` - This walkthrough (meta!)\n\nWhen contributing, keep documentation in sync with code changes.",
+      "body": "The project's main documentation lives in the README.md file. This section showcases the core features of Virgil.\n\n**Tip:** When viewing this step, try toggling between **Rendered** and **Raw** modes using the Markdown toggle in the detail panel. Rendered mode (the default) shows the markdown preview with highlighted sections, while Raw mode shows the source with line highlighting.\n\n**Documentation structure:**\n\n- `README.md` - User-facing documentation, installation, usage\n- `docs/schema.md` - Complete walkthrough JSON schema\n- `docs/development.md` - Development setup and guidelines\n- `docs/developer-guide.md` - This walkthrough (meta!)\n\nWhen contributing, keep documentation in sync with code changes.",
       "location": "/README.md:9-17"
     },
     {
@@ -220,7 +220,7 @@
     {
       "id": 34,
       "title": "Summary and Next Steps",
-      "body": "**Key takeaways:**\n\n- Extension activates on `*.walkthrough.json` detection\n- `WalkthroughProvider` manages state and builds hierarchical sidebar\n- `StepDetailPanel` shows rich step info in themed webview\n- `HighlightManager` applies line decorations to editors\n- All components coordinate through `extension.ts`\n- Steps support hierarchy via `parentId` field\n- Navigation traverses all steps in depth-first order\n- Comments are persisted to JSON files\n- Repository matching enables portable walkthroughs\n- Commit mismatch warnings help ensure correct code state\n\n**Next steps for contributors:**\n\n1. Read `docs/development.md` for detailed setup instructions\n2. Explore the codebase using this walkthrough\n3. Try making a small change (e.g., add a new command)\n4. Test thoroughly in Extension Development Host\n5. Submit a pull request\n\n**Resources:**\n\n- [VS Code Extension API](https://code.visualstudio.com/api)\n- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)\n- `docs/schema.md` - Walkthrough JSON format\n- `docs/development.md` - Development guide\n\nHappy contributing!"
+      "body": "**Quick links to key sections:**\n- [Extension Activation](#extension-activation) - How the extension starts\n- [TypeScript Interfaces - Data Model](#typescript-interfaces---data-model) - Core data structures\n- [WalkthroughProvider - State Management](#walkthroughprovider---state-management) - State management\n- [StepDetailPanel - Webview UI](#stepdetailpanel---webview-ui) - UI implementation\n\n**Key takeaways:**\n\n- Extension activates on `*.walkthrough.json` detection\n- `WalkthroughProvider` manages state and builds hierarchical sidebar\n- `StepDetailPanel` shows rich step info in themed webview\n- `HighlightManager` applies line decorations to editors\n- All components coordinate through `extension.ts`\n- Steps support hierarchy via `parentId` field\n- Navigation traverses all steps in depth-first order\n- Comments are persisted to JSON files\n- Repository matching enables portable walkthroughs\n- Commit mismatch warnings help ensure correct code state\n\n**Next steps for contributors:**\n\n1. Read `docs/development.md` for detailed setup instructions\n2. Explore the codebase using this walkthrough\n3. Try making a small change (e.g., add a new command)\n4. Test thoroughly in Extension Development Host\n5. Submit a pull request\n\n**Resources:**\n\n- [VS Code Extension API](https://code.visualstudio.com/api)\n- [VS Code Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)\n- `docs/schema.md` - Walkthrough JSON format\n- `docs/development.md` - Development guide\n\nHappy contributing!"
     }
   ]
 }

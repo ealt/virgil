@@ -277,6 +277,33 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     return undefined;
   }
 
+  /**
+   * Generates a slug from a step title (GitHub-style anchor)
+   */
+  private slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove special chars except hyphens
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Collapse multiple hyphens
+      .trim();
+  }
+
+  /**
+   * Returns a map from anchor slug to step index for step linking
+   */
+  getStepAnchorMap(): Map<string, number> {
+    const map = new Map<string, number>();
+    this.flatSteps.forEach((step, index) => {
+      const anchor = this.slugify(step.title);
+      if (!map.has(anchor)) {
+        map.set(anchor, index);
+      }
+      // Note: Duplicate anchors use first match (same as markdown behavior)
+    });
+    return map;
+  }
+
   hasGitUserName(): boolean {
     try {
       const name = execSync('git config user.name', {

@@ -155,6 +155,35 @@ The `body` field supports **Markdown formatting**, including:
 - Links (`[text](url)`)
 - Blockquotes (`> text`)
 
+### Step Links
+
+You can link to other steps using standard markdown anchor syntax:
+
+**Format:** `[link text](#step-title-as-anchor)`
+
+**Examples:**
+
+- `[see the overview](#welcome-to-virgil-development)` - links to step "Welcome to Virgil Development"
+- `[architecture section](#extension-architecture)` - links to step "Extension Architecture"
+
+**Anchor generation rules** (matches GitHub/CommonMark):
+
+- Convert title to lowercase
+- Replace spaces with hyphens
+- Remove special characters except hyphens
+- Example: `## JWT Validation` → `#jwt-validation`
+- Example: `## 2. Authentication Flow` → `#2-authentication-flow`
+
+**Behavior:**
+
+- In raw markdown files (GitHub, VS Code preview): Links work as native section anchors
+- In the Virgil extension: Links navigate to the matching step
+
+**Notes:**
+
+- If a step title matches multiple steps, the first match is used
+- Invalid anchors are rendered with strikethrough styling
+
 ### Comment
 
 | Field    | Type   | Required | Description                                          |

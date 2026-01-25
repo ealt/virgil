@@ -327,8 +327,14 @@ export function parseMarkdownWalkthrough(markdown: string, workspaceRoot?: strin
     const body = bodyLines.join('\n').trim() || undefined;
 
     // Check for location links in body (should warn)
+    // But ignore links inside code blocks or inline code
     if (body) {
-      const bodyLinkMatch = body.match(/\[([^\]]+)\]\(([^)]+)\)/g);
+      // Strip fenced code blocks (```...```) and inline code (`...`)
+      const bodyWithoutCode = body
+        .replace(/```[\s\S]*?```/g, '') // Remove fenced code blocks
+        .replace(/`[^`]+`/g, ''); // Remove inline code
+
+      const bodyLinkMatch = bodyWithoutCode.match(/\[([^\]]+)\]\(([^)]+)\)/g);
       if (bodyLinkMatch) {
         for (const link of bodyLinkMatch) {
           const extracted = extractLocationFromLink(link);
