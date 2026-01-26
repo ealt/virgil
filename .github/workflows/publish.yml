@@ -51,6 +51,17 @@ jobs:
             exit 1
           fi
 
+      - name: Verify tag matches package.json
+        if: github.event_name == 'release'
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${{ github.event.release.tag_name }}"
+          TAG_VERSION=${TAG_VERSION#v}
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Error: package.json version ($PACKAGE_VERSION) does not match tag version ($TAG_VERSION)"
+            exit 1
+          fi
+
       - name: Install vsce
         run: npm install -g @vscode/vsce
 
