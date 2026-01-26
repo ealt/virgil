@@ -135,5 +135,6 @@ npm run compile
 - Be respectful and inclusive
 - Provide constructive feedback
 - Help others learn and grow
+- Please review `CODE_OF_CONDUCT.md` for full guidelines and reporting information
 
 Thank you for contributing to Virgil! 🎉
