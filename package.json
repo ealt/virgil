@@ -15,7 +15,7 @@
     "color": "#1e1e1e",
     "theme": "dark"
   },
-  "preview": true,
+  "preview": false,
   "icon": "icon.png",
   "activationEvents": [],
   "main": "./out/extension.js",
@@ -242,6 +242,8 @@
     "lint": "eslint src --ext ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
+    "smoke": "node scripts/smoke-test.js",
+    "version:bump": "node scripts/version-bump.js",
     "postinstall": "node scripts/setup-git-hooks.js",
     "package": "vsce package",
     "publish": "vsce publish",
