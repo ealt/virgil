@@ -56,14 +56,14 @@
       "id": 8,
       "title": "File Watching - Auto-refresh",
       "body": "The extension uses VS Code `FileSystemWatcher`s to monitor walkthrough JSON files in two locations:\n\n- `.walkthrough.json` at workspace root\n- `walkthroughs/*.json` files\n\n**Event handling:**\n\n- **onDidChange**: Refreshes provider, updates context, and optionally auto-shows the first step\n- **onDidCreate**: Refreshes provider, updates context, optionally auto-shows the first step, then checks commit mismatch and git user name\n- **onDidDelete**: Refreshes provider, clears highlights, and updates context based on remaining walkthroughs\n\n**Benefits:**\n\n- No manual refresh needed when editing walkthrough JSON\n- Automatic detection of new walkthroughs in both locations\n- Clean state management when files are deleted\n\nThe watcher uses `RelativePattern` for both the workspace root and the `walkthroughs/` directory.",
-      "location": "/src/extension.ts:609-613,615-655",
+      "location": "/src/extension.ts:609-613,615-672",
       "parentId": 6
     },
     {
       "id": 9,
       "title": "Show Current Step - Core Navigation",
       "body": "The `showCurrentStep()` function orchestrates what happens when navigating to a step.\n\n**Flow:**\n\n1. Gets walkthrough, current index, and step label from the provider\n2. Clears all previous highlights\n3. Resolves the base commit (if any) and determines the step type\n4. Builds step anchor links and hierarchical navigation options for the webview\n5. Shows the appropriate view based on step type:\n   - **diff**: opens diff/head/base view based on `currentViewMode`\n   - **point-in-time**: opens the head file with standard highlights\n   - **base-only**: opens the base file with base highlights\n   - **informational**: no file opened\n6. Renders the step detail panel (including errors if a base ref is missing)\n\n**Key coordination:**\n\n- `WalkthroughProvider` manages state and step labels\n- `DiffResolver` determines the base commit\n- `HighlightManager` handles decorations\n- `StepDetailPanel` renders the webview (diff toggle + markdown toggle)\n\nThis function is called by all navigation commands to keep the UI in sync.",
-      "location": "/src/extension.ts:683-716,718-777,781-797",
+      "location": "/src/extension.ts:695-727,729-789,792-809",
       "parentId": 6
     },
     {

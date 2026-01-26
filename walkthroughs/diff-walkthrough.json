@@ -61,7 +61,7 @@
       "id": 9,
       "title": "Wiring It All Together",
       "body": "The main extension file orchestrates all the diff components.\n\n**Key changes to `showCurrentStep()`:**\n\n1. Determines step type using `getStepType()`\n2. Resolves base commit using `DiffResolver` (and shows an error panel if none is configured)\n3. Handles each step type differently:\n   - **diff**: Shows 3-way toggle, opens diff/head/base based on `currentViewMode`\n   - **point-in-time**: Opens file with standard highlights (configurable)\n   - **base-only**: Opens base file with diff base highlights (configurable, default: red)\n   - **informational**: Shows panel only, no file opened\n\n**New helper functions:**\n\n- `showFile()` - Opens a file at a specific commit with colored highlights (or a rendered markdown preview)\n- `showDiff()` - Opens VS Code's diff editor for two commits\n\n**View mode command:** `virgil.setViewMode` allows the toggle buttons to switch views without changing steps.",
-      "location": "/src/extension.ts:683-797,800-858,860-888",
+      "location": "/src/extension.ts:695-809,812-870,872-905",
       "base_location": "/src/extension.ts:176-216"
     }
   ]

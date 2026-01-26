@@ -126,7 +126,7 @@ The step detail panel now shows a 3-way toggle for diff steps.
 
 ## Wiring It All Together
 
-[View code (683-797,800-858,860-888)](/src/extension.ts)
+[View code (695-809,812-870,872-905)](/src/extension.ts)
 [Base (176-216)](/src/extension.ts)
 
 The main extension file orchestrates all the diff components.

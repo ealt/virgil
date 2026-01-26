@@ -129,7 +129,7 @@ Most commands delegate to `WalkthroughProvider` for state management, then call 
 
 ### File Watching - Auto-refresh
 
-[View code (609-613,615-655)](/src/extension.ts)
+[View code (609-613,615-672)](/src/extension.ts)
 
 The extension uses VS Code `FileSystemWatcher`s to monitor walkthrough JSON files in two locations:
 
@@ -152,7 +152,7 @@ The watcher uses `RelativePattern` for both the workspace root and the `walkthro
 
 ### Show Current Step - Core Navigation
 
-[View code (683-716,718-777,781-797)](/src/extension.ts)
+[View code (695-727,729-789,792-809)](/src/extension.ts)
 
 The `showCurrentStep()` function orchestrates what happens when navigating to a step.
 

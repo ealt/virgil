@@ -619,14 +619,26 @@ export function activate(context: vscode.ExtensionContext) {
     watcher.onDidChange(() => {
       walkthroughProvider?.refresh();
       vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
-      // Auto-show first step if setting is enabled and walkthrough exists
-      if (shouldAutoShowFirstStep() && walkthroughProvider) {
-        const walkthrough = walkthroughProvider.getWalkthrough();
-        if (walkthrough && walkthrough.steps.length > 0) {
-          walkthroughProvider.goToStep(0);
-          showCurrentStep();
-        }
+
+      if (!walkthroughProvider) {
+        return;
       }
+
+      const walkthrough = walkthroughProvider.getWalkthrough();
+      if (!walkthrough || walkthrough.steps.length === 0) {
+        return;
+      }
+
+      const currentIndex = walkthroughProvider.getCurrentStepIndex();
+      const totalSteps = walkthroughProvider.getTotalSteps();
+      const hasValidCurrent = currentIndex >= 0 && currentIndex < totalSteps;
+
+      // Auto-show first step only when there isn't a valid current step.
+      if (shouldAutoShowFirstStep() && !hasValidCurrent) {
+        walkthroughProvider.goToStep(0);
+      }
+
+      showCurrentStep();
     });
 
     watcher.onDidCreate(() => {
