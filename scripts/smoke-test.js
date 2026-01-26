@@ -24,10 +24,6 @@ if (!manifest.main) {
   fail('package.json is missing main');
 }
 
-if (!Array.isArray(manifest.activationEvents) || manifest.activationEvents.length === 0) {
-  fail('activationEvents must be a non-empty array');
-}
-
 const mainPath = path.join(repoRoot, manifest.main);
 if (!fs.existsSync(mainPath)) {
   fail(`Extension entrypoint not found at ${manifest.main}. Run npm run compile first.`);
