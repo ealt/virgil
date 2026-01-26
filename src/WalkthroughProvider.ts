@@ -41,6 +41,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   private stepTree: StepTreeNode[] = [];
   private flatSteps: WalkthroughStep[] = [];
   private navigationMap: Map<number, StepNavigationContext> = new Map();
+  private stepNumberMap: Map<number, string> = new Map();
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
@@ -209,6 +210,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       this.stepTree = [];
       this.flatSteps = [];
       this.navigationMap = new Map();
+      this.stepNumberMap = new Map();
       return;
     }
 
@@ -220,6 +222,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       this.stepTree = [];
       this.flatSteps = [];
       this.navigationMap = new Map();
+      this.stepNumberMap = new Map();
       return;
     }
 
@@ -230,6 +233,8 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
 
       // Build tree structure from flat steps
       this.stepTree = buildStepTree(this.walkthrough.steps);
+      // Build hierarchical numbering map for display labels
+      this.buildStepNumberMap();
       // Flatten tree in depth-first order for navigation
       this.flatSteps = flattenStepTree(this.stepTree);
       // Build navigation map for hierarchical navigation
@@ -241,11 +246,21 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       this.stepTree = [];
       this.flatSteps = [];
       this.navigationMap = new Map();
+      this.stepNumberMap = new Map();
     }
   }
 
   getWalkthrough(): Walkthrough | undefined {
     return this.walkthrough;
+  }
+
+  getStepDisplayLabel(step: WalkthroughStep): string {
+    if (!this.shouldShowStepNumbers()) {
+      return step.title;
+    }
+
+    const numberLabel = this.stepNumberMap.get(step.id) ?? `${step.id}.`;
+    return `${numberLabel} ${step.title}`;
   }
 
   getCurrentStepIndex(): number {
@@ -500,7 +515,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       : vscode.TreeItemCollapsibleState.None;
 
     const stepItem = new WalkthroughTreeItem(
-      `${step.id}. ${step.title}`,
+      this.getStepDisplayLabel(step),
       collapsibleState,
       stepIndex,
       node
@@ -548,6 +563,31 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     }
 
     return stepItem;
+  }
+
+  private shouldShowStepNumbers(): boolean {
+    const config = vscode.workspace.getConfiguration('virgil.view');
+    return config.get<boolean>('showStepNumbers', true);
+  }
+
+  private buildStepNumberMap(): void {
+    const map = new Map<number, string>();
+
+    const traverse = (nodes: StepTreeNode[], prefix: number[]) => {
+      nodes.forEach((node, index) => {
+        const numberParts = [...prefix, index + 1];
+        const numberLabel = numberParts.join('.');
+        const label = prefix.length === 0 ? `${numberLabel}.` : numberLabel;
+        map.set(node.step.id, label);
+
+        if (node.children.length > 0) {
+          traverse(node.children, numberParts);
+        }
+      });
+    };
+
+    traverse(this.stepTree, []);
+    this.stepNumberMap = map;
   }
 
   private getRootItems(): WalkthroughTreeItem[] {

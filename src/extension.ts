@@ -217,6 +217,16 @@ export function activate(context: vscode.ExtensionContext) {
   // Set context for keybindings
   vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', !!findWalkthroughFile());
 
+  // Refresh labels when step numbering preference changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('virgil.view.showStepNumbers')) {
+        walkthroughProvider?.refresh();
+        showCurrentStep();
+      }
+    })
+  );
+
   // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand('virgil.start', () => {
@@ -684,6 +694,7 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
     const stepType = getStepType(step);
+    const stepLabel = walkthroughProvider.getStepDisplayLabel(step);
 
     // Clear previous highlights
     highlightManager.clearAll();
@@ -721,7 +732,8 @@ export function activate(context: vscode.ExtensionContext) {
             markdownViewMode: currentMarkdownViewMode,
           },
           stepAnchorMap,
-          navOptions
+          navOptions,
+          stepLabel
         );
         return;
       }
@@ -756,7 +768,8 @@ export function activate(context: vscode.ExtensionContext) {
             markdownViewMode: currentMarkdownViewMode,
           },
           stepAnchorMap,
-          navOptions
+          navOptions,
+          stepLabel
         );
         return;
       }
@@ -779,7 +792,8 @@ export function activate(context: vscode.ExtensionContext) {
         markdownViewMode: currentMarkdownViewMode,
       },
       stepAnchorMap,
-      navOptions
+      navOptions,
+      stepLabel
     );
   }
 

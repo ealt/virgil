@@ -222,6 +222,11 @@
           "default": true,
           "description": "Automatically show the first step when a walkthrough is loaded."
         },
+        "virgil.view.showStepNumbers": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show hierarchical step numbers in step labels."
+        },
         "virgil.view.showHierarchicalNavigation": {
           "type": "boolean",
           "default": false,

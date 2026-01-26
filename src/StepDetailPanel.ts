@@ -81,7 +81,8 @@ export class StepDetailPanel {
     totalSteps: number,
     diffOptions?: DiffModeOptions,
     stepAnchorMap?: Map<string, number>,
-    navOptions?: HierarchicalNavOptions
+    navOptions?: HierarchicalNavOptions,
+    stepLabel?: string
   ): void {
     const panel = StepDetailPanel.getOrCreate(extensionUri);
     panel.render(
@@ -91,7 +92,8 @@ export class StepDetailPanel {
       totalSteps,
       diffOptions,
       stepAnchorMap,
-      navOptions
+      navOptions,
+      stepLabel
     );
   }
 
@@ -165,9 +167,10 @@ export class StepDetailPanel {
     totalSteps: number,
     diffOptions?: DiffModeOptions,
     stepAnchorMap?: Map<string, number>,
-    navOptions?: HierarchicalNavOptions
+    navOptions?: HierarchicalNavOptions,
+    stepLabel?: string
   ): void {
-    this.panel.title = `${step.id}. ${step.title}`;
+    this.panel.title = stepLabel ?? `${step.id}. ${step.title}`;
     this.panel.webview.html = this.getHtml(
       walkthrough,
       step,
