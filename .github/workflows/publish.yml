@@ -41,6 +41,9 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      - name: Smoke test
+        run: npm run smoke
+
       - name: Verify version matches package.json
         if: github.event_name == 'workflow_dispatch'
         run: |

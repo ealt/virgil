@@ -36,6 +36,9 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      - name: Smoke test
+        run: npm run smoke
+
       - name: Verify tag matches package.json
         run: |
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
