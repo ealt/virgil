@@ -71,22 +71,31 @@ This guide is for developers who want to contribute to the Virgil extension.
 
 ## Project Structure
 
-```
+```txt
 virgil/
-├── package.json              # Extension manifest (activation, commands, views)
-├── tsconfig.json            # TypeScript configuration
-├── src/
-│   ├── extension.ts         # Entry point, activation, command registration
-│   ├── types.ts             # TypeScript interfaces for walkthrough schema
-│   ├── WalkthroughProvider.ts  # Tree view provider for sidebar
-│   ├── StepDetailPanel.ts   # Webview panel for step details
-│   └── HighlightManager.ts  # Code highlighting/decorations
-├── media/
-│   └── panel.css           # Styles for webview (currently unused, styles inline)
+├── package.json                 # Extension manifest (activation, commands, views)
+├── tsconfig.json                # TypeScript configuration
+├── README.md                    # User-facing overview and usage
 ├── docs/
-│   ├── schema.md           # Walkthrough JSON schema documentation
-│   └── development.md      # This file
-└── out/                    # Compiled JavaScript (generated)
+│   ├── schema.md                # Walkthrough JSON schema documentation
+│   └── development.md           # This file
+├── media/
+│   └── panel.css                # Webview styles
+├── scripts/
+│   ├── refresh-extension.sh     # Rebuild + install helper
+│   └── setup-git-hooks.js       # Git hook setup
+├── walkthroughs/                # Example walkthrough JSON files
+├── src/
+│   ├── extension.ts             # Entry point, activation, command registration
+│   ├── types.ts                 # Walkthrough interfaces and tree utilities
+│   ├── WalkthroughProvider.ts   # Tree view provider and step navigation
+│   ├── StepDetailPanel.ts       # Webview panel for step details
+│   ├── HighlightManager.ts      # Code highlighting/decorations
+│   ├── DiffContentProvider.ts   # virgil-git:// virtual document provider
+│   ├── MarkdownHighlightProvider.ts # virgil-md-preview:// provider
+│   ├── DiffResolver.ts          # Base commit resolution for diffs
+│   └── markdownParser.ts        # Markdown walkthrough conversion
+└── out/                         # Compiled JavaScript (generated)
 ```
 
 ## Architecture Overview
