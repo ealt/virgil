@@ -219,43 +219,43 @@ export function getFileTypeIcon(filePath: string): string {
 
   const iconMap: Record<string, string> = {
     // Markdown
-    'md': 'markdown',
-    'markdown': 'markdown',
+    md: 'markdown',
+    markdown: 'markdown',
     // JSON
-    'json': 'json',
-    'jsonc': 'json',
-    'json5': 'json',
+    json: 'json',
+    jsonc: 'json',
+    json5: 'json',
     // Python
-    'py': 'python',
-    'pyw': 'python',
-    'pyi': 'python',
+    py: 'python',
+    pyw: 'python',
+    pyi: 'python',
     // Ruby
-    'rb': 'ruby',
-    'rake': 'ruby',
-    'gemspec': 'ruby',
+    rb: 'ruby',
+    rake: 'ruby',
+    gemspec: 'ruby',
     // Plain text
-    'txt': 'file-text',
-    'text': 'file-text',
+    txt: 'file-text',
+    text: 'file-text',
     // Media/images
-    'png': 'file-media',
-    'jpg': 'file-media',
-    'jpeg': 'file-media',
-    'gif': 'file-media',
-    'svg': 'file-media',
-    'webp': 'file-media',
-    'ico': 'file-media',
-    'bmp': 'file-media',
+    png: 'file-media',
+    jpg: 'file-media',
+    jpeg: 'file-media',
+    gif: 'file-media',
+    svg: 'file-media',
+    webp: 'file-media',
+    ico: 'file-media',
+    bmp: 'file-media',
     // PDF
-    'pdf': 'file-pdf',
+    pdf: 'file-pdf',
     // Archives
-    'zip': 'file-zip',
-    'tar': 'file-zip',
-    'gz': 'file-zip',
-    'tgz': 'file-zip',
+    zip: 'file-zip',
+    tar: 'file-zip',
+    gz: 'file-zip',
+    tgz: 'file-zip',
     '7z': 'file-zip',
-    'rar': 'file-zip',
+    rar: 'file-zip',
     // Notebooks
-    'ipynb': 'notebook',
+    ipynb: 'notebook',
   };
 
   return iconMap[ext] || 'file-code';

@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import { execSync } from 'child_process';
 import * as yaml from 'js-yaml';
 import { Walkthrough, WalkthroughStep, Repository, parseLocation } from './types';
@@ -164,7 +163,6 @@ export function parseMarkdownWalkthrough(markdown: string, workspaceRoot?: strin
   // Parse YAML frontmatter (allow after title with blank lines)
   let metadata: Record<string, unknown> | undefined;
   let repositoryFromFrontmatter: Repository | undefined;
-  let frontmatterEnd = i;
 
   while (i < lines.length && lines[i].trim() === '') {
     i++;
@@ -178,7 +176,6 @@ export function parseMarkdownWalkthrough(markdown: string, workspaceRoot?: strin
       i++;
     }
     if (i < lines.length && lines[i].trim() === '---') {
-      frontmatterEnd = i + 1;
       i++; // Skip closing ---
       try {
         const frontmatterText = frontmatterLines.join('\n');
@@ -211,7 +208,14 @@ export function parseMarkdownWalkthrough(markdown: string, workspaceRoot?: strin
           }
 
           // Remove repository fields from metadata
-          const { remote, commit, baseBranch, baseCommit, pr, ...rest } = frontmatterData;
+          const {
+            remote: _remote,
+            commit: _commit,
+            baseBranch: _baseBranch,
+            baseCommit: _baseCommit,
+            pr: _pr,
+            ...rest
+          } = frontmatterData;
           if (Object.keys(rest).length > 0) {
             metadata = rest;
           }
