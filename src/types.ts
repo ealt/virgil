@@ -213,6 +213,54 @@ export function isMarkdownFile(filePath: string): boolean {
   return /\.(md|markdown)$/i.test(filePath);
 }
 
+// Get the appropriate icon ID for a file path based on its extension
+export function getFileTypeIcon(filePath: string): string {
+  const ext = filePath.toLowerCase().split('.').pop() || '';
+
+  const iconMap: Record<string, string> = {
+    // Markdown
+    'md': 'markdown',
+    'markdown': 'markdown',
+    // JSON
+    'json': 'json',
+    'jsonc': 'json',
+    'json5': 'json',
+    // Python
+    'py': 'python',
+    'pyw': 'python',
+    'pyi': 'python',
+    // Ruby
+    'rb': 'ruby',
+    'rake': 'ruby',
+    'gemspec': 'ruby',
+    // Plain text
+    'txt': 'file-text',
+    'text': 'file-text',
+    // Media/images
+    'png': 'file-media',
+    'jpg': 'file-media',
+    'jpeg': 'file-media',
+    'gif': 'file-media',
+    'svg': 'file-media',
+    'webp': 'file-media',
+    'ico': 'file-media',
+    'bmp': 'file-media',
+    // PDF
+    'pdf': 'file-pdf',
+    // Archives
+    'zip': 'file-zip',
+    'tar': 'file-zip',
+    'gz': 'file-zip',
+    'tgz': 'file-zip',
+    '7z': 'file-zip',
+    'rar': 'file-zip',
+    // Notebooks
+    'ipynb': 'notebook',
+  };
+
+  return iconMap[ext] || 'file-code';
+}
+
 // Determine the step type based on location fields
 export function getStepType(step: WalkthroughStep): StepType {
   const hasLocation = !!step.location;

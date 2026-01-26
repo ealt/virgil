@@ -12,6 +12,7 @@ import {
   flattenStepTree,
   StepNavigationContext,
   buildNavigationMap,
+  getFileTypeIcon,
 } from './types';
 
 export class WalkthroughTreeItem extends vscode.TreeItem {
@@ -512,22 +513,32 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       );
       stepItem.description = '(current)';
     } else {
+      // Get file-type specific icon
+      const locationPath = step.location?.split(':')[0] || step.base_location?.split(':')[0];
+      const fileIcon = locationPath ? getFileTypeIcon(locationPath) : 'file-code';
+
       // Set icon based on step type
       switch (stepType) {
         case 'diff':
-          stepItem.iconPath = new vscode.ThemeIcon('git-compare');
+          // Use file icon for recognized types, otherwise git-compare
+          stepItem.iconPath = new vscode.ThemeIcon(
+            fileIcon !== 'file-code' ? fileIcon : 'git-compare'
+          );
           if (!hasBaseRef) {
             stepItem.description = '⚠️ no base ref';
           }
           break;
         case 'base-only':
-          stepItem.iconPath = new vscode.ThemeIcon('history', new vscode.ThemeColor('charts.red'));
+          stepItem.iconPath = new vscode.ThemeIcon(
+            fileIcon !== 'file-code' ? fileIcon : 'history',
+            fileIcon === 'file-code' ? new vscode.ThemeColor('charts.red') : undefined
+          );
           if (!hasBaseRef) {
             stepItem.description = '⚠️ no base ref';
           }
           break;
         case 'point-in-time':
-          stepItem.iconPath = new vscode.ThemeIcon('file-code');
+          stepItem.iconPath = new vscode.ThemeIcon(fileIcon);
           break;
         case 'informational':
         default:
