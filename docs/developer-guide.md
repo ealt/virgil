@@ -3,8 +3,8 @@
 ---
 
 type: developer-onboarding
-remote: <git@github.com>:ealt/virgil.git
-commit: d4b85b5b1f5ab646b671bfff01e7d1c46ccf57db
+remote: git@github.com:ealt/virgil.git
+commit: fb0b1a3ec99858f6cbd1320b9151728556fd85f0
 
 ---
 
@@ -35,63 +35,61 @@ This section covers the core architecture of the Virgil extension, including how
 
 ### Extension Activation
 
-[View code (13-15)](/package.json)
+[View code (20)](/package.json)
 
-Virgil activates when it detects any `*.walkthrough.json` file in your workspace root.
-
-The activation event is defined in `package.json`. The extension uses `workspaceContains:*.walkthrough.json` which means it only activates when the workspace contains matching files at the root.
+Virgil activates on startup. The `activationEvents` array is intentionally empty, so VS Code loads the extension without waiting for a file match.
 
 **Key points:**
 
-- Activation is lazy (only when needed)
-- Once activated, the extension discovers walkthroughs from two locations:
+- Activation is eager (startup), not gated on `workspaceContains`
+- `virgil.convertMarkdown` is registered immediately (it still requires a workspace to run)
+- Once a workspace folder is available, walkthrough discovery looks in:
   - `.walkthrough.json` at workspace root
   - Any `.json` files in `walkthroughs/` directory
-- Multiple walkthrough files can coexist
-- The extension watches for file changes automatically in both locations
+- The extension watches those JSON files for changes
 
 ### Extension Entry Point
 
-[View code (13-41)](/src/extension.ts)
+[View code (44-52,55-98,100-155,157-180,207-228)](/src/extension.ts)
 
-The `activate()` function in `extension.ts` is called when the extension activates.
+The `activate()` function in `extension.ts` is called when the extension loads.
 
 **What happens on activation:**
 
-1. Creates a `HighlightManager` instance
-2. Finds walkthrough files in two locations:
-   - `.walkthrough.json` at workspace root
-   - Any `.json` files in `walkthroughs/` directory
-3. Initializes the `WalkthroughProvider`
-4. Registers the tree view in the sidebar
-5. Registers all commands (including walkthrough selection and Markdown conversion)
-6. Sets up file watching for both locations
-7. Auto-shows the first step if a walkthrough exists
-
-**Early return:** If no workspace folder is open, the extension returns early.
+1. Creates a `HighlightManager` and reads default view modes from configuration
+2. Registers `virgil.convertMarkdown` early so it's available even before a workspace is detected
+3. Returns early if no workspace folder is open
+4. Initializes diff support (`DiffContentProvider`, `DiffResolver`) and the markdown highlight provider
+5. Initializes the `WalkthroughProvider` and the tree view
+6. Registers commands and a config watcher for step-numbering changes
+7. Sets up file watching for `.walkthrough.json` and `walkthroughs/*.json`
+8. Auto-shows the first step if `virgil.view.autoShowFirstStep` is enabled and a walkthrough exists (and then checks commit mismatch + git user name)
 
 ### TypeScript Interfaces - Data Model
 
-[View code (1-96)](/src/types.ts)
+[View code (1-21,68-112,114-130,161-214,216-262,264-276)](/src/types.ts)
 
-The `types.ts` file defines the shape of walkthrough JSON files.
+The `types.ts` file defines the shape of walkthrough JSON files and the navigation helpers.
 
 **Key interfaces:**
 
 - `Walkthrough` - Root object with title, description, repository, metadata, steps
-- `WalkthroughStep` - Individual step with id, title, body, location, comments, parentId
+- `WalkthroughStep` - Individual step with id, title, body, `location`, optional `base_location`, comments, `parentId`
 - `StepTreeNode` - Tree node for hierarchical step display
+- `StepNavigationContext` - Precomputed parent/sibling indices for fast navigation
 - `Comment` - User comments with id, author, body
-- `Repository` - Git repository info (remote URL, commit SHA)
+- `Repository` - Git info (remote URL, head commit SHA, optional `baseCommit`/`baseBranch`/`pr`)
 
-**Utility functions:**
+**Utility functions and types:**
 
 - `parseLocation()` - Parses location strings like `path:10-45,100-120`
-- `normalizeRemoteUrl()` - Normalizes Git URLs for comparison (SSH <-> HTTPS)
-- `buildStepTree()` - Builds tree structure from flat steps with parentId
-- `flattenStepTree()` - Flattens tree back to array for navigation
+- `buildStepTree()` / `flattenStepTree()` - Build and flatten the hierarchical step tree
+- `buildNavigationMap()` - Builds O(1) parent/sibling lookup for navigation
+- `ViewMode`, `MarkdownViewMode`, `StepType` + `getStepType()` - Diff/view mode typing
+- `isMarkdownFile()` / `getFileTypeIcon()` - File-type helpers for UI
+- `normalizeRemoteUrl()` - URL normalization helper (currently unused in selection filtering)
 
-These types ensure type safety throughout the extension.
+These types keep the extension's data model and navigation behavior consistent.
 
 ## Commands and Navigation
 
@@ -99,9 +97,9 @@ This section covers how commands are registered and how step navigation works.
 
 ### Command Registration
 
-[View code (43-119)](/src/extension.ts)
+[View code (231-308,310-317,319-341,347-378,379-398,404-413,418-442,444-454,508-549,553-569,571-607)](/src/extension.ts)
 
-The extension registers several commands for navigation and control.
+The extension registers several commands for navigation and control. (`virgil.convertMarkdown` is registered earlier during activation.)
 
 **Navigation commands:**
 
@@ -113,62 +111,70 @@ The extension registers several commands for navigation and control.
 - `virgil.nextSibling` - Navigate to next sibling step (same level)
 - `virgil.prevSibling` - Navigate to previous sibling step (same level)
 
+**View mode commands (used by the webview):**
+
+- `virgil.setViewMode` - Switch diff view mode (diff/head/base)
+- `virgil.setMarkdownViewMode` - Switch markdown view mode (rendered/raw)
+
 **Control commands:**
 
 - `virgil.refresh` - Reload walkthrough from file
-- `virgil.selectWalkthrough` - Switch between multiple walkthrough files or select Markdown files for conversion
+- `virgil.selectWalkthrough` - Switch walkthroughs or browse for JSON/Markdown and convert if needed
 - `virgil.convertMarkdown` - Convert a Markdown walkthrough to JSON (saves to `walkthroughs/` directory)
 - `virgil.submitComment` - Add a comment to current step
-- `virgil.openLocation` - Open file at specific location
-- `virgil.checkoutCommit` - Checkout the commit specified in walkthrough
+- `virgil.openLocation` - Open file at a specific location
+- `virgil.checkoutCommit` - Checkout the commit specified in the walkthrough
 
-All commands delegate to `WalkthroughProvider` for state management, then call `showCurrentStep()` to update the UI.
+Most commands delegate to `WalkthroughProvider` for state management, then call `showCurrentStep()` to update the UI.
 
 ### File Watching - Auto-refresh
 
-[View code (494-525)](/src/extension.ts)
+[View code (609-613,615-655)](/src/extension.ts)
 
-The extension uses VS Code's `FileSystemWatcher` to monitor walkthrough files in two locations:
+The extension uses VS Code `FileSystemWatcher`s to monitor walkthrough JSON files in two locations:
 
 - `.walkthrough.json` at workspace root
 - `walkthroughs/*.json` files
 
 **Event handling:**
 
-- **onDidCreate**: Shows notification, refreshes provider, sets context
-- **onDidChange**: Refreshes provider to reload walkthrough
-- **onDidDelete**: Clears highlights, updates context, refreshes provider
+- **onDidChange**: Refreshes provider, updates context, and optionally auto-shows the first step
+- **onDidCreate**: Refreshes provider, updates context, optionally auto-shows the first step, then checks commit mismatch and git user name
+- **onDidDelete**: Refreshes provider, clears highlights, and updates context based on remaining walkthroughs
 
 **Benefits:**
 
-- No need to manually refresh when editing walkthrough files
+- No manual refresh needed when editing walkthrough JSON
 - Automatic detection of new walkthroughs in both locations
 - Clean state management when files are deleted
 
-The watcher uses `RelativePattern` to watch both the workspace root and the `walkthroughs/` directory.
+The watcher uses `RelativePattern` for both the workspace root and the `walkthroughs/` directory.
 
 ### Show Current Step - Core Navigation
 
-[View code (315-371)](/src/extension.ts)
+[View code (683-716,718-777,781-797)](/src/extension.ts)
 
 The `showCurrentStep()` function orchestrates what happens when navigating to a step.
 
 **Flow:**
 
-1. Gets current walkthrough and step index from provider
+1. Gets walkthrough, current index, and step label from the provider
 2. Clears all previous highlights
-3. If step has a location:
-   - Parses the location string
-   - Opens the file in the editor
-   - Scrolls to the first range
-   - Applies highlights to all ranges
-4. Updates the detail panel with step content
+3. Resolves the base commit (if any) and determines the step type
+4. Builds step anchor links and hierarchical navigation options for the webview
+5. Shows the appropriate view based on step type:
+   - **diff**: opens diff/head/base view based on `currentViewMode`
+   - **point-in-time**: opens the head file with standard highlights
+   - **base-only**: opens the base file with base highlights
+   - **informational**: no file opened
+6. Renders the step detail panel (including errors if a base ref is missing)
 
 **Key coordination:**
 
-- `WalkthroughProvider` manages state
+- `WalkthroughProvider` manages state and step labels
+- `DiffResolver` determines the base commit
 - `HighlightManager` handles decorations
-- `StepDetailPanel` displays UI
+- `StepDetailPanel` renders the webview (diff toggle + markdown toggle)
 
 This function is called by all navigation commands to keep the UI in sync.
 
@@ -178,39 +184,42 @@ This section covers the main UI components: the sidebar tree view, detail panel,
 
 ### WalkthroughProvider - State Management
 
-[View code (17-220)](/src/WalkthroughProvider.ts)
+[View code (46-51,53-83,158-186,199-242,266-302,319-329,568-591)](/src/WalkthroughProvider.ts)
 
 The `WalkthroughProvider` class implements VS Code's `TreeDataProvider` interface.
 
 **Responsibilities:**
 
-- Discovers walkthrough files from root (`.walkthrough.json`) and `walkthroughs/` directory (any `.json` files)
-- Loads and parses walkthrough JSON files
-- Builds tree structure from flat steps using `buildStepTree()`
-- Maintains current step index and flat navigation array
-- Builds tree items for the sidebar with hierarchical display
-- Handles Git operations (commit checking, checkout)
-- Manages comments (add, save to file)
+- Discovers walkthrough JSON files (`.walkthrough.json` and `walkthroughs/*.json`)
+- Loads and parses walkthrough files, then builds:
+  - The hierarchical tree (`buildStepTree`)
+  - The flat navigation list (`flattenStepTree`)
+  - The parent/sibling lookup map (`buildNavigationMap`)
+- Tracks current step index and step labels (hierarchical numbering if enabled)
+- Builds tree items with file-type icons and diff/base warnings
+- Manages Git state (commit mismatch checks, checkout, stash, git user name)
+- Manages comments (add + persist to JSON)
+- Provides step anchor mapping for in-body step links
 
 **Key methods:**
 
-- `getAvailableWalkthroughs()` - Finds all walkthrough files (root `.walkthrough.json` and `walkthroughs/*.json`)
-- `loadWalkthrough()` - Loads JSON file, parses it, and builds step tree
-- `setWalkthroughFile()` - Sets the current walkthrough file (accepts relative paths)
-- `goToStep()`, `nextStep()`, `prevStep()` - Navigation using flat step array
-- `getTotalSteps()`, `getCurrentStep()` - Helper methods for navigation
-- `addComment()` - Adds comment and saves to file
-- `hasCommitMismatch()` - Checks if current commit matches walkthrough
+- `getAvailableWalkthroughs()` - Finds walkthrough JSON files
+- `loadWalkthrough()` - Loads JSON and builds tree/flat/nav maps
+- `setWalkthroughFile()` - Sets the current walkthrough file
+- `goToStep()`, `nextStep()`, `prevStep()` - Step navigation
+- `getStepAnchorMap()` - Maps step-title anchors to indices
+- `addComment()` - Adds a comment and saves the walkthrough file
+- `hasCommitMismatch()` / `getCommitMismatchInfo()` - Commit mismatch checks
 
 ### Tree View - Building the Sidebar
 
-[View code (358-425)](/src/WalkthroughProvider.ts)
+[View code (497-565,593-651)](/src/WalkthroughProvider.ts)
 
 The `getRootItems()` and `createStepTreeItem()` methods build the sidebar tree structure.
 
 **Tree structure:**
 
-1. **File selector** (if multiple walkthroughs) - Shows current file with count
+1. **File selector** (always shown) - Shows current file with a count of available walkthroughs
 2. **Title header** - Walkthrough title with description or commit mismatch warning
 3. **Steps** - Hierarchical tree of steps with parent/child relationships
 
@@ -218,24 +227,25 @@ The `getRootItems()` and `createStepTreeItem()` methods build the sidebar tree s
 
 - Top-level steps (no `parentId`) appear at root level
 - Sub-steps appear indented under their parent
-- Steps with children are expandable (collapsed state: Expanded by default)
+- Steps with children are expandable (default: Expanded)
 - Navigation traverses all steps in depth-first order
 
 **Step indicators:**
 
 - Current step: Green arrow icon + "(current)" label
-- Steps with locations: File-code icon
-- Steps without locations: Note icon
-- Diff steps: Git-compare icon
-- Base-only steps: History icon (red)
+- Point-in-time steps: File-type icon based on the location path
+- Diff steps: File-type icon when recognized, otherwise `git-compare`
+- Base-only steps: File-type icon when recognized, otherwise `history` (red)
+- Informational steps: Note icon
+- Diff/Base steps show "⚠️ no base ref" if the repository lacks a base reference
 
 **Commit mismatch:** If the walkthrough commit doesn't match current HEAD, the title shows a warning icon and tooltip.
 
-The tree view automatically updates when steps change via `_onDidChangeTreeData` event.
+The tree view automatically updates when steps change via `_onDidChangeTreeData`.
 
 ### StepDetailPanel - Webview UI
 
-[View code (46-106)](/src/StepDetailPanel.ts)
+[View code (70-121,123-160)](/src/StepDetailPanel.ts)
 
 The `StepDetailPanel` creates a webview that displays rich step information.
 
@@ -243,10 +253,12 @@ The `StepDetailPanel` creates a webview that displays rich step information.
 
 - Step title and counter (e.g., "Step 2 of 5")
 - Metadata (on first step only)
-- Clickable location link
+- Diff view toggle (Diff/Head/Base) for diff steps
+- Markdown view toggle (Rendered/Raw) for markdown steps
+- Clickable location information (head/base or base-only)
 - Step body with Markdown rendering
 - Comments section with add comment form
-- Previous/Next navigation buttons
+- Previous/Next navigation buttons (plus optional parent/sibling controls)
 
 **Webview features:**
 
@@ -255,21 +267,21 @@ The `StepDetailPanel` creates a webview that displays rich step information.
 - Uses VS Code CSS variables for theming
 - Communicates via `postMessage` API
 
-**Markdown rendering:** Uses `marked` library with `highlight.js` for syntax highlighting in code blocks.
+**Markdown rendering:** Uses `marked` with `highlight.js` for syntax highlighting in code blocks.
 
 #### Webview HTML Generation
 
-[View code (114-465)](/src/StepDetailPanel.ts)
+[View code (163-183,194-223,225-336,338-352,353-371,403-439,742-770,772-799,802-848,864-887)](/src/StepDetailPanel.ts)
 
 The `getHtml()` method generates the HTML for the detail panel.
 
 **Key features:**
 
 - **Theming**: Uses VS Code CSS variables (`var(--vscode-foreground)`, etc.)
-- **Markdown rendering**: Converts step body and comments from Markdown to HTML
-- **Security**: Content Security Policy restricts scripts, HTML is escaped to prevent XSS
-- **Interactivity**: JavaScript handles button clicks and comment submission
-- **Responsive**: Navigation buttons disabled at first/last steps
+- **Markdown rendering**: Converts step body and comments from Markdown to HTML (with step-link anchors)
+- **Security**: CSP restricts scripts; raw HTML is stripped to prevent XSS
+- **Interactivity**: JavaScript handles navigation, view toggles, step links, and comment submission
+- **Diff/error UX**: Shows base-ref errors inline and adapts location display per view
 
 **Styling:**
 
@@ -277,36 +289,37 @@ The `getHtml()` method generates the HTML for the detail panel.
 - Syntax highlighting uses VS Code-compatible colors
 - Supports dark/light themes automatically
 
-**Communication:** JavaScript uses `acquireVsCodeApi()` to send messages back to extension.
+**Communication:** JavaScript uses `acquireVsCodeApi()` to send messages back to the extension.
 
 ### HighlightManager - Code Decorations
 
-[View code (1-71)](/src/HighlightManager.ts)
+[View code (3-9,16-39,45-79,87-145,147-179,182-207,209-229)](/src/HighlightManager.ts)
 
 The `HighlightManager` creates and manages text decorations that highlight code ranges.
 
-**Color variants:**
+**Color variants (configurable in `virgil.highlights.*`):**
 
-| Context                 | Color                                     | CSS Background            |
-| ----------------------- | ----------------------------------------- | ------------------------- |
-| Point-in-time (default) | `standard` (configurable, default: blue)  | `rgba(86, 156, 214, 0.1)` |
-| Head file (diff mode)   | `diffHead` (configurable, default: green) | `rgba(72, 180, 97, 0.15)` |
-| Base file (diff mode)   | `diffBase` (configurable, default: red)   | `rgba(220, 80, 80, 0.15)` |
+| Context                 | Setting key (default)                             | Notes |
+| ----------------------- | ------------------------------------------------- | ----- |
+| Point-in-time (default) | `standard.backgroundColor` (`#569CDE1A`)         | Blue |
+| Head file (diff mode)   | `diffHead.backgroundColor` (`#48B46126`)          | Green |
+| Base file (diff mode)   | `diffBase.backgroundColor` (`#DC505026`)          | Red |
 
 **Decoration style:**
 
-- Background color based on context
-- Left border accent matching the color
+- Colors are read from settings and converted from hex to RGBA
+- Left border accent per color
 - `isWholeLine: true` highlights entire lines
-- Appears in overview ruler (minimap) for navigation
+- Appears in the overview ruler (minimap) for navigation
 
 **State management:**
 
 - Tracks decorations per file with color in a `Map<string, { color, ranges }>`
-- `highlightRange(editor, start, end, color)` adds decorations with specified color
-- `clearFile()` removes decorations from a specific file
+- `highlightRange(editor, start, end, color)` adds or replaces ranges per color
+- `clearFile()` removes decorations for a specific file
 - `clearAll()` removes all decorations
 - `refreshEditor()` reapplies decorations when editor is reopened
+- Configuration changes recreate decoration types and reapply active ranges
 
 **Usage:** Called by `showCurrentStep()` to highlight step locations with appropriate colors.
 
@@ -316,7 +329,7 @@ This section covers the components that enable diff-based walkthroughs.
 
 ### DiffContentProvider - Git File Content
 
-[View code (1-100)](/src/DiffContentProvider.ts)
+[View code (22-26,31-46,51-76,82-93,99-109)](/src/DiffContentProvider.ts)
 
 The `DiffContentProvider` implements VS Code's `TextDocumentContentProvider` to serve file content from specific Git commits.
 
@@ -347,7 +360,7 @@ const doc = await vscode.workspace.openTextDocument(uri);
 
 ### DiffResolver - Base Reference Resolution
 
-[View code (1-200)](/src/DiffResolver.ts)
+[View code (25-69,76-96,101-118,124-160,164-201,204-219)](/src/DiffResolver.ts)
 
 The `DiffResolver` resolves and validates base references for diff mode walkthroughs.
 
@@ -382,7 +395,7 @@ This section covers how data is stored and managed.
 
 ### Comments System
 
-[View code (290-322)](/src/WalkthroughProvider.ts)
+[View code (391-402,417-448)](/src/WalkthroughProvider.ts)
 
 Users can add comments to steps, which are persisted to the walkthrough JSON file.
 
@@ -405,24 +418,27 @@ Users can add comments to steps, which are persisted to the walkthrough JSON fil
 - Persisted to JSON file
 - Can be edited manually in JSON if needed
 
+**Git user prompt:** On walkthrough load/selection, the extension checks for `git config user.name` and offers to set it if missing.
+
 ### Commit Mismatch Detection
 
-[View code (69-135)](/src/WalkthroughProvider.ts)
+[View code (81-106)](/src/WalkthroughProvider.ts)
 
 The extension can warn users when viewing walkthroughs created for different codebase states.
 
 **How it works:**
 
 1. Walkthrough specifies `repository.commit`
-2. Extension compares current HEAD to walkthrough commit
+2. Extension compares current HEAD to the walkthrough commit (full SHA)
 3. If mismatch detected:
-   - Shows warning dialog with commit SHAs
+   - Shows warning dialog with short SHAs
    - Offers to checkout the commit (with stash option)
    - User can ignore and continue
 
 **Git operations:**
 
-- `hasCommitMismatch()` - Compares commits
+- `hasCommitMismatch()` / `getCommitMismatchInfo()` - Compares commits and returns details
+- `refreshGitState()` - Refreshes current HEAD before comparisons
 - `checkoutCommit()` - Checks out specified commit
 - `stashChanges()` - Stashes uncommitted changes
 - `isWorkingTreeDirty()` - Checks for uncommitted changes
@@ -433,30 +449,19 @@ The extension can warn users when viewing walkthroughs created for different cod
 - Prevents confusion from code changes
 - Optional (can be ignored if needed)
 
-### Repository Remote Matching
+### Repository Metadata
 
-[View code (28-55)](/src/types.ts)
+[View code (114-122,132-158)](/src/types.ts)
 
-Walkthroughs can be scoped to specific repositories using `repository.remote`.
+Walkthroughs can include repository metadata to capture the intended code state.
 
-**How it works:**
+**Current fields:**
 
-1. Walkthrough specifies `repository.remote`
-2. Extension gets workspace Git remote
-3. `normalizeRemoteUrl()` normalizes both URLs:
-   - Removes `.git` suffix
-   - Converts SSH to HTTPS format
-   - Case-insensitive comparison
-   - Removes authentication info
-4. Only matching walkthroughs appear in `getAvailableWalkthroughs()`
+- `remote` - Optional Git remote URL for reference
+- `commit` - Head commit SHA for the walkthrough's target state
+- `baseCommit` / `baseBranch` / `pr` - Optional base reference for diff mode
 
-**Benefits:**
-
-- Walkthrough files can be stored in shared locations
-- Only show for relevant repositories
-- Prevents confusion from wrong walkthroughs
-
-**Example:** `git@github.com:org/repo.git` matches `https://github.com/org/repo`
+**URL normalization helper:** `normalizeRemoteUrl()` is available to compare SSH/HTTPS URLs, but the current selection logic does not filter walkthroughs by remote.
 
 ## Utilities and Helpers
 
@@ -464,11 +469,11 @@ This section covers utility functions and parsing logic.
 
 ### Location Parsing
 
-[View code (63-96)](/src/types.ts)
+[View code (167-200)](/src/types.ts)
 
 The `parseLocation()` function parses location strings into structured data.
 
-**Location format:** `path:startLine-endLine` or `path:startLine-endLine,startLine-endLine`
+**Location format:** `path:startLine-endLine` or `path:startLine-endLine,startLine-endLine` (used by both `location` and `base_location`)
 
 **Examples:**
 
@@ -491,7 +496,7 @@ The `parseLocation()` function parses location strings into structured data.
 
 ### Markdown Parser
 
-[View code (144-366)](/src/markdownParser.ts)
+[View code (144-163,164-223,234-241,243-373,379-388)](/src/markdownParser.ts)
 
 The `parseMarkdownWalkthrough()` function converts Markdown files to walkthrough JSON.
 
@@ -505,17 +510,18 @@ The `parseMarkdownWalkthrough()` function converts Markdown files to walkthrough
 
 **Parsing features:**
 
-- YAML frontmatter for metadata (commit, baseBranch, etc.)
-- Location links in format `[Text (10-20)](file.ts)`
+- YAML frontmatter for repository fields (`remote`, `commit`, `baseBranch`, `baseCommit`, `pr`) and arbitrary metadata
+- Location links immediately after headings in the format `[Text (10-20)](file.ts)`
 - Base location links with `[Base (10-20)](file.ts)` prefix
 - Automatic `parentId` assignment based on header nesting
 - Sequential ID generation (1, 2, 3, 4...)
+- Warnings when location links appear in the step body (ignored for parsing)
 
 **Example input:** A markdown file with `## Login Flow` (level 2) followed by `### Token Generation` (level 3) produces steps where "Token Generation" has `parentId` pointing to "Login Flow".
 
 ## Project Structure Overview
 
-[View code (1-50)](/package.json)
+[View code (1-22)](/package.json)
 
 Understanding the project structure helps when contributing.
 
@@ -541,7 +547,7 @@ Understanding the project structure helps when contributing.
 
 ## Project Documentation - README
 
-[View code (9-17)](/README.md)
+[View code (9-20)](/README.md)
 
 The project's main documentation lives in the README.md file. This section showcases the core features of Virgil.
 
@@ -562,15 +568,15 @@ This section covers how to add new features and contribute to Virgil.
 
 ### Adding New Commands
 
-[View code (1-12)](/src/extension.ts)
+[View code (231-239)](/src/extension.ts)
 
 Here's how to add new commands to Virgil:
 
 **Steps:**
 
-1. Add command to `package.json` `contributes.commands`
-2. Register in `extension.ts` with `vscode.commands.registerCommand()`
-3. Add to subscriptions for cleanup
+1. Add the command to `package.json` under `contributes.commands` (around lines 22-78, plus keybindings if needed)
+2. Register the command in `extension.ts` with `vscode.commands.registerCommand()`
+3. Push the disposable into `context.subscriptions` for cleanup
 
 **Example:**
 
@@ -647,7 +653,7 @@ Here's the recommended workflow for contributing:
 
 **Key takeaways:**
 
-- Extension activates on `*.walkthrough.json` detection
+- Extension activates on startup; walkthroughs are discovered from `.walkthrough.json` and `walkthroughs/*.json`
 - `WalkthroughProvider` manages state and builds hierarchical sidebar
 - `StepDetailPanel` shows rich step info in themed webview
 - `HighlightManager` applies line decorations to editors
@@ -655,7 +661,7 @@ Here's the recommended workflow for contributing:
 - Steps support hierarchy via `parentId` field
 - Navigation traverses all steps in depth-first order
 - Comments are persisted to JSON files
-- Repository matching enables portable walkthroughs
+- Repository metadata tracks intended commit/base refs (no remote filtering yet)
 - Commit mismatch warnings help ensure correct code state
 
 **Next steps for contributors:**
