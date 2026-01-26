@@ -55,8 +55,8 @@ code --install-extension ealt.virgil
    ```
 
 5. Install the `.vsix` file:
-   - **VS Code**: `code --install-extension virgil-0.1.0.vsix`
-   - **Cursor**: `cursor --install-extension virgil-0.1.0.vsix`
+   - **VS Code**: `code --install-extension virgil-<version>.vsix`
+   - **Cursor**: `cursor --install-extension virgil-<version>.vsix`
 
 ### Dev Refresh Script
 
@@ -514,8 +514,9 @@ Interested in contributing to Virgil?
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** and set up the upstream remote
-3. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for a quick start guide
+3. See [CONTRIBUTING.md](CONTRIBUTING.md) for a quick start guide
 4. See [docs/development.md](docs/development.md) for detailed development setup and architecture
+5. See [docs/marketplace-setup.md](docs/marketplace-setup.md) for marketplace publishing setup (maintainers only)
 
 Your interest in contributing is appreciated! Please open an issue first to discuss major changes, or submit a pull request for smaller fixes and improvements.
 
