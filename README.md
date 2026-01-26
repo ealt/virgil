@@ -188,6 +188,8 @@ Colors support both 6-digit (`#RRGGBB`) and 8-digit (`#RRGGBBAA`) hex formats. T
 
 - **`virgil.view.autoShowFirstStep`**: Automatically show the first step when a walkthrough loads (default: `true`)
 
+- **`virgil.view.showHierarchicalNavigation`**: Show parent and sibling navigation buttons in the step panel (default: `false`). When enabled, buttons for navigating to parent, previous sibling, and next sibling steps appear in the detail panel. Keyboard shortcuts for hierarchical navigation work regardless of this setting.
+
 ### Customizing Keyboard Shortcuts
 
 Keyboard shortcuts can be customized through VS Code's keybindings. The default shortcuts are:

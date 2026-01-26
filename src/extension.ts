@@ -36,6 +36,11 @@ function shouldAutoShowFirstStep(): boolean {
   return config.get<boolean>('autoShowFirstStep', true);
 }
 
+function shouldShowHierarchicalNavigation(): boolean {
+  const config = vscode.workspace.getConfiguration('virgil.view');
+  return config.get<boolean>('showHierarchicalNavigation', false);
+}
+
 export function activate(context: vscode.ExtensionContext) {
   console.log('Virgil extension is now active');
 
@@ -695,6 +700,7 @@ export function activate(context: vscode.ExtensionContext) {
       canGoToParent: walkthroughProvider.canGoToParent(),
       canGoToPrevSibling: walkthroughProvider.canGoToPrevSibling(),
       canGoToNextSibling: walkthroughProvider.canGoToNextSibling(),
+      showHierarchical: shouldShowHierarchicalNavigation(),
     };
 
     // Handle based on step type

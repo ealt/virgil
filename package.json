@@ -221,6 +221,11 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically show the first step when a walkthrough is loaded."
+        },
+        "virgil.view.showHierarchicalNavigation": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show parent and sibling navigation buttons in the step panel."
         }
       }
     }

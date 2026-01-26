@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Markdown file rendering toggle (Raw/Rendered) for steps referencing `.md` files
 - Hierarchical navigation commands: Go to Parent (`Cmd+Shift+\`), Next Sibling (`Cmd+Option+]`), Previous Sibling (`Cmd+Option+[`)
 - File type-specific icons for steps in the sidebar (markdown, json, python, ruby, images, PDFs, archives, notebooks)
+- Setting `virgil.view.showHierarchicalNavigation` to control visibility of parent/sibling navigation buttons in the step panel (default: `false`)
 
 ### Changed
 

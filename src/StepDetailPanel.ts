@@ -64,6 +64,7 @@ export interface HierarchicalNavOptions {
   canGoToParent: boolean;
   canGoToPrevSibling: boolean;
   canGoToNextSibling: boolean;
+  showHierarchical?: boolean;
 }
 
 export class StepDetailPanel {
@@ -768,6 +769,7 @@ export class StepDetailPanel {
   <div class="navigation">
     ${
       navOptions &&
+      navOptions.showHierarchical &&
       (navOptions.canGoToParent || navOptions.canGoToPrevSibling || navOptions.canGoToNextSibling)
         ? `
     <div class="nav-row hierarchical">
