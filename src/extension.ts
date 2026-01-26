@@ -894,9 +894,12 @@ export function activate(context: vscode.ExtensionContext) {
         headUri = vscode.Uri.file(path.join(workspaceRoot!, headParsed.path));
       }
 
-      // Open diff editor
+      // Open diff editor in the source code column, not over the walkthrough panel
       const title = `${baseParsed.path} (${baseCommit.substring(0, 7)}) ↔ ${headParsed.path}`;
-      await vscode.commands.executeCommand('vscode.diff', baseUri, headUri, title);
+      await vscode.commands.executeCommand('vscode.diff', baseUri, headUri, title, {
+        viewColumn: vscode.ViewColumn.One,
+        preserveFocus: true,
+      });
 
       // Note: We can't easily highlight in diff view, but the diff itself provides context
     } catch (error) {

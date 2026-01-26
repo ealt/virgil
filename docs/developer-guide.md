@@ -4,7 +4,7 @@
 
 type: developer-onboarding
 remote: git@github.com:ealt/virgil.git
-commit: fb0b1a3ec99858f6cbd1320b9151728556fd85f0
+commit: f5eb6c7a2d4ba3289b9003ed8c53e00ce7659684
 
 ---
 
