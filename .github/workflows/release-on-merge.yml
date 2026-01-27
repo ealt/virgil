@@ -1,0 +1,99 @@
+name: Release on Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  release:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Check if version was bumped
+        id: check_version
+        run: |
+          CURRENT_VERSION="${{ steps.get_version.outputs.version }}"
+          # Get the base commit (before merge)
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          # Get package.json version from base
+          git checkout $BASE_SHA
+          BASE_VERSION=$(node -p "require('./package.json').version")
+          git checkout HEAD
+          
+          if [ "$CURRENT_VERSION" == "$BASE_VERSION" ]; then
+            echo "Version unchanged: $CURRENT_VERSION"
+            echo "version_bumped=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version bumped from $BASE_VERSION to $CURRENT_VERSION"
+            echo "version_bumped=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TAG="v$VERSION"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG does not exist"
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create and push tag
+        if: steps.check_version.outputs.version_bumped == 'true' && steps.check_tag.outputs.tag_exists == 'false'
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TAG="v$VERSION"
+          
+          # Verify package.json version matches expected format
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "Error: Invalid version format: $VERSION"
+            exit 1
+          fi
+          
+          # Create tag
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+          
+          echo "Created and pushed tag: $TAG"
+
+      - name: Skip release (version not bumped)
+        if: steps.check_version.outputs.version_bumped == 'false'
+        run: |
+          echo "Version was not bumped in this PR. Skipping release."
+          echo "This is normal for non-release PRs."
+
+      - name: Skip release (tag exists)
+        if: steps.check_tag.outputs.tag_exists == 'true'
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TAG="v$VERSION"
+          echo "Tag $TAG already exists. Skipping release."
+          echo "If you need to re-release, delete the tag first."
