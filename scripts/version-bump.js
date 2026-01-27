@@ -138,5 +138,6 @@ console.log('\nNext steps:');
 console.log(`  1. Review CHANGELOG.md and add release notes for ${newVersion}`);
 console.log(`  2. Commit changes: git add package.json CHANGELOG.md`);
 console.log(`  3. Commit: git commit -m "chore: bump version to ${newVersion}"`);
-console.log(`  4. Create tag: git tag v${newVersion}`);
-console.log(`  5. Push: git push origin main --tags`);
+console.log(`  4. Push to develop: git push origin develop`);
+console.log(`  5. Create PR: develop → main`);
+console.log(`  6. Merge PR to trigger automated release (tag will be created automatically)`);

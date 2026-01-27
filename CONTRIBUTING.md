@@ -43,15 +43,16 @@ npm run compile
 1. **Sync your fork** with the main repository:
 
    ```bash
-   git checkout main
+   git checkout develop
    git fetch upstream
-   git merge upstream/main
-   git push origin main
+   git merge upstream/develop
+   git push origin develop
    ```
 
-2. **Create a new branch** for your changes:
+2. **Create a new branch** from `develop` for your changes:
 
    ```bash
+   git checkout develop
    git checkout -b feature/your-feature-name
    ```
 
@@ -90,7 +91,8 @@ npm run compile
 2. **Create a Pull Request**:
    - Go to your fork on GitHub
    - Click "New Pull Request"
-   - Select your branch
+   - **Base branch**: `develop` (not `main`)
+   - **Compare branch**: Your feature branch
    - Fill out the PR template with:
      - Description of changes
      - Type of change (bug fix, feature, etc.)

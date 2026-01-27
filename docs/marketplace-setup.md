@@ -42,7 +42,7 @@ This guide covers the setup required to publish the Virgil extension to the VS C
 
 Before publishing, verify:
 
-- [ ] Publisher account created at https://marketplace.visualstudio.com/manage
+- [ ] Publisher account created at <https://marketplace.visualstudio.com/manage>
 - [ ] Personal Access Token created with "Marketplace (Manage)" scope
 - [ ] `VSCE_PAT` secret added to GitHub repository settings
 - [ ] Publisher ID in `package.json` matches your publisher account ID
@@ -56,41 +56,65 @@ Before publishing, verify:
 
 ## Publishing Methods
 
-### Method 1: Manual Publishing (via GitHub Actions)
+### Method 1: Automated Release (Recommended)
 
-1. Update version in `package.json`:
+This is the standard release workflow using the staging branch:
+
+1. **Prepare release on `develop` branch:**
+
    ```bash
+   git checkout develop
    npm run version:bump <version>
-   # Or manually edit package.json
-   ```
-
-2. Update `CHANGELOG.md` with release notes
-
-3. Commit and push:
-   ```bash
+   # Review and update CHANGELOG.md with release notes
    git add package.json CHANGELOG.md
-   git commit -m "chore: prepare for release v0.2.0"
-   git push origin main
+   git commit -m "chore: prepare release v0.2.0"
+   git push origin develop
    ```
 
-4. Go to GitHub Actions: https://github.com/ealt/virgil/actions/workflows/publish.yml
+2. **Create PR: `develop` → `main`**
+   - Go to GitHub and create a pull request
+   - Title: "Release v0.2.0" (or similar)
+   - Review the changes
+   - Merge the PR
 
-5. Click "Run workflow"
+3. **Automated release process:**
+   - The `release-on-merge.yml` workflow automatically:
+     - Detects the version bump
+     - Creates git tag `v<version>`
+     - Pushes the tag (triggers `release.yml`)
+   - The `release.yml` workflow:
+     - Creates a GitHub release
+     - Attaches the VSIX file
+     - Generates release notes
+   - The `publish.yml` workflow:
+     - Automatically publishes to the marketplace
+
+### Method 2: Manual Publishing (via GitHub Actions)
+
+If you need to publish manually (e.g., re-publish an existing version):
+
+1. Go to GitHub Actions: <https://github.com/ealt/virgil/actions/workflows/publish.yml>
+
+2. Click "Run workflow"
    - Select branch: `main`
    - Enter version: `0.2.0` (must match package.json)
    - Click "Run workflow"
 
-6. Monitor the workflow run - it will:
+3. Monitor the workflow run - it will:
    - Verify version matches
    - Run all quality checks (lint, type-check, build, format-check)
    - Publish to marketplace using `VSCE_PAT` secret
 
-### Method 2: Publishing via Release
+### Method 3: Manual Tagging (Fallback)
 
-1. Follow steps 1-3 from Method 1
+If the automated workflow fails, you can manually create a tag:
+
+1. Ensure version is bumped on `main` branch
 
 2. Create and push a git tag:
+
    ```bash
+   git checkout main
    git tag v0.2.0
    git push origin v0.2.0
    ```

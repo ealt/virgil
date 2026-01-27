@@ -302,15 +302,16 @@ For automated testing, consider adding:
 1. **Sync your fork** with upstream (before starting):
 
    ```bash
-   git checkout main
+   git checkout develop
    git fetch upstream
-   git merge upstream/main
-   git push origin main
+   git merge upstream/develop
+   git push origin develop
    ```
 
-2. **Create a feature branch** in your fork:
+2. **Create a feature branch** from `develop`:
 
    ```bash
+   git checkout develop
    git checkout -b feature/my-feature
    ```
 
@@ -326,7 +327,7 @@ For automated testing, consider adding:
    git push origin feature/my-feature
    ```
 
-7. **Create Pull Request** from your fork to the main repository
+7. **Create Pull Request** from your fork's feature branch to `develop` branch
    - Use the PR template
    - Describe your changes clearly
    - Reference any related issues
@@ -335,12 +336,58 @@ For automated testing, consider adding:
 
 #### For Maintainers
 
-1. Create a feature branch: `git checkout -b feature/my-feature`
-2. Make changes with clear commits
-3. Test thoroughly in Extension Development Host
-4. Update documentation if needed
-5. Push branch and create PR: `git push origin feature/my-feature`
-6. Submit PR with description of changes
+**Daily Development Workflow:**
+
+1. Work on the `develop` branch (staging branch):
+
+   ```bash
+   git checkout develop
+   git pull origin develop
+   ```
+
+2. Make changes and push directly to `develop`:
+
+   ```bash
+   # Make your changes
+   git add .
+   git commit -m "Description of changes"
+   git push origin develop
+   ```
+
+   - CI checks run automatically on every push to `develop`
+   - No need to create PRs for day-to-day work
+
+3. For larger features, create a feature branch:
+
+   ```bash
+   git checkout -b feature/my-feature
+   # Make changes
+   git push origin feature/my-feature
+   # Create PR: feature/my-feature → develop (optional)
+   ```
+
+**Release Workflow:**
+
+1. When ready to release, prepare on `develop`:
+
+   ```bash
+   git checkout develop
+   npm run version:bump <version>
+   # Review and update CHANGELOG.md
+   git add package.json CHANGELOG.md
+   git commit -m "chore: prepare release v<version>"
+   git push origin develop
+   ```
+
+2. Create PR: `develop` → `main`
+   - Review changes
+   - Merge PR (triggers automated release workflow)
+
+3. Automated release process:
+   - Workflow detects version bump
+   - Creates git tag automatically
+   - Creates GitHub release
+   - Publishes to VS Code marketplace
 
 ### Areas for Improvement
 
