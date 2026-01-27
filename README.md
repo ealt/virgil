@@ -2,7 +2,7 @@
 
 [![PR Checks](https://github.com/ealt/virgil/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/ealt/virgil/actions/workflows/pr-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue)](https://marketplace.visualstudio.com/items?itemName=ealt.virgil)
+[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue)](https://marketplace.visualstudio.com/items?itemName=ealt.virgil-walkthroughs)
 
 Named after Dante's guide through the Inferno, Virgil transforms written walkthroughs into interactive journeys. Authors create the guidance—whether for code reviews, codebase onboarding, feature documentation, or any repository content—and Virgil brings it to life as a polished, step-by-step experience within your editor. It's the tooling that turns knowledge into a guided path.
 
@@ -30,7 +30,7 @@ Named after Dante's guide through the Inferno, Virgil transforms written walkthr
 Or install via command line:
 
 ```bash
-code --install-extension ealt.virgil
+code --install-extension ealt.virgil-walkthroughs
 ```
 
 ### From Source
@@ -55,8 +55,8 @@ code --install-extension ealt.virgil
    ```
 
 5. Install the `.vsix` file:
-   - **VS Code**: `code --install-extension virgil-<version>.vsix`
-   - **Cursor**: `cursor --install-extension virgil-<version>.vsix`
+   - **VS Code**: `code --install-extension virgil-walkthroughs-<version>.vsix`
+   - **Cursor**: `cursor --install-extension virgil-walkthroughs-<version>.vsix`
 
 ### Dev Refresh Script
 

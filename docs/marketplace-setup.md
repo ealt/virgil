@@ -151,7 +151,7 @@ After successful publishing:
 1. The extension will appear in the marketplace within a few minutes
 2. Users can install it via:
    - VS Code Extensions view: Search for "Virgil"
-   - Command line: `code --install-extension ealt.virgil`
+   - Command line: `code --install-extension ealt.virgil-walkthroughs`
 3. Update the README.md marketplace badge link if needed
 4. Announce the release on your preferred channels
 
