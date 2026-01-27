@@ -1,6 +1,6 @@
 {
-  "name": "virgilius",
-  "displayName": "Virgilius",
+  "name": "virgil-walkthroughs",
+  "displayName": "Virgil: Walkthroughs",
   "description": "Interactive guided walkthroughs for code review and codebase exploration",
   "version": "0.1.0",
   "publisher": "ealt",
