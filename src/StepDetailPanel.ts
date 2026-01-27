@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Marked } from 'marked';
+import { Marked, Tokens } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -868,20 +868,20 @@ export class StepDetailPanel {
 
     // Handle #anchor links for step navigation
     const originalLink = renderer.link.bind(renderer);
-    renderer.link = (href: string, title: string | null | undefined, linkText: string): string => {
-      if (href?.startsWith('#') && stepAnchorMap) {
-        const anchor = href.substring(1); // Remove leading #
+    renderer.link = (token: Tokens.Link): string => {
+      if (token.href?.startsWith('#') && stepAnchorMap) {
+        const anchor = token.href.substring(1); // Remove leading #
 
         if (stepAnchorMap.has(anchor)) {
           const stepIndex = stepAnchorMap.get(anchor)!;
-          const escapedText = this.escapeHtml(linkText);
-          const tooltipTitle = title ? this.escapeHtml(title) : 'Go to step';
+          const escapedText = this.escapeHtml(token.text);
+          const tooltipTitle = token.title ? this.escapeHtml(token.title) : 'Go to step';
           return `<a href="#" class="step-link" data-step-index="${stepIndex}" title="${tooltipTitle}">${escapedText}</a>`;
         }
         // Anchor doesn't match any step - render as invalid
-        return `<span class="step-link-invalid" title="Step '${anchor}' not found">${this.escapeHtml(linkText)}</span>`;
+        return `<span class="step-link-invalid" title="Step '${anchor}' not found">${this.escapeHtml(token.text)}</span>`;
       }
-      return originalLink(href, title, linkText);
+      return originalLink(token);
     };
 
     return markedInstance.parse(text, { renderer }) as string;
