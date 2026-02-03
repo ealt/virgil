@@ -247,7 +247,8 @@
     "postinstall": "node scripts/setup-git-hooks.js",
     "package": "vsce package",
     "publish": "vsce publish",
-    "refresh:extension": "scripts/refresh-extension.sh"
+    "refresh:extension": "scripts/refresh-extension.sh",
+    "test:conversions": "scripts/test-conversions.sh"
   },
   "dependencies": {
     "highlight.js": "^11.9.0",

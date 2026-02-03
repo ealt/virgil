@@ -1,0 +1,68 @@
+{
+  "title": "Implementing Diff Support",
+  "description": "This walkthrough demonstrates how diff-based walkthroughs work by walking through the implementation of this very feature. It's a \"meta\" example that serves dual purposes: demonstrating the diff walkthrough feature with real content, and teaching how the diff support was implemented.",
+  "repository": {
+    "baseCommit": "84ce6fc"
+  },
+  "steps": [
+    {
+      "id": 1,
+      "title": "Understanding Diff-Based Walkthroughs",
+      "body": "Diff-based walkthroughs allow you to show code changes between two points in time. When viewing a diff step, you'll see a 3-way toggle:\n\n- **Diff**: Shows VS Code's built-in diff editor comparing base and head\n- **Head**: Shows the current (new) code with diff head highlights (configurable, default: green)\n- **Base**: Shows the old code with diff base highlights (configurable, default: red)\n\nThis is useful for code reviews, explaining refactors, or documenting how a feature evolved.\n\n**Key concepts:**\n\n- `repository.baseCommit` specifies the \"before\" state\n- Steps with only `location` show head code with `standard` highlights (configurable)\n- Steps with both `location` and `base_location` enable the 3-way toggle\n- Steps with neither show as informational (no code view)"
+    },
+    {
+      "id": 2,
+      "title": "Core Implementation",
+      "body": "This section covers the fundamental types and infrastructure needed for diff support."
+    },
+    {
+      "id": 3,
+      "title": "New Types for Diff Support",
+      "body": "The diff feature required new types to represent view modes and step types, plus a `base_location` field on steps. See `src/types.ts` around lines 202-276 for the view mode and step type definitions.\n\n**ViewMode** defines the three possible views:\n\n- `'diff'` - Side-by-side comparison\n- `'head'` - Current/new code only\n- `'base'` - Previous/old code only\n\n**StepType** categorizes steps based on their location fields:\n\n- `'diff'` - Has both `location` and `base_location`\n- `'point-in-time'` - Has only `location` (traditional walkthrough)\n- `'base-only'` - Has only `base_location` (rare, for deleted code)\n- `'informational'` - Has neither (text-only step)\n\nThe `getStepType()` function determines the type from a step's fields.",
+      "location": "/src/types.ts:7-15,202-210,264-276",
+      "parentId": 2
+    },
+    {
+      "id": 4,
+      "title": "Reading Files from Git Commits",
+      "body": "To show files at specific commits, we implement a virtual document provider using VS Code's `TextDocumentContentProvider` interface.\n\n**URI scheme:** `virgil-git:///<commit>/<file-path>`\n\n**How it works:**\n\n1. `createUri()` builds a URI for a file at a specific commit\n2. `parseUri()` extracts the commit and path from a URI\n3. `provideTextDocumentContent()` retrieves content via `git show <commit>:<path>`\n\nThis allows VS Code to open files from any commit as if they were regular documents, enabling highlighting and diff views.",
+      "location": "/src/DiffContentProvider.ts:22-26,31-46,51-76",
+      "parentId": 2
+    },
+    {
+      "id": 5,
+      "title": "Resolving Base References",
+      "body": "Users can specify the base reference in three ways, with a clear priority order:\n\n1. **baseCommit** - Explicit commit SHA (highest priority)\n2. **baseBranch** - Branch name, resolved to its current commit\n3. **pr** - PR number, resolved via GitHub CLI or merge-base fallback\n\nThe `resolveBase()` method tries each in order and returns the resolved commit SHA along with which source it came from. This flexibility allows walkthroughs to work in different contexts (local development, CI, PR reviews).",
+      "location": "/src/DiffResolver.ts:25-69,140-160,164-201",
+      "parentId": 2
+    },
+    {
+      "id": 6,
+      "title": "UI Changes",
+      "body": "This section covers the user interface modifications for diff support."
+    },
+    {
+      "id": 7,
+      "title": "Multi-Color Highlight System",
+      "body": "The highlight manager was refactored to support multiple colors for different contexts.\n\n**Before (base):**\n\n- Single decoration type with blue color\n- Simple `Map<string, Range[]>` for tracking\n\n**After (head):**\n\n- `HighlightColor` type: `'standard' | 'diffHead' | 'diffBase'` (semantic names)\n- Colors read from VS Code configuration with hex-to-rgba conversion\n- Decoration types created for each color in constructor\n- `Map<string, { color, ranges }>` tracks both color and ranges per file\n- Configuration change listener recreates decorations when colors change\n\n**Color semantics:**\n\n- `standard`: Point-in-time steps (traditional walkthrough, configurable, default: blue)\n- `diffHead`: Head file in diff mode (new code, configurable, default: green)\n- `diffBase`: Base file in diff mode (old code, configurable, default: red)",
+      "location": "/src/HighlightManager.ts:3-9,16-39,45-79,87-145,147-179",
+      "base_location": "/src/HighlightManager.ts:3-16,19-34",
+      "parentId": 6
+    },
+    {
+      "id": 8,
+      "title": "Toggle Between Diff, Head, and Base Views",
+      "body": "The step detail panel now shows a 3-way toggle for diff steps.\n\n**New interface:** `DiffModeOptions` carries the step type, current view mode, and commit references to the panel.\n\n**UI changes:**\n\n- Toggle buttons styled with the color of their view (diffHead for Head, diffBase for Base)\n- Location info shows file paths with colored indicators\n- Both head and base locations displayed when in diff mode\n- Markdown steps add a Rendered/Raw toggle when viewing head/base\n\n**Before:** The panel only showed a single clickable location. Now it adapts based on step type and shows appropriate controls.",
+      "location": "/src/StepDetailPanel.ts:54-61,246-291",
+      "base_location": "/src/StepDetailPanel.ts:307-318",
+      "parentId": 6
+    },
+    {
+      "id": 9,
+      "title": "Wiring It All Together",
+      "body": "The main extension file orchestrates all the diff components.\n\n**Key changes to `showCurrentStep()`:**\n\n1. Determines step type using `getStepType()`\n2. Resolves base commit using `DiffResolver` (and shows an error panel if none is configured)\n3. Handles each step type differently:\n   - **diff**: Shows 3-way toggle, opens diff/head/base based on `currentViewMode`\n   - **point-in-time**: Opens file with standard highlights (configurable)\n   - **base-only**: Opens base file with diff base highlights (configurable, default: red)\n   - **informational**: Shows panel only, no file opened\n\n**New helper functions:**\n\n- `showFile()` - Opens a file at a specific commit with colored highlights (or a rendered markdown preview)\n- `showDiff()` - Opens VS Code's diff editor for two commits\n\n**View mode command:** `virgil.setViewMode` allows the toggle buttons to switch views without changing steps.",
+      "location": "/src/extension.ts:695-809,812-870,872-909",
+      "base_location": "/src/extension.ts:176-216"
+    }
+  ]
+}
