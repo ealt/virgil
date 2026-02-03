@@ -108,6 +108,41 @@ npm run compile
    - Push additional commits to your branch
    - The PR will automatically update
 
+## Releasing
+
+Releases are automated when version bumps are pushed to main (via PR merge or direct push).
+
+### Version Bump Commands
+
+```bash
+npm run version:bump patch   # 0.1.0 → 0.1.1 (bug fixes)
+npm run version:bump minor   # 0.1.0 → 0.2.0 (new features, backwards compatible)
+npm run version:bump major   # 0.1.0 → 1.0.0 (breaking changes)
+npm run version:bump 1.2.3   # Set exact version
+```
+
+This updates both `package.json` and `CHANGELOG.md`.
+
+### Release Workflow
+
+1. Create your feature branch and make changes
+2. Run `npm run version:bump <type>` to bump the version
+3. Edit `CHANGELOG.md` to add release notes under the new version
+4. Commit: `git commit -m "chore: bump version to X.Y.Z"`
+5. Open PR and merge to main
+
+When merged, the CI will automatically:
+- Create a git tag (vX.Y.Z)
+- Create a GitHub release with the VSIX
+- Publish to VS Code Marketplace
+- Publish to Open VSX Marketplace
+
+### When to Bump Versions
+
+- **patch**: Bug fixes, documentation updates, minor improvements
+- **minor**: New features that don't break existing functionality
+- **major**: Breaking changes (API changes, removed features, etc.)
+
 ## Code Style Guidelines
 
 - Follow the existing code style
