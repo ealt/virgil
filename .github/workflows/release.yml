@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g., v0.1.2)"
+        required: true
+        type: string
 
 jobs:
   release:
@@ -12,8 +18,18 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
       - uses: actions/checkout@v4
         with:
+          ref: ${{ steps.tag.outputs.version }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -42,7 +58,8 @@ jobs:
       - name: Verify tag matches package.json
         run: |
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          TAG_VERSION="${{ steps.tag.outputs.version }}"
+          TAG_VERSION=${TAG_VERSION#v}
           if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
             echo "Error: package.json version ($PACKAGE_VERSION) does not match tag version ($TAG_VERSION)"
             exit 1
@@ -54,6 +71,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.tag.outputs.version }}
           files: |
             *.vsix
           generate_release_notes: true
