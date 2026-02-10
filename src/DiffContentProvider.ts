@@ -46,6 +46,14 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
   }
 
   /**
+   * Builds a safe git revision argument (commit:path) so paths with spaces work.
+   */
+  private static gitRevisionArg(commit: string, filePath: string): string {
+    const rev = `${commit}:${filePath}`;
+    return rev.includes(' ') ? `"${rev.replace(/"/g, '\\"')}"` : rev;
+  }
+
+  /**
    * Provides the content of a file at a specific git commit
    */
   provideTextDocumentContent(uri: vscode.Uri): string {
@@ -55,9 +63,10 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
     }
 
     const { commit, filePath } = parsed;
+    const revArg = DiffContentProvider.gitRevisionArg(commit, filePath);
 
     try {
-      const content = execSync(`git show ${commit}:${filePath}`, {
+      const content = execSync(`git show ${revArg}`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -81,7 +90,8 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
    */
   public fileExistsAtCommit(commit: string, filePath: string): boolean {
     try {
-      execSync(`git cat-file -e ${commit}:${filePath}`, {
+      const revArg = DiffContentProvider.gitRevisionArg(commit, filePath);
+      execSync(`git cat-file -e ${revArg}`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -98,7 +108,8 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
    */
   public getFileContent(commit: string, filePath: string): string | null {
     try {
-      return execSync(`git show ${commit}:${filePath}`, {
+      const revArg = DiffContentProvider.gitRevisionArg(commit, filePath);
+      return execSync(`git show ${revArg}`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
