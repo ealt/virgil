@@ -164,6 +164,14 @@ export interface ParsedLocation {
   ranges: { startLine: number; endLine: number }[];
 }
 
+/**
+ * Normalize a location path to be relative to the workspace (no leading slash).
+ * Walkthroughs may use "/README.md" or "README.md"; both should resolve under the workspace root.
+ */
+export function normalizeLocationPath(locationPath: string): string {
+  return locationPath.replace(/^\/+/, '');
+}
+
 // Utility to parse location string
 export function parseLocation(location: string): ParsedLocation | null {
   // Format: "path:start-end,start-end" or "path:line"
@@ -172,7 +180,8 @@ export function parseLocation(location: string): ParsedLocation | null {
     return null;
   }
 
-  const path = location.substring(0, colonIndex);
+  const rawPath = location.substring(0, colonIndex);
+  const path = normalizeLocationPath(rawPath);
   const rangesStr = location.substring(colonIndex + 1);
 
   const ranges: { startLine: number; endLine: number }[] = [];

@@ -817,7 +817,9 @@ export function activate(context: vscode.ExtensionContext) {
         uri = vscode.Uri.file(fullPath);
       }
 
-      // For markdown files in 'rendered' mode, use VS Code's built-in preview with highlighting
+      // For markdown files in 'rendered' mode, use VS Code's built-in preview with highlighting.
+      // Open the virtual document first so the markdown preview can resolve it (custom schemes
+      // are not resolved by the preview unless the document is already in the workspace).
       if (isMarkdownFile(parsed.path) && currentMarkdownViewMode === 'rendered') {
         const highlightedUri = MarkdownHighlightProvider.createUri(
           parsed.path,
@@ -825,6 +827,7 @@ export function activate(context: vscode.ExtensionContext) {
           color,
           commit ?? undefined
         );
+        await vscode.workspace.openTextDocument(highlightedUri);
         await vscode.commands.executeCommand('markdown.showPreview', highlightedUri);
         return;
       }
