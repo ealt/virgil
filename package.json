@@ -1,8 +1,8 @@
 {
-  "name": "virgil",
-  "displayName": "Virgil",
+  "name": "virgil-walkthroughs",
+  "displayName": "Virgil: Walkthroughs",
   "description": "Interactive guided walkthroughs for code review and codebase exploration",
-  "version": "0.1.0",
+  "version": "0.1.5",
   "publisher": "ealt",
   "engines": {
     "vscode": "^1.85.0"
@@ -15,7 +15,7 @@
     "color": "#1e1e1e",
     "theme": "dark"
   },
-  "preview": true,
+  "preview": false,
   "icon": "icon.png",
   "activationEvents": [],
   "main": "./out/extension.js",
@@ -242,10 +242,13 @@
     "lint": "eslint src --ext ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
+    "smoke": "node scripts/smoke-test.js",
+    "version:bump": "node scripts/version-bump.js",
     "postinstall": "node scripts/setup-git-hooks.js",
     "package": "vsce package",
     "publish": "vsce publish",
-    "refresh:extension": "scripts/refresh-extension.sh"
+    "refresh:extension": "scripts/refresh-extension.sh",
+    "test:conversions": "scripts/test-conversions.sh"
   },
   "dependencies": {
     "highlight.js": "^11.9.0",
@@ -259,7 +262,7 @@
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
-    "@vscode/vsce": "^2.15.0",
+    "@vscode/vsce": "^3.7.1",
     "eslint": "^8.54.0",
     "eslint-config-prettier": "^9.1.0",
     "lint-staged": "^15.2.0",

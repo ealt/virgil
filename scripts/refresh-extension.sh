@@ -2,7 +2,8 @@
 set -e
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VSIX_PATH="$REPO_ROOT/virgil-0.1.0.vsix"
+VERSION="$(node -p "require('./package.json').version")"
+VSIX_PATH="$REPO_ROOT/virgil-walkthroughs-$VERSION.vsix"
 
 echo "Repo: $REPO_ROOT"
 

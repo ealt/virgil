@@ -11,8 +11,8 @@ on:
     types: [published]
 
 jobs:
-  publish:
-    name: Publish Extension
+  build:
+    name: Build Extension
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,6 +41,9 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      - name: Smoke test
+        run: npm run smoke
+
       - name: Verify version matches package.json
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -51,10 +54,41 @@ jobs:
             exit 1
           fi
 
+      - name: Verify tag matches package.json
+        if: github.event_name == 'release'
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${{ github.event.release.tag_name }}"
+          TAG_VERSION=${TAG_VERSION#v}
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Error: package.json version ($PACKAGE_VERSION) does not match tag version ($TAG_VERSION)"
+            exit 1
+          fi
+
+      - name: Package extension
+        run: npx vsce package --allow-missing-repository
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-package
+          path: "*.vsix"
+          retention-days: 7
+
+  publish-vscode:
+    name: Publish to VS Code Marketplace
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix-package
+
       - name: Install vsce
         run: npm install -g @vscode/vsce
 
-      - name: Publish to Marketplace
+      - name: Publish to VS Code Marketplace
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: |
@@ -64,4 +98,31 @@ jobs:
             echo "Then add it as a secret named VSCE_PAT in your repository settings"
             exit 1
           fi
-          vsce publish -p $VSCE_PAT
+          VSIX_FILE=$(ls *.vsix)
+          vsce publish --packagePath "$VSIX_FILE" -p $VSCE_PAT
+
+  publish-openvsx:
+    name: Publish to Open VSX
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix-package
+
+      - name: Install ovsx
+        run: npm install -g ovsx
+
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "Error: OVSX_PAT secret is not set"
+            echo "Please create a Personal Access Token at https://open-vsx.org/user-settings/tokens"
+            echo "Then add it as a secret named OVSX_PAT in your repository settings"
+            exit 1
+          fi
+          VSIX_FILE=$(ls *.vsix)
+          ovsx publish "$VSIX_FILE" -p $OVSX_PAT

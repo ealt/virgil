@@ -619,14 +619,26 @@ export function activate(context: vscode.ExtensionContext) {
     watcher.onDidChange(() => {
       walkthroughProvider?.refresh();
       vscode.commands.executeCommand('setContext', 'virgilWalkthroughActive', true);
-      // Auto-show first step if setting is enabled and walkthrough exists
-      if (shouldAutoShowFirstStep() && walkthroughProvider) {
-        const walkthrough = walkthroughProvider.getWalkthrough();
-        if (walkthrough && walkthrough.steps.length > 0) {
-          walkthroughProvider.goToStep(0);
-          showCurrentStep();
-        }
+
+      if (!walkthroughProvider) {
+        return;
       }
+
+      const walkthrough = walkthroughProvider.getWalkthrough();
+      if (!walkthrough || walkthrough.steps.length === 0) {
+        return;
+      }
+
+      const currentIndex = walkthroughProvider.getCurrentStepIndex();
+      const totalSteps = walkthroughProvider.getTotalSteps();
+      const hasValidCurrent = currentIndex >= 0 && currentIndex < totalSteps;
+
+      // Auto-show first step only when there isn't a valid current step.
+      if (shouldAutoShowFirstStep() && !hasValidCurrent) {
+        walkthroughProvider.goToStep(0);
+      }
+
+      showCurrentStep();
     });
 
     watcher.onDidCreate(() => {
@@ -885,9 +897,12 @@ export function activate(context: vscode.ExtensionContext) {
         headUri = vscode.Uri.file(path.join(workspaceRoot!, headParsed.path));
       }
 
-      // Open diff editor
+      // Open diff editor in the source code column, not over the walkthrough panel
       const title = `${baseParsed.path} (${baseCommit.substring(0, 7)}) ↔ ${headParsed.path}`;
-      await vscode.commands.executeCommand('vscode.diff', baseUri, headUri, title);
+      await vscode.commands.executeCommand('vscode.diff', baseUri, headUri, title, {
+        viewColumn: vscode.ViewColumn.One,
+        preserveFocus: true,
+      });
 
       // Note: We can't easily highlight in diff view, but the diff itself provides context
     } catch (error) {

@@ -2,7 +2,7 @@
 
 [![PR Checks](https://github.com/ealt/virgil/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/ealt/virgil/actions/workflows/pr-checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue)](https://marketplace.visualstudio.com/items?itemName=ealt.virgil)
+[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue)](https://marketplace.visualstudio.com/items?itemName=ealt.virgil-walkthroughs)
 
 Named after Dante's guide through the Inferno, Virgil transforms written walkthroughs into interactive journeys. Authors create the guidance—whether for code reviews, codebase onboarding, feature documentation, or any repository content—and Virgil brings it to life as a polished, step-by-step experience within your editor. It's the tooling that turns knowledge into a guided path.
 
@@ -30,7 +30,7 @@ Named after Dante's guide through the Inferno, Virgil transforms written walkthr
 Or install via command line:
 
 ```bash
-code --install-extension ealt.virgil
+code --install-extension ealt.virgil-walkthroughs
 ```
 
 ### From Source
@@ -55,8 +55,8 @@ code --install-extension ealt.virgil
    ```
 
 5. Install the `.vsix` file:
-   - **VS Code**: `code --install-extension virgil-0.1.0.vsix`
-   - **Cursor**: `cursor --install-extension virgil-0.1.0.vsix`
+   - **VS Code**: `code --install-extension virgil-walkthroughs-<version>.vsix`
+   - **Cursor**: `cursor --install-extension virgil-walkthroughs-<version>.vsix`
 
 ### Dev Refresh Script
 
@@ -514,8 +514,9 @@ Interested in contributing to Virgil?
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** and set up the upstream remote
-3. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for a quick start guide
+3. See [CONTRIBUTING.md](CONTRIBUTING.md) for a quick start guide
 4. See [docs/development.md](docs/development.md) for detailed development setup and architecture
+5. See [docs/marketplace-setup.md](docs/marketplace-setup.md) for marketplace publishing setup (maintainers only)
 
 Your interest in contributing is appreciated! Please open an issue first to discuss major changes, or submit a pull request for smaller fixes and improvements.
 
