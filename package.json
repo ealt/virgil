@@ -2,7 +2,7 @@
   "name": "virgil-walkthroughs",
   "displayName": "Virgil: Walkthroughs",
   "description": "Interactive guided walkthroughs for code review and codebase exploration",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "ealt",
   "engines": {
     "vscode": "^1.85.0"

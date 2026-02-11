@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.1.6] - 2026-02-10
+
+### Fixed
+
+- Markdown file steps: open virgil-md-preview document before showing preview so custom-scheme URIs resolve; normalize location paths (strip leading slash) so paths like `/README.md` resolve under the workspace root
+- File paths with spaces when loading content from git: quote commit:path arguments in git commands so paths like `docs/Obsidian Filename with Spaces.md` are passed correctly
+- Code scanning: fix incomplete string escaping/encoding (alert no. 12)
+
+### Changed
+
+- Markdown preview: include step index in URI paths to prevent tab reuse when navigating between steps
+- Diff content: use template literals for git commands in `DiffContentProvider` for clearer command construction
+- Refresh script: support both VS Code and Cursor for installing the extension
+
+### Dependencies
+
+- Upgraded brace-expansion to 5.0.1
+
 ## [0.1.5] - 2026-02-03
 
 ### Fixed
@@ -55,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File type-specific icons for steps in the sidebar (markdown, json, python, ruby, images, PDFs, archives, notebooks)
 - Setting `virgil.view.showHierarchicalNavigation` to control visibility of parent/sibling navigation buttons in the step panel (default: `false`)
 
-[Unreleased]: https://github.com/ealt/virgil/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/ealt/virgil/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/ealt/virgil/releases/tag/v0.1.6
 [0.1.5]: https://github.com/ealt/virgil/releases/tag/v0.1.5
 [0.1.4]: https://github.com/ealt/virgil/releases/tag/v0.1.4
 [0.1.3]: https://github.com/ealt/virgil/releases/tag/v0.1.3
