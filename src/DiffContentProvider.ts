@@ -92,7 +92,7 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
   public fileExistsAtCommit(commit: string, filePath: string): boolean {
     try {
       const revArg = DiffContentProvider.gitRevisionArg(commit, filePath);
-      execSync('git', ['cat-file', '-e', revArg], {
+      execSync(`git cat-file -e ${JSON.stringify(revArg)}`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -110,7 +110,7 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
   public getFileContent(commit: string, filePath: string): string | null {
     try {
       const revArg = DiffContentProvider.gitRevisionArg(commit, filePath);
-      return execSync('git', ['show', revArg], {
+      return execSync(`git show ${JSON.stringify(revArg)}`, {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
