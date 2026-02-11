@@ -41,16 +41,23 @@ export class MarkdownHighlightProvider implements vscode.TextDocumentContentProv
   }
 
   /**
-   * Creates a URI for a markdown file with highlighting
+   * Creates a URI for a markdown file with highlighting.
+   * stepIndex is included in the path so each step gets a distinct URI; the built-in
+   * markdown preview reuses the tab when the path is the same, so without this only
+   * the first step's highlighting would appear when navigating between steps.
    */
   public static createUri(
     filePath: string,
     ranges: { startLine: number; endLine: number }[],
     color: HighlightColor,
-    commit?: string
+    commit?: string,
+    stepIndex?: number
   ): vscode.Uri {
     // Normalize path to remove leading slashes
     const normalizedPath = filePath.replace(/^\/+/, '');
+    // Use step-specific path so preview does not reuse the same tab for different steps
+    const pathWithStep =
+      stepIndex !== undefined ? `step-${stepIndex}/${normalizedPath}` : normalizedPath;
 
     // Build query string
     const rangesStr = ranges.map((r) => `${r.startLine}-${r.endLine}`).join(',');
@@ -59,7 +66,7 @@ export class MarkdownHighlightProvider implements vscode.TextDocumentContentProv
       query += `&commit=${encodeURIComponent(commit)}`;
     }
 
-    return vscode.Uri.parse(`virgil-md-preview:///${normalizedPath}?${query}`);
+    return vscode.Uri.parse(`virgil-md-preview:///${pathWithStep}?${query}`);
   }
 
   /**
@@ -70,8 +77,10 @@ export class MarkdownHighlightProvider implements vscode.TextDocumentContentProv
       return null;
     }
 
-    // Extract file path from URI path
-    const filePath = uri.path.replace(/^\/+/, '');
+    // Extract file path from URI path (strip optional step-N/ prefix used for tab identity)
+    const rawPath = uri.path.replace(/^\/+/, '');
+    const stepPrefixMatch = rawPath.match(/^step-\d+\/(.*)$/);
+    const filePath = stepPrefixMatch ? stepPrefixMatch[1] : rawPath;
 
     // Parse query parameters
     const query = new URLSearchParams(uri.query);

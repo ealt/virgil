@@ -25,7 +25,21 @@ if [ ! -f "$VSIX_PATH" ]; then
   exit 1
 fi
 
-echo "Installing VSIX into Cursor..."
-cursor --install-extension "$VSIX_PATH"
+# Install into the current app: Cursor has 'cursor', VS Code has 'code'
+if command -v cursor >/dev/null 2>&1; then
+  echo "Installing VSIX into Cursor..."
+  cursor --install-extension "$VSIX_PATH"
+elif command -v code >/dev/null 2>&1; then
+  echo "Installing VSIX into VS Code..."
+  code --install-extension "$VSIX_PATH"
+else
+  echo "Neither 'cursor' nor 'code' found in PATH. Install manually:"
+  echo "  cursor --install-extension $VSIX_PATH"
+  echo "  # or: code --install-extension $VSIX_PATH"
+  exit 1
+fi
 
-echo "Done. Reload the window to see changes."
+echo "Done. Reload the window (or restart the app) to see changes."
+echo ""
+echo "If the activity bar icon or behavior does not update: uninstall 'Virgil (preview)'"
+echo "from Cursor Extensions first, then run this script again and restart Cursor."
