@@ -755,15 +755,15 @@ export function activate(context: vscode.ExtensionContext) {
           await showDiff(step.location!, step.base_location!, baseResult.commit, headCommit);
           break;
         case 'head':
-          await showFile(step.location!, headCommit, 'diffHead');
+          await showFile(step.location!, headCommit, 'diffHead', currentIndex);
           break;
         case 'base':
-          await showFile(step.base_location!, baseResult.commit, 'diffBase');
+          await showFile(step.base_location!, baseResult.commit, 'diffBase', currentIndex);
           break;
       }
     } else if (stepType === 'point-in-time') {
       // Point-in-time mode (unchanged behavior)
-      await showFile(step.location!, headCommit, 'standard');
+      await showFile(step.location!, headCommit, 'standard', currentIndex);
     } else if (stepType === 'base-only') {
       // Base-only mode
       if (!baseResult.commit) {
@@ -785,7 +785,7 @@ export function activate(context: vscode.ExtensionContext) {
         );
         return;
       }
-      await showFile(step.base_location!, baseResult.commit, 'diffBase');
+      await showFile(step.base_location!, baseResult.commit, 'diffBase', currentIndex);
     }
     // informational steps have no file to show
 
@@ -809,7 +809,12 @@ export function activate(context: vscode.ExtensionContext) {
     );
   }
 
-  async function showFile(location: string, commit: string | null, color: HighlightColor) {
+  async function showFile(
+    location: string,
+    commit: string | null,
+    color: HighlightColor,
+    stepIndex?: number
+  ) {
     if (!highlightManager) {
       return;
     }
@@ -832,12 +837,15 @@ export function activate(context: vscode.ExtensionContext) {
       // For markdown files in 'rendered' mode, use VS Code's built-in preview with highlighting.
       // Open the virtual document first so the markdown preview can resolve it (custom schemes
       // are not resolved by the preview unless the document is already in the workspace).
+      // stepIndex in the URI path ensures each step gets a distinct preview (avoids reusing the
+      // same tab and showing the first step's highlight when navigating to later steps).
       if (isMarkdownFile(parsed.path) && currentMarkdownViewMode === 'rendered') {
         const highlightedUri = MarkdownHighlightProvider.createUri(
           parsed.path,
           parsed.ranges,
           color,
-          commit ?? undefined
+          commit ?? undefined,
+          stepIndex
         );
         await vscode.workspace.openTextDocument(highlightedUri);
         await vscode.commands.executeCommand('markdown.showPreview', highlightedUri);
