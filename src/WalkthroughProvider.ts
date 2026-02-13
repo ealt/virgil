@@ -316,6 +316,10 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   /**
    * Returns a map from anchor slug to step index for step linking
    */
+  getFlatSteps(): WalkthroughStep[] {
+    return [...this.flatSteps];
+  }
+
   getStepAnchorMap(): Map<string, number> {
     const map = new Map<string, number>();
     this.flatSteps.forEach((step, index) => {

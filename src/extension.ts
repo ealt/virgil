@@ -1,7 +1,14 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseLocation, ViewMode, getStepType, MarkdownViewMode, isMarkdownFile } from './types';
+import {
+  parseLocation,
+  ViewMode,
+  getStepType,
+  MarkdownViewMode,
+  isMarkdownFile,
+  normalizeLocationPath,
+} from './types';
 import { WalkthroughProvider } from './WalkthroughProvider';
 import { StepDetailPanel } from './StepDetailPanel';
 import { HighlightManager, HighlightColor } from './HighlightManager';
@@ -670,6 +677,62 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   fileWatchers.forEach((watcher) => context.subscriptions.push(watcher));
+
+  // Watch markdown files; invalidate rendered preview when referenced files change
+  const mdWatcher = vscode.workspace.createFileSystemWatcher(
+    new vscode.RelativePattern(workspaceRoot, '**/*.{md,markdown}')
+  );
+  fileWatchers.push(mdWatcher);
+  context.subscriptions.push(mdWatcher);
+
+  mdWatcher.onDidChange((uri) => {
+    const walkthrough = walkthroughProvider?.getWalkthrough();
+    if (!walkthrough || !diffResolver) {
+      return;
+    }
+    const relativePath = vscode.workspace.asRelativePath(uri).replace(/\\/g, '/');
+    const normalizedPath = normalizeLocationPath(relativePath);
+
+    const flatSteps = walkthroughProvider?.getFlatSteps() ?? [];
+    const baseResult = diffResolver.resolveBase(walkthrough.repository);
+    const headCommit = walkthrough.repository?.commit ?? diffResolver.getHeadCommit();
+
+    for (let stepIndex = 0; stepIndex < flatSteps.length; stepIndex++) {
+      const step = flatSteps[stepIndex];
+      const stepType = getStepType(step);
+
+      const checkAndInvalidate = (
+        location: string | undefined,
+        commit: string | null,
+        color: HighlightColor
+      ) => {
+        if (!location) {
+          return;
+        }
+        const parsed = parseLocation(location);
+        if (!parsed || normalizeLocationPath(parsed.path) !== normalizedPath) {
+          return;
+        }
+        const invalidationUri = MarkdownHighlightProvider.createUri(
+          parsed.path,
+          parsed.ranges,
+          color,
+          commit ?? undefined,
+          stepIndex
+        );
+        markdownHighlightProvider.invalidate(invalidationUri);
+      };
+
+      if (stepType === 'diff') {
+        checkAndInvalidate(step.location, headCommit, 'diffHead');
+        checkAndInvalidate(step.base_location, baseResult.commit, 'diffBase');
+      } else if (stepType === 'point-in-time') {
+        checkAndInvalidate(step.location, headCommit, 'standard');
+      } else if (stepType === 'base-only') {
+        checkAndInvalidate(step.base_location, baseResult.commit, 'diffBase');
+      }
+    }
+  });
 
   // Handle tree view selection
   treeView.onDidChangeSelection(async (e) => {
