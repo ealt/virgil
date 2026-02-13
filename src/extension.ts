@@ -826,11 +826,22 @@ export function activate(context: vscode.ExtensionContext) {
 
     try {
       // Create URI first (needed for both markdown preview and regular editor)
+      // Proactively use workspace version if file doesn't exist at commit (e.g. newly added, uncommitted)
+      const fullPath = path.join(workspaceRoot!, parsed.path);
+      let effectiveCommit = commit;
+      if (commit && diffContentProvider && fs.existsSync(fullPath)) {
+        if (!diffContentProvider.fileExistsAtCommit(commit, parsed.path)) {
+          effectiveCommit = null;
+          vscode.window.showInformationMessage(
+            `File didn't exist at commit ${commit.substring(0, 7)}; showing current version.`
+          );
+        }
+      }
+
       let uri: vscode.Uri;
-      if (commit && diffContentProvider) {
-        uri = DiffContentProvider.createUri(commit, parsed.path);
+      if (effectiveCommit && diffContentProvider) {
+        uri = DiffContentProvider.createUri(effectiveCommit, parsed.path);
       } else {
-        const fullPath = path.join(workspaceRoot!, parsed.path);
         uri = vscode.Uri.file(fullPath);
       }
 
@@ -844,7 +855,7 @@ export function activate(context: vscode.ExtensionContext) {
           parsed.path,
           parsed.ranges,
           color,
-          commit ?? undefined,
+          effectiveCommit ?? undefined,
           stepIndex
         );
         await vscode.workspace.openTextDocument(highlightedUri);
@@ -876,6 +887,21 @@ export function activate(context: vscode.ExtensionContext) {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const isMissingAtCommit =
+        errorMessage.includes('does not exist at commit') ||
+        errorMessage.includes('does not exist in workspace');
+
+      // Fallback: if file doesn't exist at commit (e.g. newly added file), try workspace version
+      if (commit && isMissingAtCommit) {
+        const fullPath = path.join(workspaceRoot!, parsed.path);
+        if (fs.existsSync(fullPath)) {
+          vscode.window.showInformationMessage(
+            `File didn't exist at commit ${commit.substring(0, 7)}; showing current version.`
+          );
+          await showFile(location, null, color, stepIndex);
+          return;
+        }
+      }
       vscode.window.showErrorMessage(`Could not open file: ${errorMessage}`);
     }
   }
@@ -915,6 +941,21 @@ export function activate(context: vscode.ExtensionContext) {
       // Note: We can't easily highlight in diff view, but the diff itself provides context
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const isMissingAtCommit =
+        errorMessage.includes('does not exist at commit') ||
+        errorMessage.includes('does not exist in workspace');
+
+      // Fallback: if base file doesn't exist at commit (e.g. newly added file), show head only
+      if (isMissingAtCommit && headParsed) {
+        const headPath = path.join(workspaceRoot!, headParsed.path);
+        if (fs.existsSync(headPath)) {
+          vscode.window.showInformationMessage(
+            `Base file didn't exist at commit ${baseCommit.substring(0, 7)}; showing head only.`
+          );
+          await showFile(headLocation, headCommit, 'diffHead', undefined);
+          return;
+        }
+      }
       vscode.window.showErrorMessage(`Could not open diff: ${errorMessage}`);
     }
   }
