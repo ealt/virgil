@@ -29,8 +29,7 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
         cwd: this.workspaceRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
-      })
-        .trim();
+      }).trim();
       return root || null;
     } catch {
       return null;
