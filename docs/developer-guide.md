@@ -122,6 +122,8 @@ The extension registers several commands for navigation and control. (`virgil.co
 - `virgil.selectWalkthrough` - Switch walkthroughs or browse for JSON/Markdown and convert if needed
 - `virgil.convertMarkdown` - Convert a Markdown walkthrough to JSON (saves to `walkthroughs/` directory)
 - `virgil.submitComment` - Add a comment to current step
+- `virgil.editComment` - Update an existing comment on the current step
+- `virgil.deleteComment` - Remove a comment from the current step
 - `virgil.openLocation` - Open file at a specific location
 - `virgil.checkoutCommit` - Checkout the commit specified in the walkthrough
 
@@ -198,7 +200,7 @@ The `WalkthroughProvider` class implements VS Code's `TreeDataProvider` interfac
 - Tracks current step index and step labels (hierarchical numbering if enabled)
 - Builds tree items with file-type icons and diff/base warnings
 - Manages Git state (commit mismatch checks, checkout, stash, git user name)
-- Manages comments (add + persist to JSON)
+- Manages comments (add, edit, delete, persist to JSON)
 - Provides step anchor mapping for in-body step links
 
 **Key methods:**
@@ -208,7 +210,7 @@ The `WalkthroughProvider` class implements VS Code's `TreeDataProvider` interfac
 - `setWalkthroughFile()` - Sets the current walkthrough file
 - `goToStep()`, `nextStep()`, `prevStep()` - Step navigation
 - `getStepAnchorMap()` - Maps step-title anchors to indices
-- `addComment()` - Adds a comment and saves the walkthrough file
+- `addComment()` / `editComment()` / `deleteComment()` - Update comments and save the walkthrough file
 - `hasCommitMismatch()` / `getCommitMismatchInfo()` - Commit mismatch checks
 
 ### Tree View - Building the Sidebar
@@ -257,7 +259,7 @@ The `StepDetailPanel` creates a webview that displays rich step information.
 - Markdown view toggle (Rendered/Raw) for markdown steps
 - Clickable location information (head/base or base-only)
 - Step body with Markdown rendering
-- Comments section with add comment form
+- Comments section with add, edit, and delete controls
 - Previous/Next navigation buttons (plus optional parent/sibling controls)
 
 **Webview features:**
@@ -280,7 +282,7 @@ The `getHtml()` method generates the HTML for the detail panel.
 - **Theming**: Uses VS Code CSS variables (`var(--vscode-foreground)`, etc.)
 - **Markdown rendering**: Converts step body and comments from Markdown to HTML (with step-link anchors)
 - **Security**: CSP restricts scripts; raw HTML is stripped to prevent XSS
-- **Interactivity**: JavaScript handles navigation, view toggles, step links, and comment submission
+- **Interactivity**: JavaScript handles navigation, view toggles, step links, and comment actions
 - **Diff/error UX**: Shows base-ref errors inline and adapts location display per view
 
 **Styling:**
@@ -397,26 +399,26 @@ This section covers how data is stored and managed.
 
 [View code (391-402,417-448)](/src/WalkthroughProvider.ts)
 
-Users can add comments to steps, which are persisted to the walkthrough JSON file.
+Users can add, edit, and delete comments on steps, and those changes are persisted to the walkthrough JSON file.
 
 **How it works:**
 
-1. User types comment in webview textarea
-2. Webview sends `submitComment` message via `postMessage`
-3. Extension command handler calls `WalkthroughProvider.addComment()`
-4. Comment is created with:
+1. User adds, edits, or deletes a comment in the webview
+2. Webview sends the matching comment command via `postMessage`
+3. Extension command handler calls `WalkthroughProvider.addComment()`, `editComment()`, or `deleteComment()`
+4. New comments get:
    - Auto-generated ID (timestamp + random)
    - Author from `git config user.name` (or "Anonymous")
    - Body text (supports Markdown)
-5. Walkthrough JSON is saved to disk
-6. Panel is refreshed to show new comment
+5. Walkthrough JSON is saved to disk after each change
+6. Panel is refreshed to show the latest comment state
 
 **Comment features:**
 
 - Markdown rendering in comments
 - Author attribution
 - Persisted to JSON file
-- Can be edited manually in JSON if needed
+- Editable and removable from the webview UI
 
 **Git user prompt:** On walkthrough load/selection, the extension checks for `git config user.name` and offers to set it if missing.
 

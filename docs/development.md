@@ -125,7 +125,7 @@ Implements `TreeDataProvider` to:
 - Manage current step state
 - Build the sidebar tree view
 - Handle Git operations (commit checking, checkout)
-- Manage comments (add, save to file)
+- Manage comments (add, edit, delete, save to file)
 
 #### `StepDetailPanel.ts`
 
@@ -135,7 +135,7 @@ Creates and manages the webview panel that:
 - Shows metadata on the first step
 - Renders comments with Markdown support
 - Provides Previous/Next navigation buttons
-- Handles comment submission
+- Handles comment actions and submission
 - Communicates with extension via `postMessage`
 
 #### `HighlightManager.ts`
@@ -189,12 +189,12 @@ Defines TypeScript interfaces:
 
 ### Comment System
 
-1. User types comment in webview textarea
-2. Webview sends `submitComment` message via `postMessage`
-3. Extension command handler calls `WalkthroughProvider.addComment()`
-4. Comment is added to step's `comments` array
+1. User adds, edits, or deletes a comment in the webview
+2. Webview sends the matching comment command via `postMessage`
+3. Extension command handler calls the corresponding `WalkthroughProvider` method
+4. The step's `comments` array is updated in memory
 5. Walkthrough JSON is saved to disk
-6. Panel is refreshed to show new comment
+6. Panel is refreshed to show the latest comment state
 
 ### Walkthrough Discovery
 
@@ -277,7 +277,7 @@ For automated testing, consider adding:
 
 - Extension → Webview: HTML content with data embedded
 - Webview → Extension: `postMessage` with command objects
-- Commands: `next`, `prev`, `openLocation`, `submitComment`
+- Commands: `next`, `prev`, `openLocation`, `submitComment`, `editComment`, `deleteComment`
 
 ## Contributing Guidelines
 

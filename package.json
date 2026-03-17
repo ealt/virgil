@@ -2,7 +2,7 @@
   "name": "virgil-walkthroughs",
   "displayName": "Virgil: Walkthroughs",
   "description": "Interactive guided walkthroughs for code review and codebase exploration",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "publisher": "ealt",
   "engines": {
     "vscode": "^1.85.0"
@@ -260,10 +260,10 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^6.13.0",
-    "@typescript-eslint/parser": "^6.13.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
     "@vscode/vsce": "^3.7.1",
-    "eslint": "^8.54.0",
+    "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
     "lint-staged": "^15.2.0",
     "prettier": "^3.2.5",

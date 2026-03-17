@@ -1,10 +1,14 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { execSync } from 'child_process';
 
 /**
  * Provides content from git commits for virtual documents.
  * URI scheme: virgil-git
  * URI format: virgil-git:///<commit>/<file-path>
+ *
+ * File paths in URIs are workspace-relative. Git commands run from the repository
+ * root so paths are resolved to repo-relative form when workspace is a subfolder.
  */
 export class DiffContentProvider implements vscode.TextDocumentContentProvider {
   private workspaceRoot: string;
@@ -14,6 +18,36 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
+  }
+
+  /**
+   * Resolves the git repository root (may differ from workspace if workspace is a subfolder)
+   */
+  private getGitRoot(): string | null {
+    try {
+      const root = execSync('git rev-parse --show-toplevel', {
+        cwd: this.workspaceRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).trim();
+      return root || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Converts a workspace-relative path to a git repo-relative path.
+   * When workspace equals repo root, returns the path as-is.
+   */
+  private toRepoRelativePath(workspaceRelativePath: string): string {
+    const gitRoot = this.getGitRoot();
+    if (!gitRoot) {
+      return workspaceRelativePath;
+    }
+    const absolutePath = path.join(this.workspaceRoot, workspaceRelativePath);
+    const repoPath = path.relative(gitRoot, absolutePath);
+    return repoPath.replace(/\\/g, '/');
   }
 
   /**
@@ -64,11 +98,13 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
     }
 
     const { commit, filePath } = parsed;
-    const revArg = DiffContentProvider.gitRevisionArg(commit, filePath);
+    const repoPath = this.toRepoRelativePath(filePath);
+    const gitRoot = this.getGitRoot() ?? this.workspaceRoot;
+    const revArg = DiffContentProvider.gitRevisionArg(commit, repoPath);
 
     try {
       const content = execSync(`git show ${revArg}`, {
-        cwd: this.workspaceRoot,
+        cwd: gitRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large files
@@ -88,12 +124,15 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
 
   /**
    * Checks if a file exists at a specific commit
+   * @param filePath Workspace-relative path
    */
   public fileExistsAtCommit(commit: string, filePath: string): boolean {
     try {
-      const revArg = DiffContentProvider.gitRevisionArg(commit, filePath);
+      const repoPath = this.toRepoRelativePath(filePath);
+      const gitRoot = this.getGitRoot() ?? this.workspaceRoot;
+      const revArg = DiffContentProvider.gitRevisionArg(commit, repoPath);
       execSync(`git cat-file -e ${JSON.stringify(revArg)}`, {
-        cwd: this.workspaceRoot,
+        cwd: gitRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
       });
@@ -106,12 +145,15 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
   /**
    * Gets the content of a file at a specific commit
    * Returns null if the file doesn't exist
+   * @param filePath Workspace-relative path
    */
   public getFileContent(commit: string, filePath: string): string | null {
     try {
-      const revArg = DiffContentProvider.gitRevisionArg(commit, filePath);
+      const repoPath = this.toRepoRelativePath(filePath);
+      const gitRoot = this.getGitRoot() ?? this.workspaceRoot;
+      const revArg = DiffContentProvider.gitRevisionArg(commit, repoPath);
       return execSync(`git show ${JSON.stringify(revArg)}`, {
-        cwd: this.workspaceRoot,
+        cwd: gitRoot,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
         maxBuffer: 10 * 1024 * 1024,

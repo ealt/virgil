@@ -220,6 +220,14 @@ export class MarkdownHighlightProvider implements vscode.TextDocumentContentProv
     return merged.sort((a, b) => b.startLine - a.startLine);
   }
 
+  /**
+   * Invalidates cached content for the given URI. Call when the underlying file
+   * changes so VS Code refetches from provideTextDocumentContent.
+   */
+  public invalidate(uri: vscode.Uri): void {
+    this._onDidChange.fire(uri);
+  }
+
   public dispose(): void {
     this._onDidChange.dispose();
   }
