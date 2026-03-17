@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-17
+
+### Added
+
+- Comment editing and deletion in the step detail panel, with inline edit controls and delete confirmation
+
+### Fixed
+
+- Comment persistence now resolves the active step correctly in hierarchical walkthrough views before applying add/edit/delete changes
+- Git hook installation during `npm install` now works in Git worktrees where `.git` is a file instead of a directory
+
+### Security
+
+- Upgraded the ESLint TypeScript toolchain to remove the vulnerable `minimatch` dependency path flagged by `npm audit`
+
 ## [0.1.6] - 2026-02-10
 
 ### Fixed
@@ -83,3 +98,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.1.2]: https://github.com/ealt/virgil/releases/tag/v0.1.2
 [0.1.1]: https://github.com/ealt/virgil/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ealt/virgil/releases/tag/v0.1.0
+
+[Unreleased]: https://github.com/ealt/virgil/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ealt/virgil/releases/tag/v0.2.0
