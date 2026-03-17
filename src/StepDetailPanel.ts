@@ -144,6 +144,12 @@ export class StepDetailPanel {
           case 'submitComment':
             vscode.commands.executeCommand('virgil.submitComment', message.text);
             break;
+          case 'editComment':
+            vscode.commands.executeCommand('virgil.editComment', message.commentId, message.text);
+            break;
+          case 'deleteComment':
+            vscode.commands.executeCommand('virgil.deleteComment', message.commentId);
+            break;
           case 'setViewMode':
             vscode.commands.executeCommand('virgil.setViewMode', message.mode);
             break;
@@ -587,14 +593,33 @@ export class StepDetailPanel {
       border-radius: 4px;
       margin-bottom: 8px;
     }
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
     .comment-author {
       font-weight: 600;
       font-size: 12px;
       color: var(--vscode-textLink-foreground);
-      margin-bottom: 4px;
+      min-width: 0;
+    }
+    .comment-actions {
+      display: flex;
+      gap: 8px;
+      flex: none;
+    }
+    .comment-action-btn {
+      padding: 2px 10px;
+      font-size: 12px;
     }
     .comment-body {
       font-size: 13px;
+    }
+    .comment-edit-form {
+      margin-top: 8px;
     }
     .no-comments {
       font-size: 12px;
@@ -633,6 +658,9 @@ export class StepDetailPanel {
     .submit-comment-btn {
       flex: none;
       padding: 6px 16px;
+    }
+    .is-hidden {
+      display: none;
     }
     /* Markdown styles */
     .markdown-content {
@@ -752,9 +780,24 @@ export class StepDetailPanel {
         ? step.comments
             .map(
               (comment) => `
-        <div class="comment">
-          <div class="comment-author">${this.escapeHtml(comment.author)}</div>
-          <div class="comment-body markdown-content">${this.renderMarkdown(comment.body, stepAnchorMap)}</div>
+        <div class="comment" data-comment-id="${this.escapeHtml(comment.id)}">
+          <div class="comment-header">
+            <div class="comment-author">${this.escapeHtml(comment.author)}</div>
+            <div class="comment-actions">
+              <button type="button" class="secondary comment-action-btn" data-comment-action="edit">Edit</button>
+              <button type="button" class="secondary comment-action-btn" data-comment-action="delete">Delete</button>
+            </div>
+          </div>
+          <div class="comment-display">
+            <div class="comment-body markdown-content">${this.renderMarkdown(comment.body, stepAnchorMap)}</div>
+          </div>
+          <div class="comment-edit-form is-hidden">
+            <textarea class="comment-input comment-edit-input" placeholder="Edit comment...">${this.escapeHtml(comment.body)}</textarea>
+            <div class="comment-form-actions">
+              <button type="button" class="secondary comment-action-btn" data-comment-action="cancelEdit">Cancel</button>
+              <button type="button" class="submit-comment-btn" data-comment-action="saveEdit">Save</button>
+            </div>
+          </div>
         </div>
       `
             )
@@ -827,6 +870,31 @@ export class StepDetailPanel {
       }
     }
 
+    function setCommentEditing(commentElement, isEditing) {
+      const display = commentElement.querySelector('.comment-display');
+      const editForm = commentElement.querySelector('.comment-edit-form');
+      const editInput = commentElement.querySelector('.comment-edit-input');
+
+      display.classList.toggle('is-hidden', isEditing);
+      editForm.classList.toggle('is-hidden', !isEditing);
+
+      if (isEditing) {
+        editInput.focus();
+        editInput.selectionStart = editInput.value.length;
+        editInput.selectionEnd = editInput.value.length;
+      }
+    }
+
+    function saveEditedComment(commentElement) {
+      const commentId = commentElement.dataset.commentId;
+      const input = commentElement.querySelector('.comment-edit-input');
+      const text = input.value.trim();
+
+      if (commentId && text) {
+        vscode.postMessage({ command: 'editComment', commentId: commentId, text: text });
+      }
+    }
+
     // Allow Ctrl+Enter / Cmd+Enter to submit
     document.getElementById('commentInput').addEventListener('keydown', function(e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -834,8 +902,47 @@ export class StepDetailPanel {
       }
     });
 
+    document.querySelectorAll('.comment-edit-input').forEach(function(input) {
+      input.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          saveEditedComment(e.target.closest('.comment'));
+        }
+
+        if (e.key === 'Escape') {
+          setCommentEditing(e.target.closest('.comment'), false);
+        }
+      });
+    });
+
     // Handle step link clicks
     document.addEventListener('click', function(e) {
+      const commentAction = e.target.closest('[data-comment-action]');
+      if (commentAction) {
+        const commentElement = commentAction.closest('.comment');
+        const action = commentAction.dataset.commentAction;
+
+        switch (action) {
+          case 'edit':
+            setCommentEditing(commentElement, true);
+            break;
+          case 'cancelEdit':
+            setCommentEditing(commentElement, false);
+            break;
+          case 'saveEdit':
+            saveEditedComment(commentElement);
+            break;
+          case 'delete':
+            if (commentElement?.dataset.commentId) {
+              vscode.postMessage({
+                command: 'deleteComment',
+                commentId: commentElement.dataset.commentId,
+              });
+            }
+            break;
+        }
+        return;
+      }
+
       const stepLink = e.target.closest('.step-link');
       if (stepLink) {
         e.preventDefault();

@@ -576,6 +576,54 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'virgil.editComment',
+      async (commentId: string, text: string) => {
+        if (!walkthroughProvider || !commentId || !text) {
+          return;
+        }
+
+        const currentIndex = walkthroughProvider.getCurrentStepIndex();
+        if (currentIndex < 0) {
+          return;
+        }
+
+        const success = walkthroughProvider.editComment(currentIndex, commentId, text);
+        if (success) {
+          showCurrentStep();
+        }
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.deleteComment', async (commentId: string) => {
+      if (!walkthroughProvider || !commentId) {
+        return;
+      }
+
+      const currentIndex = walkthroughProvider.getCurrentStepIndex();
+      if (currentIndex < 0) {
+        return;
+      }
+
+      const confirmation = await vscode.window.showWarningMessage(
+        'Delete this comment?',
+        { modal: true },
+        'Delete'
+      );
+      if (confirmation !== 'Delete') {
+        return;
+      }
+
+      const success = walkthroughProvider.deleteComment(currentIndex, commentId);
+      if (success) {
+        showCurrentStep();
+      }
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('virgil.openLocation', async (location: string) => {
       const parsed = parseLocation(location);
       if (!parsed) {

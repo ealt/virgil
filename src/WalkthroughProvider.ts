@@ -418,16 +418,44 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     }
   }
 
-  addComment(stepIndex: number, body: string): boolean {
+  private getWalkthroughStepFromFlatIndex(stepIndex: number): WalkthroughStep | undefined {
+    if (!this.walkthrough || stepIndex < 0 || stepIndex >= this.flatSteps.length) {
+      return undefined;
+    }
+
+    const flatStep = this.flatSteps[stepIndex];
+    return this.walkthrough.steps.find((step) => step.id === flatStep.id);
+  }
+
+  private saveWalkthrough(commentAction: 'add' | 'edit' | 'delete'): boolean {
     if (!this.walkthrough || !this.currentFile) {
       return false;
     }
 
-    if (stepIndex < 0 || stepIndex >= this.walkthrough.steps.length) {
+    try {
+      const walkthroughPath = path.join(this.workspaceRoot, this.currentFile);
+      fs.writeFileSync(walkthroughPath, JSON.stringify(this.walkthrough, null, 2));
+      this._onDidChangeTreeData.fire();
+      return true;
+    } catch {
+      const actionLabel =
+        commentAction === 'add'
+          ? 'save comment'
+          : commentAction === 'edit'
+            ? 'save comment changes'
+            : 'delete comment';
+      vscode.window.showErrorMessage(`Failed to ${actionLabel}`);
+      return false;
+    }
+  }
+
+  addComment(stepIndex: number, body: string): boolean {
+    const step = this.getWalkthroughStepFromFlatIndex(stepIndex);
+    const trimmedBody = body.trim();
+    if (!step || !trimmedBody) {
       return false;
     }
 
-    const step = this.walkthrough.steps[stepIndex];
     if (!step.comments) {
       step.comments = [];
     }
@@ -435,21 +463,44 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
     const comment: Comment = {
       id: Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
       author: this.getGitUserName(),
-      body: body,
+      body: trimmedBody,
     };
 
     step.comments.push(comment);
+    return this.saveWalkthrough('add');
+  }
 
-    // Save to file
-    try {
-      const walkthroughPath = path.join(this.workspaceRoot, this.currentFile);
-      fs.writeFileSync(walkthroughPath, JSON.stringify(this.walkthrough, null, 2));
-      this._onDidChangeTreeData.fire();
-      return true;
-    } catch (error) {
-      vscode.window.showErrorMessage('Failed to save comment');
+  editComment(stepIndex: number, commentId: string, body: string): boolean {
+    const step = this.getWalkthroughStepFromFlatIndex(stepIndex);
+    const trimmedBody = body.trim();
+    if (!step || !step.comments || !trimmedBody) {
       return false;
     }
+
+    const comment = step.comments.find((existingComment) => existingComment.id === commentId);
+    if (!comment) {
+      vscode.window.showErrorMessage('Comment not found');
+      return false;
+    }
+
+    comment.body = trimmedBody;
+    return this.saveWalkthrough('edit');
+  }
+
+  deleteComment(stepIndex: number, commentId: string): boolean {
+    const step = this.getWalkthroughStepFromFlatIndex(stepIndex);
+    if (!step || !step.comments) {
+      return false;
+    }
+
+    const nextComments = step.comments.filter((comment) => comment.id !== commentId);
+    if (nextComments.length === step.comments.length) {
+      vscode.window.showErrorMessage('Comment not found');
+      return false;
+    }
+
+    step.comments = nextComments;
+    return this.saveWalkthrough('delete');
   }
 
   getTreeItem(element: WalkthroughTreeItem): vscode.TreeItem {
