@@ -655,7 +655,7 @@ export function activate(context: vscode.ExtensionContext) {
         for (const range of parsed.ranges) {
           highlightManager?.highlightRange(editor, range.startLine, range.endLine);
         }
-      } catch (error) {
+      } catch {
         vscode.window.showErrorMessage(`Could not open file: ${parsed.path}`);
       }
     })

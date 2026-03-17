@@ -239,7 +239,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
       this.flatSteps = flattenStepTree(this.stepTree);
       // Build navigation map for hierarchical navigation
       this.navigationMap = buildNavigationMap(this.stepTree, this.flatSteps);
-    } catch (error) {
+    } catch {
       vscode.window.showErrorMessage(`Failed to parse ${walkthroughFile}`);
       this.walkthrough = undefined;
       this.currentFile = undefined;
