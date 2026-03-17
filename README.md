@@ -4,6 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue)](https://marketplace.visualstudio.com/items?itemName=ealt.virgil-walkthroughs)
 
+![icon](icon.png)
+
 Named after Dante's guide through the Inferno, Virgil transforms written walkthroughs into interactive journeys. Authors create the guidance—whether for code reviews, codebase onboarding, feature documentation, or any repository content—and Virgil brings it to life as a polished, step-by-step experience within your editor. It's the tooling that turns knowledge into a guided path.
 
 ## Features
