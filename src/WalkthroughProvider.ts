@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { discoverWalkthroughFiles } from './discovery';
 import {
   Walkthrough,
   WalkthroughStep,
@@ -156,33 +157,7 @@ export class WalkthroughProvider implements vscode.TreeDataProvider<WalkthroughT
   }
 
   getAvailableWalkthroughs(): string[] {
-    const walkthroughFiles: string[] = [];
-
-    try {
-      // Check for .walkthrough.json at root
-      const rootWalkthroughPath = path.join(this.workspaceRoot, '.walkthrough.json');
-      if (fs.existsSync(rootWalkthroughPath)) {
-        walkthroughFiles.push('.walkthrough.json');
-      }
-    } catch {
-      // Ignore errors
-    }
-
-    try {
-      // Check for all .json files in walkthroughs/ directory
-      const walkthroughsDir = path.join(this.workspaceRoot, 'walkthroughs');
-      if (fs.existsSync(walkthroughsDir) && fs.statSync(walkthroughsDir).isDirectory()) {
-        const files = fs.readdirSync(walkthroughsDir);
-        const jsonFiles = files.filter((f) => f.endsWith('.json'));
-        for (const jsonFile of jsonFiles) {
-          walkthroughFiles.push(path.join('walkthroughs', jsonFile));
-        }
-      }
-    } catch {
-      // Ignore errors
-    }
-
-    return walkthroughFiles;
+    return discoverWalkthroughFiles(this.workspaceRoot);
   }
 
   getCurrentFile(): string | undefined {

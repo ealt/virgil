@@ -4,17 +4,15 @@ This document defines the schema for walkthrough JSON files used by the Virgil e
 
 ## File Naming and Locations
 
-Virgil discovers walkthrough files in two locations:
+Virgil recursively discovers walkthrough files anywhere in the workspace:
 
-1. **Root location**: `.walkthrough.json` at the workspace root
-   - Example: `.walkthrough.json`
-   - This is the traditional location for a single walkthrough
+1. **`.walkthrough.json` files**: Any file named `.walkthrough.json` at any depth
+   - Examples: `.walkthrough.json`, `docs/.walkthrough.json`, `packages/frontend/.walkthrough.json`
 
-2. **Walkthroughs directory**: Any `.json` file in the `walkthroughs/` directory at the workspace root
-   - Examples: `walkthroughs/architecture.json`, `walkthroughs/pr-123.json`, `walkthroughs/onboarding.json`
-   - This allows organizing multiple walkthroughs in a dedicated directory
+2. **`walkthroughs/` directories**: Any `.json` file inside any directory named `walkthroughs/` at any depth
+   - Examples: `walkthroughs/architecture.json`, `docs/walkthroughs/onboarding.json`, `packages/api/walkthroughs/pr-123.json`
 
-**Note**: Files in the `walkthroughs/` directory do not need the `.walkthrough.json` suffix - any `.json` file is recognized. The extension automatically watches both locations for changes.
+**Note**: Files in `walkthroughs/` directories do not need the `.walkthrough.json` suffix — any `.json` file is recognized. The extension automatically watches both patterns for changes. Common non-content directories (`node_modules`, `.git`, `out`, `dist`, etc.) are skipped during discovery.
 
 ## Schema
 
@@ -313,7 +311,7 @@ For PR reviews or comparing changes, use `base_location` with a base reference:
 - Use `metadata` for any custom fields (PR numbers, recommendations, tags, etc.)
 - The `body` field supports Markdown for rich formatting
 - Comments are persisted to the JSON file when added through the extension UI
-- Multiple walkthrough files can coexist in a workspace (in `walkthroughs/` directory or as `.walkthrough.json` at root)
+- Multiple walkthrough files can coexist in a workspace (in `walkthroughs/` directories or as `.walkthrough.json` files at any depth)
 - You can select walkthroughs via the "Select Walkthrough" command, which also allows selecting Markdown files for conversion
 
 ## Markdown Format
