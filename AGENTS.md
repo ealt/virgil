@@ -75,10 +75,10 @@ The extension uses custom URI schemes for virtual documents:
 
 ## Walkthrough files
 
-Walkthroughs are discovered from:
+Walkthroughs are discovered recursively from anywhere in the workspace:
 
-- `.walkthrough.json` at workspace root
-- Any `.json` files in `walkthroughs/` directory
+- Any `.walkthrough.json` file at any depth
+- Any `.json` files inside any `walkthroughs/` directory at any depth
 
 Markdown files can be converted to JSON using the `Virgil: Convert Markdown to Walkthrough` command.
 
