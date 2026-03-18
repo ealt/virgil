@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-18
+
+### Added
+
+- Recursive walkthrough discovery: `.walkthrough.json` files and `walkthroughs/` directories are now found at any depth in the workspace, not just the root
+- File watchers use deep glob patterns (`**/.walkthrough.json`, `**/walkthroughs/*.json`) so newly created walkthroughs in nested directories are detected automatically
+
+### Changed
+
+- Walkthrough discovery logic extracted into a shared `discovery.ts` module used by both the extension entry point and `WalkthroughProvider`
+- Common non-content directories (`node_modules`, `.git`, `out`, `dist`, etc.) are skipped during discovery for performance
+
 ## [0.2.0] - 2026-03-17
 
 ### Added
@@ -90,7 +102,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File type-specific icons for steps in the sidebar (markdown, json, python, ruby, images, PDFs, archives, notebooks)
 - Setting `virgil.view.showHierarchicalNavigation` to control visibility of parent/sibling navigation buttons in the step panel (default: `false`)
 
-[Unreleased]: https://github.com/ealt/virgil/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/ealt/virgil/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ealt/virgil/releases/tag/v0.3.0
+[0.2.0]: https://github.com/ealt/virgil/releases/tag/v0.2.0
 [0.1.6]: https://github.com/ealt/virgil/releases/tag/v0.1.6
 [0.1.5]: https://github.com/ealt/virgil/releases/tag/v0.1.5
 [0.1.4]: https://github.com/ealt/virgil/releases/tag/v0.1.4
@@ -98,6 +112,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.1.2]: https://github.com/ealt/virgil/releases/tag/v0.1.2
 [0.1.1]: https://github.com/ealt/virgil/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ealt/virgil/releases/tag/v0.1.0
-
-[Unreleased]: https://github.com/ealt/virgil/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/ealt/virgil/releases/tag/v0.2.0
