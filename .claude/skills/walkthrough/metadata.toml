@@ -1,0 +1,9 @@
+name = "walkthrough"
+version = "1.0.0"
+type = "skill"
+
+[skill]
+prompt-file = "SKILL.md"
+
+[custom]
+author = "ealt"
