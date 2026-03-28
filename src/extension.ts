@@ -9,6 +9,7 @@ import {
   isMarkdownFile,
   normalizeLocationPath,
 } from './types';
+import { discoverWalkthroughFiles } from './discovery';
 import { WalkthroughProvider } from './WalkthroughProvider';
 import { StepDetailPanel } from './StepDetailPanel';
 import { HighlightManager, HighlightColor } from './HighlightManager';
@@ -186,28 +187,12 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  // Find walkthrough file (.walkthrough.json at root or any .json in walkthroughs/)
+  // Find walkthrough file (any .walkthrough.json or walkthroughs/*.json at any depth)
   const findWalkthroughFile = (): string | undefined => {
-    // Check for .walkthrough.json at root
-    const rootWalkthroughPath = path.join(workspaceRoot, '.walkthrough.json');
-    if (fs.existsSync(rootWalkthroughPath)) {
-      return rootWalkthroughPath;
+    const files = discoverWalkthroughFiles(workspaceRoot);
+    if (files.length > 0) {
+      return path.join(workspaceRoot, files[0]);
     }
-
-    // Check for any .json file in walkthroughs/ directory
-    const walkthroughsDir = path.join(workspaceRoot, 'walkthroughs');
-    if (fs.existsSync(walkthroughsDir) && fs.statSync(walkthroughsDir).isDirectory()) {
-      try {
-        const files = fs.readdirSync(walkthroughsDir);
-        const jsonFile = files.find((f) => f.endsWith('.json'));
-        if (jsonFile) {
-          return path.join(walkthroughsDir, jsonFile);
-        }
-      } catch {
-        // Ignore errors
-      }
-    }
-
     return undefined;
   };
 
@@ -576,6 +561,54 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'virgil.editComment',
+      async (commentId: string, text: string) => {
+        if (!walkthroughProvider || !commentId || !text) {
+          return;
+        }
+
+        const currentIndex = walkthroughProvider.getCurrentStepIndex();
+        if (currentIndex < 0) {
+          return;
+        }
+
+        const success = walkthroughProvider.editComment(currentIndex, commentId, text);
+        if (success) {
+          showCurrentStep();
+        }
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('virgil.deleteComment', async (commentId: string) => {
+      if (!walkthroughProvider || !commentId) {
+        return;
+      }
+
+      const currentIndex = walkthroughProvider.getCurrentStepIndex();
+      if (currentIndex < 0) {
+        return;
+      }
+
+      const confirmation = await vscode.window.showWarningMessage(
+        'Delete this comment?',
+        { modal: true },
+        'Delete'
+      );
+      if (confirmation !== 'Delete') {
+        return;
+      }
+
+      const success = walkthroughProvider.deleteComment(currentIndex, commentId);
+      if (success) {
+        showCurrentStep();
+      }
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('virgil.openLocation', async (location: string) => {
       const parsed = parseLocation(location);
       if (!parsed) {
@@ -607,16 +640,16 @@ export function activate(context: vscode.ExtensionContext) {
         for (const range of parsed.ranges) {
           highlightManager?.highlightRange(editor, range.startLine, range.endLine);
         }
-      } catch (error) {
+      } catch {
         vscode.window.showErrorMessage(`Could not open file: ${parsed.path}`);
       }
     })
   );
 
-  // Watch for walkthrough file changes (both .walkthrough.json at root and walkthroughs/*.json)
+  // Watch for walkthrough file changes at any depth
   const watcherPatterns = [
-    new vscode.RelativePattern(workspaceRoot, '.walkthrough.json'),
-    new vscode.RelativePattern(workspaceRoot, 'walkthroughs/*.json'),
+    new vscode.RelativePattern(workspaceRoot, '**/.walkthrough.json'),
+    new vscode.RelativePattern(workspaceRoot, '**/walkthroughs/*.json'),
   ];
 
   // Create watchers for both patterns

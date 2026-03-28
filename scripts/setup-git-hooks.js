@@ -2,21 +2,43 @@
 const fs = require('fs');
 const path = require('path');
 
-const hookSource = path.join(__dirname, '..', '.githooks', 'pre-commit');
-const hookDest = path.join(__dirname, '..', '.git', 'hooks', 'pre-commit');
+const repoRoot = path.join(__dirname, '..');
+const hookSource = path.join(repoRoot, '.githooks', 'pre-commit');
+const gitEntryPath = path.join(repoRoot, '.git');
 
-// Only set up hooks if .git directory exists (i.e., we're in a git repo)
-if (fs.existsSync(path.join(__dirname, '..', '.git')) && fs.existsSync(hookSource)) {
-  // Ensure .git/hooks directory exists
-  const hooksDir = path.dirname(hookDest);
-  if (!fs.existsSync(hooksDir)) {
-    fs.mkdirSync(hooksDir, { recursive: true });
+function resolveHooksDir() {
+  if (!fs.existsSync(gitEntryPath)) {
+    return null;
   }
 
-  // Copy the hook
+  const gitEntryStats = fs.statSync(gitEntryPath);
+  if (gitEntryStats.isDirectory()) {
+    return path.join(gitEntryPath, 'hooks');
+  }
+
+  if (gitEntryStats.isFile()) {
+    const gitFileContent = fs.readFileSync(gitEntryPath, 'utf-8').trim();
+    const match = gitFileContent.match(/^gitdir:\s*(.+)$/i);
+    if (!match) {
+      return null;
+    }
+
+    const gitDir = path.resolve(repoRoot, match[1]);
+    return path.join(gitDir, 'hooks');
+  }
+
+  return null;
+}
+
+const hooksDir = resolveHooksDir();
+
+if (hooksDir && fs.existsSync(hookSource)) {
+  fs.mkdirSync(hooksDir, { recursive: true });
+
+  const hookDest = path.join(hooksDir, 'pre-commit');
   fs.copyFileSync(hookSource, hookDest);
   fs.chmodSync(hookDest, '755');
   console.log('Git hooks installed successfully');
-} else if (!fs.existsSync(path.join(__dirname, '..', '.git'))) {
+} else if (!hooksDir) {
   console.log('Not a git repository, skipping git hook installation');
 }
